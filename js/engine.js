@@ -2,6 +2,19 @@
 window.App = window.App || {};
 
 window.App.Engine = (() => {
+  function getCategoriesList() {
+    let list = ["Saúde", "Alimentação", "Moradia", "Cartão de Crédito", "Lazer", "Serviços por Assinatura", "Serviços", "Financiamento", "Investimento", "Outros"];
+    if (typeof window !== "undefined" && window.App && window.App.State) {
+      const state = window.App.State.getState();
+      if (state && state.categorias) {
+        list = Object.keys(state.categorias);
+        if (!list.includes("Financiamento")) list.push("Financiamento");
+        if (!list.includes("Outros")) list.push("Outros");
+      }
+    }
+    return list;
+  }
+
   return {
     /**
      * Calcula as informações de parcela de uma despesa para um determinado mês selecionado.
@@ -77,18 +90,11 @@ window.App.Engine = (() => {
       const nomePerfil = perfil ? perfil.nome : "";
       const targetYear = parseInt(anoSelecionado) || new Date().getFullYear();
 
-      // Inicializar dicionário de gastos com as categorias obrigatórias
-      const gastosPorCategoria = {
-        "Saúde": 0,
-        "Alimentação": 0,
-        "Moradia": 0,
-        "Cartão de Crédito": 0,
-        "Lazer": 0,
-        "Serviços por Assinatura": 0,
-        "Serviços": 0,
-        "Financiamento": 0,
-        "Outros": 0
-      };
+      // Inicializar dicionário de gastos com as categorias dinâmicas
+      const gastosPorCategoria = {};
+      getCategoriesList().forEach(cat => {
+        gastosPorCategoria[cat] = 0;
+      });
 
       let totalGastos = 0;
 
@@ -180,17 +186,10 @@ window.App.Engine = (() => {
       const salarioAnual = salarioMensal * 12;
       const targetYear = parseInt(anoSelecionado) || new Date().getFullYear();
 
-      const gastosPorCategoria = {
-        "Saúde": 0,
-        "Alimentação": 0,
-        "Moradia": 0,
-        "Cartão de Crédito": 0,
-        "Lazer": 0,
-        "Serviços por Assinatura": 0,
-        "Serviços": 0,
-        "Financiamento": 0,
-        "Outros": 0
-      };
+      const gastosPorCategoria = {};
+      getCategoriesList().forEach(cat => {
+        gastosPorCategoria[cat] = 0;
+      });
 
       let totalGastos = 0;
 

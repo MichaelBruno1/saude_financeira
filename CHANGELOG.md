@@ -2,6 +2,55 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.0.6] - 2026-06-30
+
+### Removido
+- **Desenvolvedor: Depurador de Estado RAM (JSON)**:
+  - Remoção completa do painel colapsável de depuração na interface visual (`index.html`).
+  - Remoção de variáveis declaradas, listeners de eventos, referências de DOM e atualização de JSON de estado em `js/ui.js`.
+  - Bumping de versão para **v1.0.6** em `index.html`.
+
+## [1.0.5] - 2026-06-30
+
+### Corrigido
+- **Consolidação de Despesas de Investimento**:
+  - Correção na inicialização das categorias nos métodos `calculateMonthlySummary` e `calculateAnnualSummary` em `js/engine.js`.
+  - Adição do método auxiliar `getCategoriesList()` para buscar dinamicamente as categorias registradas no estado ativo (incluindo "Investimento" e qualquer categoria criada customizadamente pelo usuário).
+  - Evita que gastos da categoria "Investimento" caiam no fallback de "Outros" ao gerar sumários e relatórios.
+  - Bumping de versão para **v1.0.5** em `index.html`.
+
+## [1.0.4] - 2026-06-30
+
+### Modificado
+- **Status da Categoria Investimento**:
+  - Ajuste na lógica de status da categoria "Investimento" no Planejador Financeiro (aba de Relatórios).
+  - Status mudado para "Ruim" (badge vermelho) se o gasto real for menor que o limite.
+  - Status mantido como "OK" (badge verde) se o gasto real for igual ao limite.
+  - Status mudado para "Excelente" (badge ciano) se o gasto real for maior que o limite.
+  - Bumping de versão para **v1.0.4** em `index.html`.
+
+## [1.0.3] - 2026-06-30
+
+### Adicionado
+- **Mensagem Orçamentária em Tempo Real**:
+  - Exibe quantos % serão direcionados para Investimento dinamicamente na aba de configurações.
+  - Mensagem especial de conclusão do orçamento quando atinge 100% de limite.
+
+## [1.0.2] - 2026-06-30
+
+### Modificado
+- **Estilização e Alinhamento**:
+  - Centralização do botão de "Salvar Porcentagens" na tela de editar limites do planejador.
+  - Unificação de classe e estilo com o botão "Cadastrar Categoria".
+
+## [1.0.1] - 2026-06-30
+
+### Modificado
+- **Ajustes de UI no Planejador**:
+  - Remoção da categoria "Financiamento" da tela de limites de configurações.
+  - Alinhamento à esquerda para o seletor de método na tela de configurações.
+  - Inclusão da observação informando sobre gastos de financiamento considerados como moradia.
+
 ## [1.0.0] - 2026-06-30
 
 ### Adicionado

@@ -108,14 +108,7 @@ window.App.UI = (() => {
   let simTableAmortMonths;
   let simTableAmortJuros;
   let simTableAmortTotal;
-  
-  // Debugger
-  let toggleDebugBtn;
-  let debugArrow;
-  let debugContent;
-  
   // Tabelas
-  let stateJsonView;
   let expenseCountBadge;
   let expensesTableBody;
 
@@ -382,11 +375,6 @@ window.App.UI = (() => {
       simTableAmortJuros = document.getElementById("sim-table-amort-juros");
       simTableAmortTotal = document.getElementById("sim-table-amort-total");
 
-      toggleDebugBtn = document.getElementById("toggle-debug-btn");
-      debugArrow = document.getElementById("debug-arrow");
-      debugContent = document.getElementById("debug-content");
-      
-      stateJsonView = document.getElementById("state-json-view");
       expenseCountBadge = document.getElementById("expense-count-badge");
       expensesTableBody = document.getElementById("expenses-table-body");
 
@@ -528,17 +516,7 @@ window.App.UI = (() => {
         }
       });
 
-      // 6. Colapso do Debugger do Desenvolvedor
-      toggleDebugBtn.addEventListener("click", () => {
-        const isHidden = debugContent.classList.contains("hidden");
-        if (isHidden) {
-          debugContent.classList.remove("hidden");
-          debugArrow.classList.add("rotate-180");
-        } else {
-          debugContent.classList.add("hidden");
-          debugArrow.classList.remove("rotate-180");
-        }
-      });
+
 
       // --- 7. Modal de Inserção / Edição de Despesas ---
       
@@ -1131,10 +1109,7 @@ window.App.UI = (() => {
         }
       }
 
-      // 3. Atualizar Visualizador JSON de Estado RAM
-      if (stateJsonView) {
-        stateJsonView.textContent = JSON.stringify(state, null, 2);
-      }
+
 
       // 4. Fluxo de Visualização Condicional
       if (mesAtivo === 13) {
@@ -1236,9 +1211,19 @@ window.App.UI = (() => {
               let statusText = "OK";
               let statusClass = "bg-emerald-950/40 text-emerald-400 border border-emerald-900/40";
               
-              if (actualVal > limitVal) {
-                statusText = "Excedido";
-                statusClass = "bg-red-950/40 text-red-400 border border-red-900/40";
+              if (cat === "Investimento") {
+                if (actualVal < limitVal) {
+                  statusText = "Ruim";
+                  statusClass = "bg-red-950/40 text-red-400 border border-red-900/40";
+                } else if (actualVal > limitVal) {
+                  statusText = "Excelente";
+                  statusClass = "bg-cyan-950/40 text-cyan-400 border border-cyan-900/40";
+                }
+              } else {
+                if (actualVal > limitVal) {
+                  statusText = "Excedido";
+                  statusClass = "bg-red-950/40 text-red-400 border border-red-900/40";
+                }
               }
 
               row.innerHTML = `

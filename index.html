@@ -113,7 +113,7 @@
         <div id="sync-status" class="text-[10px] text-center font-medium mt-1.5 hidden transition"></div>
       </div>
       <div class="text-center pt-2">
-        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.0.3 • Controle Financeiro</p>
+        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.0.6 • Controle Financeiro</p>
       </div>
     </div>
   </aside>
@@ -130,7 +130,7 @@
       <div class="flex items-center space-x-4">
         <!-- Salary Card with Inline Editing -->
         <div class="bg-slate-950/40 border border-slate-800 px-4 py-2.5 rounded-2xl flex flex-col min-w-36 transition" id="salary-card-container">
-          <span class="text-xxs font-bold text-slate-500 uppercase tracking-wider">Salário do Perfil</span>
+          <span class="text-xxs font-bold text-slate-500 uppercase tracking-wider">Renda Líquida</span>
           <!-- View Mode -->
           <div class="flex items-center justify-between mt-0.5" id="salary-view-mode">
             <span id="kpi-salario" class="text-lg font-bold text-emerald-400">R$ 0,00</span>
@@ -547,16 +547,7 @@
 
       </div>
 
-      <!-- Collapsible Developer Debugger -->
-      <div class="bg-slate-950/20 border border-slate-850 rounded-2xl p-4 space-y-2">
-        <button id="toggle-debug-btn" class="flex items-center justify-between w-full text-left text-xs font-bold text-slate-500 hover:text-slate-400 uppercase tracking-wider transition focus:outline-none">
-          <span>Desenvolvedor: Depurador de Estado RAM (JSON)</span>
-          <svg id="debug-arrow" class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-        </button>
-        <div id="debug-content" class="hidden transition-all duration-200 overflow-hidden">
-          <pre id="state-json-view" class="w-full bg-slate-950 border border-slate-800 p-4 rounded-xl text-xs overflow-auto text-emerald-400 font-mono leading-relaxed max-h-80 mt-2"></pre>
-        </div>
-      </div>
+
 
     </div>
   </main>
