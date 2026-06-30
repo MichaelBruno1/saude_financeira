@@ -1,0 +1,252 @@
+/* Custom transitions and scrollbar stylings for premium visual aesthetics */
+
+:root {
+  --scrollbar-track: #1e293b; /* slate-800 */
+  --scrollbar-thumb: #475569; /* slate-600 */
+  --scrollbar-thumb-hover: #64748b; /* slate-500 */
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(15, 23, 42, 0.6); /* slate-900 with opacity */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  transition: background 0.2s ease-in-out;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Tab Transition Effects */
+.tab-content {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Interactive card hover */
+.card-interactive {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+  border-color: rgba(99, 102, 241, 0.3); /* indigo-500 */
+}
+
+/* Monthly active tab styles */
+.tab-month-active {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.4) !important;
+  border-color: #4f46e5 !important;
+}
+
+/* Modal fade-in/scale animations */
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-animate-in {
+  animation: modalScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Sidebar navigation active state */
+.sidebar-nav-active {
+  background: rgba(79, 70, 229, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: #818cf8 !important;
+}
+
+/* ==========================================
+   Light Mode Premium Overrides
+   ========================================== */
+body {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+body.theme-light {
+  background-color: #f1f5f9 !important; /* slate-100 */
+  color: #1e293b !important; /* slate-800 */
+}
+
+/* Headers and panels */
+body.theme-light header,
+body.theme-light .bg-slate-950,
+body.theme-light .bg-slate-900,
+body.theme-light .bg-slate-950\/30,
+body.theme-light .bg-slate-950\/20,
+body.theme-light .bg-slate-900\/40 {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+}
+
+/* Sidebar override to look distinct (e.g. slight gray background) */
+body.theme-light aside,
+body.theme-light #sidebar {
+  background-color: #f8fafc !important; /* slate-50 */
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+/* Text coloring overrides */
+body.theme-light .text-slate-100,
+body.theme-light .text-slate-200,
+body.theme-light .text-slate-300,
+body.theme-light .text-white {
+  color: #0f172a !important; /* slate-900 */
+}
+
+body.theme-light .text-slate-450,
+body.theme-light .text-slate-400,
+body.theme-light .text-slate-500,
+body.theme-light .text-slate-350 {
+  color: #475569 !important; /* slate-600 */
+}
+
+/* Borders and dividers */
+body.theme-light .border-slate-800,
+body.theme-light .border-slate-850,
+body.theme-light .border-slate-700,
+body.theme-light .border-slate-700\/60,
+body.theme-light .divide-slate-850 > *,
+body.theme-light .divide-slate-800 > * {
+  border-color: #e2e8f0 !important; /* slate-200 */
+}
+
+/* inputs, selects, textareas */
+body.theme-light input[type="text"],
+body.theme-light input[type="number"],
+body.theme-light select {
+  background-color: #f8fafc !important; /* slate-50 */
+  border-color: #cbd5e1 !important; /* slate-300 */
+  color: #0f172a !important;
+}
+
+body.theme-light input::placeholder {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+/* Modals */
+body.theme-light #expense-modal,
+body.theme-light #financing-modal,
+body.theme-light #profile-modal {
+  background-color: rgba(15, 23, 42, 0.4) !important; /* semi-transparent overlay */
+}
+
+body.theme-light #expense-modal > div,
+body.theme-light #financing-modal > div,
+body.theme-light #profile-modal > div {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+}
+
+/* Sidebar active states */
+body.theme-light .sidebar-nav-active {
+  background-color: #e0e7ff !important; /* indigo-50 */
+  color: #4f46e5 !important; /* indigo-600 */
+  border-color: #c7d2fe !important;
+}
+
+body.theme-light .sidebar-nav-active svg {
+  color: #4f46e5 !important;
+}
+
+/* Month tab buttons unselected */
+body.theme-light #month-tabs-container > button,
+body.theme-light #year-tabs-container > button {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+body.theme-light #month-tabs-container > button:hover,
+body.theme-light #year-tabs-container > button:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Month tab buttons active */
+body.theme-light .tab-month-active {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+  color: #ffffff !important;
+  border-color: #4f46e5 !important;
+}
+
+/* KPIs */
+body.theme-light .bg-slate-900\/50 {
+  background-color: #f8fafc !important; /* slate-50 */
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light #sim-kpi-juros-saved,
+body.theme-light #sim-kpi-months-saved,
+body.theme-light #sim-table-amort-total {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Tables hover and styling */
+body.theme-light .hover\:bg-slate-900\/40:hover {
+  background-color: #f8fafc !important;
+}
+
+body.theme-light table {
+  background-color: #ffffff !important;
+}
+
+body.theme-light tr.hover\:bg-slate-900\/40 {
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* Developer JSON view */
+body.theme-light #state-json-view {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #097969 !important; /* teal */
+}
+
+/* Category Badge background in light mode */
+body.theme-light span.bg-slate-800 {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+

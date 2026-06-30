@@ -1,0 +1,19 @@
+{
+  "name": "saude-financeira",
+  "version": "0.2.0",
+  "description": "Aplicação de Saúde Financeira Pessoal Estritamente Local",
+  "main": "js/app.js",
+  "scripts": {
+    "dev": "lite-server",
+    "lint": "eslint js/**/*.js",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "lite-server": "^2.6.1",
+    "vitest": "^1.6.0"
+  }
+}
