@@ -21,7 +21,8 @@ Este arquivo registra o andamento cronológico das execuções de prompts deste 
 | 30/06/2026 | Prompt 014 | `js/engine.js`, `index.html`, `CHANGELOG.md`, `prompts/history.md` | Concluído | Resolução do bug de categorias no sumário: adição do getCategoriesList no engine para inicializar as categorias dinamicamente (incluindo Investimento) e evitar o fallback de "Outros"; linter limpo e testes passando. |
 | 30/06/2026 | Prompt 015 | `index.html`, `js/ui.js`, `CHANGELOG.md`, `prompts/history.md` | Concluído | Remoção completa do Depurador de Estado RAM (JSON) da interface e do código; linter limpo e testes passando. |
 | 02/07/2026 | Prompt 016 | `index.html`, `js/ui.js`, `eslint.config.js`, `llm_config.js`, `prompts/analise.js`, `.gitignore`, `CHANGELOG.md`, `prompts/history.md` | Concluído | Nova funcionalidade de Análise Financeira Inteligente via LLM externa; diagnóstico de saúde financeira, sugestões e projeções de fim de ano baseados no perfil; configuração local e segura em llm_config.js; correção de CORS para execução sem servidor via file://; linter limpo e testes passando. |
-| [PENDENTE] | Prompt 017 | - | - | Próximas etapas de hardening e novas solicitações |
+| 02/07/2026 | Prompt 017 | `js/ui.js`, `index.html`, `CHANGELOG.md`, `prompts/history.md` | Concluído | Detecção e tratamento amigável de erro de CORS em requisições locais (localhost) via protocolo file://; exibição de alert de troubleshooting orientando sobre npm run dev e liberação de wildcard CORS no LM Studio / Ollama; linter e testes 100% OK. |
+| [PENDENTE] | Prompt 018 | - | - | Próximas etapas de hardening e novas solicitações |
 
 ---
 *Instrução para o Agente Executor: Sempre atualize este arquivo logo após a validação e conclusão bem-sucedida de qualquer etapa, preenchendo a data de execução, arquivos alterados e o status da homologação.*

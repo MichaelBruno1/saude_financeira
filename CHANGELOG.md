@@ -2,6 +2,14 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.1.2] - 2026-07-02
+
+### Corrigido
+- **Diagnóstico de CORS em Chamadas de API Locais (localhost)**:
+  - Adicionada detecção inteligente no tratamento de erro da chamada da LLM em `js/ui.js`.
+  - Exibição de dicas úteis no caso de requisições de servidores locais (ex: LM Studio ou Ollama) via protocolo `file://`, orientando o usuário a subir o projeto com `npm run dev` ou habilitar permissões de wildcard CORS no servidor local.
+  - Bumping de versão para **v1.1.2** em `index.html`.
+
 ## [1.1.1] - 2026-07-02
 
 ### Corrigido

@@ -991,7 +991,11 @@ window.App.UI = (() => {
 
           } catch (err) {
             console.error(err);
-            alert(`Erro: ${err.message}`);
+            if (window.location.protocol === "file:") {
+              alert(`Erro na Análise Inteligente: ${err.message}\n\nNota: Como a aplicação está rodando via file://, chamadas para servidores locais (localhost) costumam ser bloqueadas por CORS. Para resolver:\n1. Execute o projeto usando o servidor de desenvolvimento ('npm run dev').\n2. Ou configure seu servidor LLM (LM Studio / Ollama) para permitir CORS de todas as origens (*).`);
+            } else {
+              alert(`Erro: ${err.message}`);
+            }
           } finally {
             if (aiAnalysisLoader) aiAnalysisLoader.classList.add("hidden");
             generateAiAnalysisBtn.disabled = false;
