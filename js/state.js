@@ -157,6 +157,7 @@ window.App.State = (() => {
 
       _state.theme = newState.theme || "dark";
 
+
       _state.planejamento = newState.planejamento || {
         "Conservador": {
           "Saúde": 8,

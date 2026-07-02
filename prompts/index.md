@@ -19,5 +19,6 @@ Abaixo está o índice sequencial e idempotente de prompts necessários para o d
 | `prompt_013.md` | Status personalizado de investimentos no planejador | Milestone 13: Status Investimento | Baixa | 1 hora | Concluido |
 | `prompt_014.md` | Correção de consolidação de Investimentos em Outros | Milestone 14: Engine Fix | Média | 1 hora | Concluido |
 | `prompt_015.md` | Remoção do Depurador de Estado RAM (JSON) | Milestone 15: Clean Debugger | Baixa | 1 hora | Concluido |
+| `prompt_016.md` | Análise Financeira Inteligente via LLM externa e suporte offline | Milestone 16: Análise IA | Alta | 6 horas | Concluido |
 ---
 **Nota de Idempotência**: Antes de iniciar qualquer etapa, o agente executor deve obrigatoriamente validar a existência de alterações anteriores e ler os arquivos correspondentes para manter o projeto íntegro e em perfeito funcionamento como MVP após cada entrega.

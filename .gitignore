@@ -36,6 +36,7 @@ out/
 *.pfx
 secrets.json
 secrets.*.json
+llm_config.json
 
 # ── Logs ────────────────────────────────────────────────────
 logs/

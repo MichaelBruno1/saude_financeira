@@ -112,6 +112,13 @@ window.App.UI = (() => {
   let expenseCountBadge;
   let expensesTableBody;
 
+  // Inteligência Artificial (LLM)
+  let generateAiAnalysisBtn;
+  let aiAnalysisLoader;
+  let aiAnalysisResultCard;
+  let aiAnalysisTimestamp;
+  let aiAnalysisTextContent;
+
   // Controle de edição
   let editingExpenseId = null;
   let editingFinancingId = null;
@@ -388,6 +395,13 @@ window.App.UI = (() => {
       settingsPlannerWarning = document.getElementById("settings-planner-warning");
       settingsPlannerInfo = document.getElementById("settings-planner-info");
       settingsPlannerSobraSpan = document.getElementById("settings-planner-sobra-span");
+
+      // Inteligência Artificial (LLM)
+      generateAiAnalysisBtn = document.getElementById("generate-ai-analysis-btn");
+      aiAnalysisLoader = document.getElementById("ai-analysis-loader");
+      aiAnalysisResultCard = document.getElementById("ai-analysis-result-card");
+      aiAnalysisTimestamp = document.getElementById("ai-analysis-timestamp");
+      aiAnalysisTextContent = document.getElementById("ai-analysis-text-content");
 
       // --- Bind de Mascaramento Monetário ---
       const monetaryFields = [
@@ -823,6 +837,167 @@ window.App.UI = (() => {
         };
         reader.readAsText(file, "UTF-8");
       });
+
+      // 11. Gerar Análise Inteligente via LLM
+      if (generateAiAnalysisBtn) {
+        generateAiAnalysisBtn.addEventListener("click", async () => {
+          if (aiAnalysisLoader) aiAnalysisLoader.classList.remove("hidden");
+          if (aiAnalysisResultCard) aiAnalysisResultCard.classList.add("hidden");
+          generateAiAnalysisBtn.disabled = true;
+
+          try {
+            // A. Carregar configuração
+            const config = window.App.LlmConfig;
+            if (!config) {
+              throw new Error("Não foi possível carregar as configurações de 'llm_config.js'. Certifique-se de que o arquivo existe na raiz do projeto.");
+            }
+            
+            const apiUrl = String(config.apiUrl || "").trim();
+            const apiKey = String(config.apiKey || "").trim();
+            const model = String(config.model || "").trim();
+
+            if (!apiUrl || !apiKey || !model) {
+              throw new Error("Configuração incompleta em 'llm_config.js'. Certifique-se de preencher apiUrl, apiKey e model.");
+            }
+
+            if (apiKey === "SUA_API_KEY_AQUI") {
+              throw new Error("Chave de API não configurada em 'llm_config.js'. Abra o arquivo e altere a chave de API para uma válida.");
+            }
+
+            // B. Carregar o template de prompt
+            const promptTemplate = window.App.LlmPromptTemplate;
+            if (!promptTemplate) {
+              throw new Error("Não foi possível carregar o template de prompt de 'prompts/analise.js'.");
+            }
+
+            // C. Coletar dados do estado atual
+            const state = window.App.State.getState();
+            const perfil = state.perfis.find(p => p.nome === state.perfilAtivo);
+            const salario = perfil ? perfil.salario : 0;
+
+            // Limites recomendados do planejador
+            const plannerMethod = plannerMethodSelect ? plannerMethodSelect.value : "Equilibrado";
+            const limites = (state.planejamento && state.planejamento[plannerMethod]) || {};
+            let limitesStr = "";
+            for (const cat in state.categorias) {
+              limitesStr += `- ${cat}: ${limites[cat] || 0}%\n`;
+            }
+
+            // Obter gastos reais consolidados
+            const selectedMonth = reportsPizzaMonthSelect ? parseInt(reportsPizzaMonthSelect.value) : 1;
+            let summary;
+            if (selectedMonth === 0) {
+              summary = window.App.Engine.calculateAnnualSummary(perfil, state.despesas, state.financiamentos, state.anoAtivo);
+            } else {
+              summary = window.App.Engine.calculateMonthlySummary(perfil, selectedMonth, state.despesas, state.financiamentos, state.anoAtivo);
+            }
+
+            let gastosReaisStr = "";
+            for (const cat in state.categorias) {
+              const valor = summary.gastosPorCategoria[cat] || 0;
+              const pct = summary.porcentagemPorCategoria[cat] || 0;
+              gastosReaisStr += `- ${cat}: ${formatCurrency(valor)} (${pct}%)\n`;
+            }
+
+            // Detalhe das despesas
+            let detalheDespesasStr = "";
+            const activeExpenses = state.despesas.filter(d => d.perfil === state.perfilAtivo);
+            if (activeExpenses.length === 0) {
+              detalheDespesasStr = "Nenhuma despesa cadastrada.\n";
+            } else {
+              activeExpenses.forEach(d => {
+                const rec = d.recorrente ? "Recorrente" : `Parcelado (${d.parcelas}x)`;
+                detalheDespesasStr += `- ${d.descricao}: ${formatCurrency(parseFloat(d.valor) || 0)} | Categoria: ${d.categoria} | Início: ${d.mes_inicio}/${d.ano_inicio} | ${rec}\n`;
+              });
+            }
+
+            // Detalhe dos financiamentos
+            let detalheFinanciamentosStr = "";
+            const activeFinancings = state.financiamentos.filter(f => f.perfil === state.perfilAtivo);
+            if (activeFinancings.length === 0) {
+              detalheFinanciamentosStr = "Nenhum financiamento cadastrado.\n";
+            } else {
+              activeFinancings.forEach(f => {
+                detalheFinanciamentosStr += `- ${f.nome}: Total: ${formatCurrency(f.valorTotal)} | Parcela: ${formatCurrency(f.valorParcela)} | Parcelas: ${f.parcelasTotais} | TR: ${f.taxaTR}%\n`;
+              });
+            }
+
+            // D. Substituir placeholders no template
+            const promptContent = promptTemplate
+              .replace("{{PERFIL}}", state.perfilAtivo || "Nenhum")
+              .replace("{{SALARIO}}", formatCurrency(salario))
+              .replace("{{METODO_PLANEJADOR}}", plannerMethod)
+              .replace("{{LIMITES_PLANEJADOR}}", limitesStr)
+              .replace("{{GASTOS_REAIS}}", gastosReaisStr)
+              .replace("{{DETALHE_DESPESAS}}", detalheDespesasStr)
+              .replace("{{DETALHE_FINANCIAMENTOS}}", detalheFinanciamentosStr);
+
+            // E. Chamar LLM externa compatível com OpenAI
+            const chatUrl = apiUrl.endsWith("/") ? `${apiUrl}chat/completions` : `${apiUrl}/chat/completions`;
+            const response = await fetch(chatUrl, {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                model: model,
+                messages: [
+                  {
+                    role: "user",
+                    content: promptContent
+                  }
+                ],
+                temperature: 0.7
+              })
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`Erro na API (${response.status}): ${errorText}`);
+            }
+
+            const data = await response.json();
+            const aiText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+
+            if (!aiText) {
+              throw new Error("A API retornou uma resposta vazia.");
+            }
+
+            // F. Formatação simples de Markdown para HTML
+            if (aiAnalysisTextContent) {
+              let html = aiText
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\n\n/g, "</p><p>")
+                .replace(/\n/g, "<br>")
+                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                .replace(/\*(.*?)\*/g, "<em>$1</em>")
+                .replace(/### (.*?)(<br>|<\/p>)/g, "<h3 class='text-xs font-bold text-indigo-300 mt-4 mb-2 uppercase tracking-wider'>$1</h3>$2")
+                .replace(/## (.*?)(<br>|<\/p>)/g, "<h2 class='text-sm font-bold text-white mt-5 mb-2'>$1</h2>$2")
+                .replace(/- (.*?)(<br>)/g, "<li class='list-disc list-inside ml-2 text-slate-400'>$1</li>");
+
+              aiAnalysisTextContent.innerHTML = `<p>${html}</p>`;
+            }
+
+            if (aiAnalysisTimestamp) {
+              const now = new Date();
+              const timeStr = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+              aiAnalysisTimestamp.textContent = `Gerado às ${timeStr}`;
+            }
+
+            if (aiAnalysisResultCard) aiAnalysisResultCard.classList.remove("hidden");
+
+          } catch (err) {
+            console.error(err);
+            alert(`Erro: ${err.message}`);
+          } finally {
+            if (aiAnalysisLoader) aiAnalysisLoader.classList.add("hidden");
+            generateAiAnalysisBtn.disabled = false;
+          }
+        });
+      }
     },
 
     // Renderizar Abas de Anos (Gerados dinamicamente com base nas despesas comuns e ano atual)
@@ -943,6 +1118,7 @@ window.App.UI = (() => {
 
       // Renderizar formulário do Planejador Financeiro nas configurações
       renderPlannerSettingsForm();
+
     },
 
     // Renderizar Abas de Meses (Janeiro a Dezembro apenas)

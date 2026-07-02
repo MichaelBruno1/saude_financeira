@@ -2,6 +2,23 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.1.1] - 2026-07-02
+
+### Corrigido
+- **Suporte Offline file:// e Evitação de CORS**:
+  - Correção do erro de CORS causado por requisições `fetch()` locais de arquivos JSON e Markdown ao rodar a aplicação diretamente pelo protocolo `file:///`.
+  - Migração de `llm_config.json` para `llm_config.js` e de `prompts/analise.md` para `prompts/analise.js`.
+  - Importação de dados estáticos via tags `<script>` no `index.html` injetando os dados em variáveis globais `window.App.LlmConfig` e `window.App.LlmPromptTemplate`.
+  - Bumping de versão para **v1.1.1** em `index.html`.
+
+## [1.1.0] - 2026-07-02
+
+### Adicionado
+- **Análise Financeira com Inteligência Artificial**:
+  - Criação do painel de Análise Financeira no painel de relatórios.
+  - Implementação do botão "Gerar análise inteligente" para submeter os dados do perfil atual à LLM e exibir o diagnóstico abaixo.
+  - Remoção dos campos de IA das configurações e criação do arquivo local de parametrização `llm_config.js` (ignorado no `.gitignore` por segurança).
+
 ## [1.0.6] - 2026-06-30
 
 ### Removido

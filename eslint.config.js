@@ -16,7 +16,8 @@ export default [
         setTimeout: "readonly",
         clearTimeout: "readonly",
         App: "writable",
-        Chart: "readonly"
+        Chart: "readonly",
+        fetch: "readonly"
       }
     },
     rules: {
