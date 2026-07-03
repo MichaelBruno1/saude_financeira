@@ -179,9 +179,8 @@ A ordem dos `<script>` no `index.html` é **estritamente obrigatória**:
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- 2. Configurações e prompts estáticos (sem import/fetch) -->
+<!-- 2. Configurações locais (sem import/fetch) -->
 <script src="llm_config.js"></script>
-<script src="prompts/analise.js"></script>
 
 <!-- 3. Módulos da aplicação (em ordem de dependência) -->
 <script src="js/storage.js"></script>
@@ -235,7 +234,7 @@ saude_financeira/
 │   └── ui.js               # Controladora da interface e event listeners
 │
 ├── prompts/
-│   └── analise.js          # Template de prompt para análise com IA (variável global)
+│   └── analise.md          # Template de prompt para análise com IA (arquivo markdown)
 │
 ├── llm_config.js           # Config da LLM local (ignorado no .gitignore)
 │

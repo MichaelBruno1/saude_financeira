@@ -2,6 +2,21 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.1.3] - 2026-07-03
+
+### Adicionado
+- **Documentação Spec-Driven Development (SDD)**:
+  - Adicionada documentação completa do projeto na pasta `spec/` seguindo a estrutura recomendada: visão de produto, histórias de usuário, restrições, arquitetura geral, Architecture Decision Records (ADRs), contratos e especificações de módulos (`state.js`, `storage.js`, `engine.js`, `charts.js`, `ui.js`, `app.js`), especificações de features, formato de dados (CSV) e qualidade (estratégia de testes e dívidas técnicas).
+
+### Modificado
+- **Migração do Template de Prompt da LLM**:
+  - Conversão do arquivo `prompts/analise.js` para `prompts/analise.md` contendo estritamente o prompt original em Markdown.
+  - Atualização do carregador em `js/ui.js` para realizar requisição `fetch` assíncrona do arquivo `prompts/analise.md`.
+  - Implementação de um fallback de template em string no próprio `js/ui.js` para garantir o funcionamento offline via protocolo `file:///` quando `fetch` é impedido por regras de CORS do navegador.
+  - Remoção da tag `<script>` desnecessária em `index.html`.
+  - Atualização de todas as especificações e contratos na pasta `spec/` para referenciar `prompts/analise.md`.
+  - Bumping de versão para **v1.1.3** em `index.html`.
+
 ## [1.1.2] - 2026-07-02
 
 ### Corrigido

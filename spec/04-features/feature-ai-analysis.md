@@ -41,8 +41,7 @@ window.App.LlmConfig = {
    d. Resumo de gastos do mês atual (por categoria)
    e. Detalhes de todas as despesas do mês
    f. Detalhes de todos os financiamentos
-4. UI preenche o template de prompt:
-   window.App.LlmPromptTemplate com os dados interpolados
+4. UI preenche o template de prompt carregado dinamicamente com os dados interpolados
 5. UI faz fetch() para:
    POST {apiUrl}/chat/completions
    Headers: { Authorization: "Bearer {apiKey}", Content-Type: "application/json" }
@@ -54,7 +53,7 @@ window.App.LlmConfig = {
 
 ## 4. Template de Prompt
 
-O template (`prompts/analise.js`) é injetado na variável `window.App.LlmPromptTemplate` e contém os seguintes placeholders:
+O template (`prompts/analise.md`) é carregado via fetch (ou fallback local) e contém os seguintes placeholders:
 
 | Placeholder               | Substituído por                              |
 |---------------------------|----------------------------------------------|

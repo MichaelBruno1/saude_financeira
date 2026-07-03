@@ -169,7 +169,7 @@ O fluxo de geração de análise financeira:
    - Resumo de gastos mensais
    - Detalhes das despesas do mês
    - Detalhes dos financiamentos
-3. UI preenche o template de prompt (window.App.LlmPromptTemplate)
+3. UI preenche o template de prompt (carregado dinamicamente via fetch de prompts/analise.md ou fallback)
 4. UI faz fetch() para window.App.LlmConfig.apiUrl (OpenAI-compatible API)
 5. Exibe resposta em Markdown no painel de análise
 6. Em caso de erro CORS (protocolo file:///):
