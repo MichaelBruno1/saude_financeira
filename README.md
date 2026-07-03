@@ -34,6 +34,12 @@ A aplicação adota o padrão Single Page Application (SPA) em Vanilla JS modern
    ```
 3. Alternativamente, você pode abrir o arquivo `index.html` diretamente em seu navegador (protocolo `file:///`) clicando duas vezes sobre ele.
 
+## Persistência e Backup de Dados
+Por ser uma aplicação estritamente local (sem banco de dados em nuvem), todos os seus perfis e despesas são salvos automaticamente no **LocalStorage** do navegador. 
+> ⚠️ **Atenção**: Limpar os dados de navegação, cookies ou histórico do navegador poderá apagar o LocalStorage e causar a perda definitiva de dados.
+> 
+> **O uso da ferramenta "Exportar Perfil (CSV)" no rodapé do menu lateral é o seu mecanismo principal de Backup físico.** Recomenda-se realizar a exportação regularmente para manter uma cópia de segurança dos seus dados em disco.
+
 ## Testes e Linter
 * **Linting**: Execute `npm run lint` para validar o padrão do código.
 * **Testes Unitários**: Execute `npm run test` para rodar os testes com o Vitest.

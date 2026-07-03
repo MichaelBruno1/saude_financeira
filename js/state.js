@@ -23,6 +23,7 @@ window.App.State = (() => {
       "Investimento": "#eab308"
     },
     theme: "dark",       // Tema padrão dark
+    ultimoBackup: null,  // Timestamp do último backup CSV
     planejamento: {
       "Conservador": {
         "Saúde": 8,
@@ -156,6 +157,7 @@ window.App.State = (() => {
       }
 
       _state.theme = newState.theme || "dark";
+      _state.ultimoBackup = newState.ultimoBackup ? parseInt(newState.ultimoBackup) || null : null;
 
 
       _state.planejamento = newState.planejamento || {
@@ -591,6 +593,13 @@ window.App.State = (() => {
 
       _state.planejamento[metodo]["Investimento"] = (_state.planejamento[metodo]["Investimento"] || 0) + sobra;
 
+      notify();
+      return true;
+    },
+
+    // Atualizar data/hora do último backup em CSV realizado
+    atualizarUltimoBackup() {
+      _state.ultimoBackup = Date.now();
       notify();
       return true;
     }

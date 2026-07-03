@@ -122,6 +122,7 @@ Manter CDN como comportamento padrão (compatível com `file:///`). Se houver ne
 | **Severity**| Média                                                            |
 | **Tipo**    | Confiabilidade de Dados                                          |
 | **Desde**   | v0.2.0                                                           |
+| **Status**  | Resolvido (v1.1.3)                                               |
 
 ### Descrição
 O único mecanismo de persistência automática é o `localStorage`. Se o usuário limpar os dados do navegador, todos os dados são perdidos sem aviso.
@@ -130,12 +131,10 @@ O único mecanismo de persistência automática é o `localStorage`. Se o usuár
 - Perda total de dados financeiros históricos do usuário.
 - Sem mecanismo de recuperação integrado.
 
-### Solução Proposta
-1. Adicionar aviso ao iniciar a aplicação caso o localStorage esteja próximo do limite.
-2. Implementar exportação automática agendada (sugestão de backup quinzenal).
-3. Documentar claramente no README que CSV é o backup principal.
-
-### Esforço Estimado: Baixo
+### Resolução (v1.1.3)
+- Adicionado banner de aviso dinâmico na aplicação que avisa o usuário se ele possuir dados ativos e não realizar um backup (exportação CSV) há mais de 15 dias.
+- O campo `ultimoBackup` foi adicionado ao estado central e é atualizado toda vez que uma exportação CSV é concluída com sucesso.
+- O backup principal por CSV foi devidamente documentado no `README.md` do projeto.
 
 ---
 
@@ -176,5 +175,5 @@ const DOM_IDS = {
 | TD-002  | Re-renderização total                       | Baixa/Média | Médio |
 | TD-003  | Sem testes de integração/E2E               | Média    | Alto    |
 | TD-004  | Tailwind via CDN em produção               | Baixa    | Baixo   |
-| TD-005  | LocalStorage como único backup             | Média    | Baixo   |
+| TD-005  | LocalStorage como único backup             | Média    | Resolvido (v1.1.3) |
 | TD-006  | IDs DOM hardcoded                          | Baixa    | Baixo   |

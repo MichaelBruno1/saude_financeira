@@ -135,6 +135,10 @@ window.App.UI = (() => {
   let pdfImportConfirmBtn;
   let extractedExpenses = [];
 
+  // Backup warning banner
+  let backupWarningBanner;
+  let btnCloseBackupBanner;
+
   // Controle de edição
   let editingExpenseId = null;
   let editingFinancingId = null;
@@ -695,6 +699,9 @@ Exemplo de formato:
       pdfImportCancelBtn = document.getElementById("pdf-import-cancel-btn");
       pdfImportConfirmBtn = document.getElementById("pdf-import-confirm-btn");
       
+      backupWarningBanner = document.getElementById("backup-warning-banner");
+      btnCloseBackupBanner = document.getElementById("btn-close-backup-banner");
+      
       // Containers da aba de relatórios
       monthlyExpensesContainer = document.getElementById("monthly-expenses-container");
       reportsContainer = document.getElementById("reports-container");
@@ -1150,6 +1157,7 @@ Exemplo de formato:
         const state = window.App.State.getState();
         const success = window.App.Storage.exportAsCSVFile(state);
         if (success) {
+          window.App.State.atualizarUltimoBackup();
           showStatus("Arquivo CSV exportado!");
         } else {
           showStatus("Erro ao exportar CSV.", true);
@@ -1566,6 +1574,12 @@ Informe:
           showStatus(`Importação concluída: ${importedCount} despesas cadastradas!`);
         });
       }
+
+      if (btnCloseBackupBanner) {
+        btnCloseBackupBanner.addEventListener("click", () => {
+          if (backupWarningBanner) backupWarningBanner.classList.add("hidden");
+        });
+      }
     },
 
     // Renderizar Abas de Anos (Gerados dinamicamente com base nas despesas comuns e ano atual)
@@ -1767,6 +1781,20 @@ Informe:
     // Renderizar dados do Estado no DOM
     render(state) {
       const { perfis, perfilAtivo, despesas, mesAtivo, anoAtivo, financiamentos } = state;
+
+      // Verificar recomendação de backup
+      if (backupWarningBanner) {
+        const ultimoBackup = state.ultimoBackup;
+        const quinzeDiasMs = 15 * 24 * 60 * 60 * 1000;
+        
+        // Se nunca fez backup ou fez há mais de 15 dias, e tem dados para fazer backup
+        const possuiDados = (Array.isArray(despesas) && despesas.length > 0) || (Array.isArray(financiamentos) && financiamentos.length > 0);
+        if (possuiDados && (!ultimoBackup || (Date.now() - ultimoBackup) > quinzeDiasMs)) {
+          backupWarningBanner.classList.remove("hidden");
+        } else {
+          backupWarningBanner.classList.add("hidden");
+        }
+      }
 
       // Aplicar Tema Claro/Escuro
       if (document.body) {
