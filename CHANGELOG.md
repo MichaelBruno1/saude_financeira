@@ -2,6 +2,12 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.1.5] - 2026-07-03
+
+### Adicionado
+- **TD-008 (Configurações de LLM personalizadas)**:
+  - Adicionado formulário de configuração da Inteligência Artificial na aba de Configurações do sistema. O usuário agora pode definir a URL Base, a chave de API e o modelo de IA que preferir (como Ollama, LM Studio local ou APIs externas como OpenAI). Os dados são persistidos localmente e o arquivo `llm_config.js` é utilizado de forma transparente como fallback caso não haja configuração personalizada.
+
 ## [1.1.4] - 2026-07-03
 
 ### Corrigido

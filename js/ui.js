@@ -112,7 +112,11 @@ window.App.UI = (() => {
     SYNC_STATUS: "sync-status",
     THEME_TOGGLE_BTN: "theme-toggle-btn",
     THEME_TOGGLE_BTN_TEXT: "theme-toggle-btn-text",
-    YEAR_TABS_CONTAINER: "year-tabs-container"
+    YEAR_TABS_CONTAINER: "year-tabs-container",
+    LLM_SETTINGS_FORM: "llm-settings-form",
+    SETTINGS_LLM_URL: "settings-llm-url",
+    SETTINGS_LLM_KEY: "settings-llm-key",
+    SETTINGS_LLM_MODEL: "settings-llm-model"
   };
 
   // Elementos do DOM cached

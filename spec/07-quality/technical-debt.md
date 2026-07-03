@@ -183,6 +183,7 @@ No arquivo `js/engine.js`, o método `getInstallmentInfo` possui uma limitação
 | **Severity**| Média                                                            |
 | **Tipo**    | Usabilidade / Manutenibilidade                                   |
 | **Desde**   | v1.1.2                                                           |
+| **Status**  | Resolvido (v1.1.5)                                               |
 
 ### Descrição
 As configurações de URL do servidor da LLM local (LM Studio/Ollama) e o nome do modelo de inteligência artificial estão definidos de forma rígida em `llm_config.js`.
@@ -191,10 +192,10 @@ As configurações de URL do servidor da LLM local (LM Studio/Ollama) e o nome d
 - Para trocar o modelo ou apontar para um provedor externo (como OpenAI ou Anthropic), o usuário precisa editar o código-fonte manualmente.
 - Dificuldade para usuários não técnicos utilizarem a funcionalidade com sua infraestrutura local.
 
-### Solução Proposta
-Criar uma seção de configuração da LLM na aba de Configurações do sistema para permitir ao usuário salvar a URL base, a chave de API (opcional) e o modelo diretamente no LocalStorage, usando `llm_config.js` apenas como fallback inicial.
-
-### Esforço Estimado: Baixo
+### Resolução (v1.1.5)
+- Adicionado formulário de configuração da inteligência artificial na aba de Configurações do sistema.
+- Permite salvar a URL base, a chave de API e o modelo diretamente no estado reativo central (LocalStorage).
+- O arquivo `llm_config.js` é utilizado de forma transparente apenas como fallback inicial caso não haja configuração personalizada.
 
 ---
 
@@ -252,6 +253,6 @@ Baixar e hospedar as bibliotecas (`chart.js`, `pdf.min.js`, `pdf.worker.min.js`)
 | TD-005  | LocalStorage como único backup             | Média    | Resolvido (v1.1.3) |
 | TD-006  | IDs DOM hardcoded                          | Baixa    | Resolvido (v1.1.3) |
 | TD-007  | Recorrências limitadas ao ano de início     | Alta     | Resolvido (v1.1.4) |
-| TD-008  | Configuração LLM hardcoded                  | Média    | Baixo   |
+| TD-008  | Configuração LLM hardcoded                  | Média    | Resolvido (v1.1.5) |
 | TD-009  | Falta de validação e OCR no PDF             | Média    | Baixo   |
 | TD-010  | Dependência de bibliotecas via CDN          | Baixa    | Baixo   |

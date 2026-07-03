@@ -24,6 +24,11 @@ window.App.State = (() => {
     },
     theme: "dark",       // Tema padrão dark
     ultimoBackup: null,  // Timestamp do último backup CSV
+    llmConfig: {         // Configurações personalizadas da LLM
+      apiUrl: "",
+      apiKey: "",
+      model: ""
+    },
     planejamento: {
       "Conservador": {
         "Saúde": 8,
@@ -158,6 +163,7 @@ window.App.State = (() => {
 
       _state.theme = newState.theme || "dark";
       _state.ultimoBackup = newState.ultimoBackup ? parseInt(newState.ultimoBackup) || null : null;
+      _state.llmConfig = newState.llmConfig || { apiUrl: "", apiKey: "", model: "" };
 
 
       _state.planejamento = newState.planejamento || {
@@ -601,6 +607,17 @@ window.App.State = (() => {
     atualizarUltimoBackup() {
       _state.ultimoBackup = Date.now();
       notify("ultimoBackup");
+      return true;
+    },
+
+    // Atualizar configurações da LLM
+    atualizarLlmConfig(apiUrl, apiKey, model) {
+      _state.llmConfig = {
+        apiUrl: String(apiUrl || "").trim(),
+        apiKey: String(apiKey || "").trim(),
+        model: String(model || "").trim()
+      };
+      notify("llmConfig");
       return true;
     }
   };

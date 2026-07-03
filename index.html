@@ -115,7 +115,7 @@
         <div id="sync-status" class="text-[10px] text-center font-medium mt-1.5 hidden transition"></div>
       </div>
       <div class="text-center pt-2">
-        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.1.4 • Controle Financeiro</p>
+        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.1.5 • Controle Financeiro</p>
       </div>
     </div>
   </aside>
@@ -541,6 +541,36 @@
               <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-550 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition shadow-lg shadow-indigo-600/10 focus:outline-none">
                 Cadastrar Categoria
               </button>
+            </form>
+          </div>
+
+          <!-- Card 3: Configuração da Inteligência Artificial (LLM) -->
+          <div class="bg-slate-950/30 border border-slate-800 p-6 rounded-2xl flex flex-col space-y-6 md:col-span-2">
+            <div>
+              <h4 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Configuração da Inteligência Artificial (LLM)</h4>
+              <p class="text-xs text-slate-500 mt-1">Configure o endpoint da API para a análise de perfil e importação de faturas. Deixe em branco para usar as configurações padrão do arquivo llm_config.js.</p>
+            </div>
+
+            <form id="llm-settings-form" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">URL Base do Endpoint</label>
+                  <input type="text" id="settings-llm-url" placeholder="Padrão: Gemini / LM Studio" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-350 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Chave de API (API Key)</label>
+                  <input type="password" id="settings-llm-key" placeholder="Insira a chave secreta" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-350 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Nome do Modelo (Model)</label>
+                  <input type="text" id="settings-llm-model" placeholder="Ex: gemini-3.5-flash / llama3" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-350 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+              </div>
+              <div class="flex justify-end">
+                <button type="submit" class="bg-indigo-650 hover:bg-indigo-600 text-white text-xs font-semibold py-2.5 px-6 rounded-xl flex items-center space-x-2 transition shadow-lg shadow-indigo-650/10 cursor-pointer">
+                  <span>Salvar Configuração IA</span>
+                </button>
+              </div>
             </form>
           </div>
         </div>
