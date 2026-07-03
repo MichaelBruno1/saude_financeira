@@ -12,6 +12,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- Tailwind Config for Custom Aesthetics -->
   <script>
     tailwind.config = {
@@ -169,6 +171,10 @@
         <button id="add-expense-btn" class="bg-indigo-600 hover:bg-indigo-550 text-white text-xs font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 transition shadow-lg shadow-indigo-600/10 shrink-0 self-start sm:self-auto focus:outline-none">
           <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
           <span>Adicionar Gasto</span>
+        </button>
+        <button id="btn-open-pdf-import" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 transition shadow-lg shrink-0 self-start sm:self-auto focus:outline-none">
+          <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path></svg>
+          <span>Importar Fatura PDF</span>
         </button>
         <nav class="flex space-x-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none flex-1" id="month-tabs-container">
           <!-- Dynamically populated from JS -->
@@ -753,6 +759,63 @@
           <button type="submit" class="w-1/2 bg-indigo-650 hover:bg-indigo-600 text-white font-medium py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-650/20">Salvar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Import Credit Card Invoice PDF Modal Container -->
+  <div id="pdf-import-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden transition-all duration-300">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl modal-animate-in space-y-6 flex flex-col max-h-[90vh]">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800 shrink-0">
+        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">Importar Fatura PDF (Cartão de Crédito)</h3>
+        <button id="close-pdf-import-modal-btn" class="text-slate-500 hover:text-slate-350 transition focus:outline-none">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Drag & Drop Area / File Input -->
+      <div id="pdf-import-upload-zone" class="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-2xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-3 shrink-0">
+        <input type="file" id="pdf-import-file-input" accept="application/pdf" class="hidden">
+        <svg class="w-12 h-12 text-slate-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"></path>
+        </svg>
+        <div class="text-sm text-slate-300 font-medium">Arraste seu arquivo PDF aqui ou <span class="text-indigo-400 hover:underline">clique para buscar</span></div>
+        <p class="text-xs text-slate-500">Apenas arquivos PDF de fatura de cartão de crédito. Leitura feita localmente em memória.</p>
+      </div>
+
+      <!-- Loading State -->
+      <div id="pdf-import-loading" class="hidden flex flex-col items-center justify-center p-8 space-y-4 shrink-0">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+        <p id="pdf-import-status-text" class="text-sm text-slate-400 font-medium">Lendo arquivo PDF...</p>
+      </div>
+
+      <!-- Review Container -->
+      <div id="pdf-import-review-container" class="hidden flex-1 overflow-y-auto space-y-4 pr-1">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider shrink-0">
+          <span>Despesas Identificadas pela IA</span>
+          <button id="pdf-import-select-all" class="text-indigo-400 hover:text-indigo-300 transition focus:outline-none">Desmarcar Todos</button>
+        </div>
+        <div class="overflow-x-auto border border-slate-800 rounded-xl bg-slate-950">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 text-[10px] text-slate-500 uppercase tracking-wider">
+                <th class="py-3 px-4 w-12 text-center">Incluir</th>
+                <th class="py-3 px-4">Descrição</th>
+                <th class="py-3 px-4 w-32">Valor (R$)</th>
+                <th class="py-3 px-4 w-40">Parcelamento</th>
+              </tr>
+            </thead>
+            <tbody id="pdf-import-table-body" class="text-xs text-slate-300 divide-y divide-slate-800/50">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="flex space-x-3 pt-4 border-t border-slate-800 shrink-0">
+        <button type="button" id="pdf-import-cancel-btn" class="w-1/2 bg-slate-850 hover:bg-slate-800 text-slate-300 font-medium py-3 rounded-xl transition text-sm">Cancelar</button>
+        <button type="button" id="pdf-import-confirm-btn" class="w-1/2 bg-indigo-650 hover:bg-indigo-600 text-white font-medium py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-650/20 disabled:opacity-50 disabled:cursor-not-allowed" disabled>Confirmar Lançamento</button>
+      </div>
     </div>
   </div>
 

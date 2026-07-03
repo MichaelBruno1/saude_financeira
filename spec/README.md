@@ -46,7 +46,8 @@ spec/
 │   ├── feature-planner.md           ← Feature: Planejador Financeiro
 │   ├── feature-categories.md        ← Feature: Categorias Customizadas
 │   ├── feature-sync.md              ← Feature: Sincronização CSV
-│   └── feature-ai-analysis.md       ← Feature: Análise com IA
+│   ├── feature-ai-analysis.md       ← Feature: Análise com IA
+│   └── feature-pdf-invoice-import.md ← Feature: Importação de Fatura via PDF
 │
 ├── 05-api/
 │   └── state-api.md                 ← Referência pública da API do State

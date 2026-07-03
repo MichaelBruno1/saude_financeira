@@ -1,3 +1,4 @@
+/* global pdfjsLib */
 // Namespace global
 window.App = window.App || {};
 
@@ -119,6 +120,21 @@ window.App.UI = (() => {
   let aiAnalysisTimestamp;
   let aiAnalysisTextContent;
 
+  // Importação de Fatura PDF
+  let btnOpenPdfImport;
+  let pdfImportModal;
+  let closePdfImportModalBtn;
+  let pdfImportUploadZone;
+  let pdfImportFileInput;
+  let pdfImportLoading;
+  let pdfImportStatusText;
+  let pdfImportReviewContainer;
+  let pdfImportSelectAll;
+  let pdfImportTableBody;
+  let pdfImportCancelBtn;
+  let pdfImportConfirmBtn;
+  let extractedExpenses = [];
+
   // Controle de edição
   let editingExpenseId = null;
   let editingFinancingId = null;
@@ -221,6 +237,321 @@ window.App.UI = (() => {
           settingsPlannerInfo.className = "ml-3 text-xxs font-semibold text-slate-400";
         }
       }
+    }
+  }
+
+  // ── FUNÇÕES DE IMPORTAÇÃO DE FATURA PDF ──────────────────────
+
+  function showPdfImportModal() {
+    if (pdfImportModal) {
+      pdfImportModal.classList.remove("hidden");
+      resetPdfImportState();
+    }
+  }
+
+  function hidePdfImportModal() {
+    if (pdfImportModal) {
+      pdfImportModal.classList.add("hidden");
+    }
+  }
+
+  function resetPdfImportState() {
+    if (pdfImportFileInput) pdfImportFileInput.value = "";
+    if (pdfImportUploadZone) pdfImportUploadZone.classList.remove("hidden");
+    if (pdfImportLoading) pdfImportLoading.classList.add("hidden");
+    if (pdfImportReviewContainer) pdfImportReviewContainer.classList.add("hidden");
+    if (pdfImportTableBody) pdfImportTableBody.innerHTML = "";
+    if (pdfImportConfirmBtn) {
+      pdfImportConfirmBtn.disabled = true;
+      pdfImportConfirmBtn.textContent = "Confirmar Lançamento";
+    }
+    extractedExpenses = [];
+  }
+
+  async function processPdfFile(file) {
+    if (!file) return;
+
+    if (pdfImportUploadZone) pdfImportUploadZone.classList.add("hidden");
+    if (pdfImportLoading) pdfImportLoading.classList.remove("hidden");
+    if (pdfImportStatusText) pdfImportStatusText.textContent = "Lendo arquivo PDF localmente...";
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      // Configure worker CDN
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let rawText = "";
+
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        if (pdfImportStatusText) pdfImportStatusText.textContent = `Lendo página ${i} de ${pdfDoc.numPages}...`;
+        const page = await pdfDoc.getPage(i);
+        const textContent = await page.getTextContent();
+        rawText += textContent.items.map(item => item.str).join(" ") + "\n";
+      }
+
+      if (!rawText.trim()) {
+        throw new Error("Não foi possível extrair nenhum texto legível deste PDF.");
+      }
+
+      if (pdfImportStatusText) pdfImportStatusText.textContent = "Estruturando fatura com Inteligência Artificial...";
+      await sendTextToLlm(rawText);
+
+    } catch (err) {
+      console.error("Erro no processamento do PDF:", err);
+      alert(`Erro no processamento do PDF: ${err.message}`);
+      resetPdfImportState();
+    }
+  }
+
+  async function sendTextToLlm(text) {
+    // A. Carregar configuração
+    const config = window.App.LlmConfig;
+    if (!config) {
+      throw new Error("Não foi possível carregar as configurações de 'llm_config.js'. Certifique-se de que o arquivo existe na raiz do projeto.");
+    }
+    
+    const apiUrl = String(config.apiUrl || "").trim();
+    const apiKey = String(config.apiKey || "").trim();
+    const model = String(config.model || "").trim();
+
+    if (!apiUrl || !apiKey || !model) {
+      throw new Error("Configuração incompleta em 'llm_config.js'. Certifique-se de preencher apiUrl, apiKey e model.");
+    }
+
+    // B. Carregar o template de prompt
+    let promptTemplate = "";
+    try {
+      const response = await fetch("prompts/importacao.md");
+      if (response.ok) {
+        promptTemplate = await response.text();
+      } else {
+        throw new Error(`Erro HTTP! Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.warn("Erro ao carregar o prompt de 'prompts/importacao.md' via fetch. Usando fallback local:", err);
+      // Fallback template
+      promptTemplate = `Você é um processador de dados especializado em faturas de cartão de crédito. Sua tarefa é analisar o texto extraído de uma fatura de cartão de crédito e retornar ESTRITAMENTE um JSON contendo uma lista de despesas identificadas.
+
+### INSTRUÇÕES DE EXTRAÇÃO:
+1. **Identifique apenas transações de gastos/despesas** (compras, débitos, tarifas). Ignore pagamentos de fatura, créditos, estornos ou saldos anteriores.
+2. **Identifique compras parceladas**:
+   - Compras parceladas normalmente contêm indicações como \`02/05\`, \`2 de 5\`, \`2/5\`, \`Parcela 02\`.
+   - Se for uma compra parcelada, identifique:
+     - \`description\`: O nome do estabelecimento (remova o sufixo da parcela, ex: "Lojas Americanas 02/05" vira "Lojas Americanas").
+     - \`value\`: O valor cobrado NESTA fatura (o valor da parcela individual).
+     - \`isInstallment\`: \`true\`.
+     - \`currentInstallment\`: O número da parcela atual cobrada (no exemplo acima, \`2\`).
+     - \`totalInstallments\`: O total de parcelas (no exemplo acima, \`5\`).
+3. **Se a compra NÃO for parcelada**:
+   - \`description\`: O nome do estabelecimento.
+   - \`value\`: O valor total cobrado.
+   - \`isInstallment\`: \`false\`.
+   - \`currentInstallment\`: \`1\`.
+   - \`totalInstallments\`: \`1\`.
+
+### FORMATO DE RETORNO ESPERADO:
+Retorne ESTRITAMENTE uma lista JSON, sem explicações, tags de código markdown (como \`\`\`json) ou qualquer outro texto. Apenas o JSON válido.
+
+Exemplo de formato:
+[
+  {
+    "description": "Supermercado Pão de Açúcar",
+    "value": 156.40,
+    "isInstallment": false,
+    "currentInstallment": 1,
+    "totalInstallments": 1
+  },
+  {
+    "description": "Geladeira Consul",
+    "value": 120.00,
+    "isInstallment": true,
+    "currentInstallment": 3,
+    "totalInstallments": 10
+  }
+]
+
+### TEXTO DA FATURA A SER ANALISADO:
+{{TEXTO_FATURA}}`;
+    }
+
+    const promptText = promptTemplate.replace("{{TEXTO_FATURA}}", text);
+
+    // C. Chamada para a API
+    const requestBody = {
+      model: model,
+      messages: [
+        { role: "user", content: promptText }
+      ],
+      temperature: 0.1
+    };
+
+    const response = await fetch(`${apiUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Erro na chamada da LLM (${response.status}): ${errText}`);
+    }
+
+    const resData = await response.json();
+    let choiceText = resData.choices && resData.choices[0] && resData.choices[0].message && resData.choices[0].message.content;
+
+    if (!choiceText) {
+      throw new Error("A API da LLM retornou uma resposta vazia.");
+    }
+
+    choiceText = choiceText.trim();
+    if (choiceText.startsWith("```")) {
+      choiceText = choiceText.replace(/^```[a-zA-Z]*\n/, "");
+      choiceText = choiceText.replace(/\n```$/, "");
+    }
+    choiceText = choiceText.trim();
+
+    try {
+      extractedExpenses = JSON.parse(choiceText);
+      if (!Array.isArray(extractedExpenses)) {
+        throw new Error("O retorno da LLM não é um array válido.");
+      }
+      renderReviewTable();
+    } catch (jsonErr) {
+      console.error("Erro ao parsear JSON da LLM:", choiceText, jsonErr);
+      throw new Error("A inteligência artificial não retornou um formato JSON válido. Tente novamente.");
+    }
+  }
+
+  function renderReviewTable() {
+    if (pdfImportLoading) pdfImportLoading.classList.add("hidden");
+    if (pdfImportReviewContainer) pdfImportReviewContainer.classList.remove("hidden");
+    if (pdfImportTableBody) {
+      pdfImportTableBody.innerHTML = "";
+
+      if (extractedExpenses.length === 0) {
+        pdfImportTableBody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-500">Nenhum gasto identificado na fatura.</td></tr>`;
+        if (pdfImportConfirmBtn) pdfImportConfirmBtn.disabled = true;
+        return;
+      }
+
+      extractedExpenses.forEach((exp, idx) => {
+        const row = document.createElement("tr");
+        row.className = "hover:bg-slate-900/30 transition-colors";
+        
+        const description = exp.description || "";
+        const value = parseFloat(exp.value) || 0;
+        const isInstallment = !!exp.isInstallment;
+        const current = parseInt(exp.currentInstallment) || 1;
+        const total = parseInt(exp.totalInstallments) || 1;
+
+        row.innerHTML = `
+          <td class="py-3 px-4 text-center">
+            <input type="checkbox" data-idx="${idx}" checked class="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+          </td>
+          <td class="py-3 px-4">
+            <input type="text" data-field="description" data-idx="${idx}" value="${description.replace(/"/g, '&quot;')}" class="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none transition">
+          </td>
+          <td class="py-3 px-4">
+            <input type="number" step="0.01" data-field="value" data-idx="${idx}" value="${value.toFixed(2)}" class="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none transition">
+          </td>
+          <td class="py-3 px-4">
+            <div class="flex items-center space-x-1">
+              <input type="number" min="1" max="100" data-field="current" data-idx="${idx}" value="${current}" ${isInstallment ? "" : "disabled"} class="w-12 bg-slate-950/60 border border-slate-800 focus:border-indigo-500/50 rounded px-1.5 py-1 text-[11px] text-slate-300 focus:outline-none transition disabled:opacity-40">
+              <span class="text-[10px] text-slate-600 font-semibold">de</span>
+              <input type="number" min="1" max="100" data-field="total" data-idx="${idx}" value="${total}" ${isInstallment ? "" : "disabled"} class="w-12 bg-slate-950/60 border border-slate-800 focus:border-indigo-500/50 rounded px-1.5 py-1 text-[11px] text-slate-300 focus:outline-none transition disabled:opacity-40">
+              <label class="flex items-center space-x-1 ml-2 cursor-pointer select-none">
+                <input type="checkbox" data-field="is_inst" data-idx="${idx}" ${isInstallment ? "checked" : ""} class="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-[10px] text-slate-500">Parcelada</span>
+              </label>
+            </div>
+          </td>
+        `;
+        pdfImportTableBody.appendChild(row);
+      });
+    }
+
+    setupReviewTableListeners();
+    updateConfirmBtnState();
+  }
+
+  function setupReviewTableListeners() {
+    if (!pdfImportTableBody) return;
+    const checkboxes = pdfImportTableBody.querySelectorAll('input[type="checkbox"][data-idx]');
+    const textInputs = pdfImportTableBody.querySelectorAll('input[type="text"][data-idx]');
+    const numInputs = pdfImportTableBody.querySelectorAll('input[type="number"][data-idx]');
+
+    checkboxes.forEach(cb => {
+      if (cb.dataset.field === "is_inst") {
+        cb.addEventListener("change", (e) => {
+          const idx = parseInt(e.target.dataset.idx);
+          const isChecked = e.target.checked;
+          extractedExpenses[idx].isInstallment = isChecked;
+          
+          const currentInput = pdfImportTableBody.querySelector(`input[data-field="current"][data-idx="${idx}"]`);
+          const totalInput = pdfImportTableBody.querySelector(`input[data-field="total"][data-idx="${idx}"]`);
+          
+          if (isChecked) {
+            if (currentInput) currentInput.disabled = false;
+            if (totalInput) {
+              totalInput.disabled = false;
+              if (parseInt(totalInput.value) <= 1) {
+                totalInput.value = "2";
+                extractedExpenses[idx].totalInstallments = 2;
+              }
+            }
+          } else {
+            if (currentInput) {
+              currentInput.disabled = true;
+              currentInput.value = "1";
+            }
+            if (totalInput) {
+              totalInput.disabled = true;
+              totalInput.value = "1";
+            }
+            extractedExpenses[idx].currentInstallment = 1;
+            extractedExpenses[idx].totalInstallments = 1;
+          }
+        });
+      } else {
+        cb.addEventListener("change", () => {
+          updateConfirmBtnState();
+        });
+      }
+    });
+
+    textInputs.forEach(input => {
+      input.addEventListener("input", (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        extractedExpenses[idx].description = e.target.value;
+      });
+    });
+
+    numInputs.forEach(input => {
+      input.addEventListener("input", (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        const field = e.target.dataset.field;
+        const val = e.target.value;
+
+        if (field === "value") {
+          extractedExpenses[idx].value = parseFloat(val) || 0;
+        } else if (field === "current") {
+          extractedExpenses[idx].currentInstallment = Math.max(1, parseInt(val) || 1);
+        } else if (field === "total") {
+          extractedExpenses[idx].totalInstallments = Math.max(1, parseInt(val) || 1);
+        }
+      });
+    });
+  }
+
+  function updateConfirmBtnState() {
+    if (!pdfImportTableBody) return;
+    const checkedBoxes = pdfImportTableBody.querySelectorAll('input[type="checkbox"][data-idx]:not([data-field="is_inst"]):checked');
+    if (pdfImportConfirmBtn) {
+      pdfImportConfirmBtn.disabled = checkedBoxes.length === 0;
+      pdfImportConfirmBtn.textContent = `Confirmar Lançamento (${checkedBoxes.length})`;
     }
   }
 
@@ -349,6 +680,20 @@ window.App.UI = (() => {
       closeFinancingModalBtn = document.getElementById("close-financing-modal-btn");
       modalFinancingCancelBtn = document.getElementById("modal-financing-cancel-btn");
       financingTableBody = document.getElementById("financing-table-body");
+      
+      // Modal de Importação PDF
+      btnOpenPdfImport = document.getElementById("btn-open-pdf-import");
+      pdfImportModal = document.getElementById("pdf-import-modal");
+      closePdfImportModalBtn = document.getElementById("close-pdf-import-modal-btn");
+      pdfImportUploadZone = document.getElementById("pdf-import-upload-zone");
+      pdfImportFileInput = document.getElementById("pdf-import-file-input");
+      pdfImportLoading = document.getElementById("pdf-import-loading");
+      pdfImportStatusText = document.getElementById("pdf-import-status-text");
+      pdfImportReviewContainer = document.getElementById("pdf-import-review-container");
+      pdfImportSelectAll = document.getElementById("pdf-import-select-all");
+      pdfImportTableBody = document.getElementById("pdf-import-table-body");
+      pdfImportCancelBtn = document.getElementById("pdf-import-cancel-btn");
+      pdfImportConfirmBtn = document.getElementById("pdf-import-confirm-btn");
       
       // Containers da aba de relatórios
       monthlyExpensesContainer = document.getElementById("monthly-expenses-container");
@@ -1091,6 +1436,134 @@ Informe:
             if (aiAnalysisLoader) aiAnalysisLoader.classList.add("hidden");
             generateAiAnalysisBtn.disabled = false;
           }
+        });
+      }
+
+      // 12. Importação de Fatura PDF
+      if (btnOpenPdfImport) {
+        btnOpenPdfImport.addEventListener("click", () => {
+          showPdfImportModal();
+        });
+      }
+
+      if (closePdfImportModalBtn) {
+        closePdfImportModalBtn.addEventListener("click", () => {
+          hidePdfImportModal();
+        });
+      }
+
+      if (pdfImportCancelBtn) {
+        pdfImportCancelBtn.addEventListener("click", () => {
+          hidePdfImportModal();
+        });
+      }
+
+      if (pdfImportUploadZone && pdfImportFileInput) {
+        pdfImportUploadZone.addEventListener("click", () => {
+          pdfImportFileInput.click();
+        });
+
+        pdfImportFileInput.addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            processPdfFile(file);
+          }
+        });
+
+        pdfImportUploadZone.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          pdfImportUploadZone.classList.add("border-indigo-500", "bg-slate-900/30");
+        });
+
+        pdfImportUploadZone.addEventListener("dragleave", () => {
+          pdfImportUploadZone.classList.remove("border-indigo-500", "bg-slate-900/30");
+        });
+
+        pdfImportUploadZone.addEventListener("drop", (e) => {
+          e.preventDefault();
+          pdfImportUploadZone.classList.remove("border-indigo-500", "bg-slate-900/30");
+          const file = e.dataTransfer.files[0];
+          if (file && file.type === "application/pdf") {
+            processPdfFile(file);
+          } else {
+            alert("Por favor, selecione ou solte um arquivo PDF.");
+          }
+        });
+      }
+
+      if (pdfImportSelectAll) {
+        let allSelected = true;
+        pdfImportSelectAll.addEventListener("click", () => {
+          const checkboxes = pdfImportTableBody.querySelectorAll('input[type="checkbox"][data-idx]:not([data-field="is_inst"])');
+          allSelected = !allSelected;
+          checkboxes.forEach(cb => {
+            cb.checked = allSelected;
+          });
+          pdfImportSelectAll.textContent = allSelected ? "Desmarcar Todos" : "Marcar Todos";
+          updateConfirmBtnState();
+        });
+      }
+
+      if (pdfImportConfirmBtn) {
+        pdfImportConfirmBtn.addEventListener("click", () => {
+          const checkedBoxes = pdfImportTableBody.querySelectorAll('input[type="checkbox"][data-idx]:not([data-field="is_inst"]):checked');
+          if (checkedBoxes.length === 0) return;
+
+          const state = window.App.State.getState();
+          const activeMonth = state.mesAtivo;
+          const activeYear = state.anoAtivo;
+
+          if (activeMonth > 12) {
+            alert("Por favor, navegue para um mês de Janeiro a Dezembro na barra superior para realizar os lançamentos.");
+            return;
+          }
+
+          let importedCount = 0;
+
+          checkedBoxes.forEach(cb => {
+            const idx = parseInt(cb.dataset.idx);
+            const exp = extractedExpenses[idx];
+
+            const desc = String(exp.description).trim() || "Compra Cartão";
+            const instVal = parseFloat(exp.value) || 0;
+            const isInst = !!exp.isInstallment;
+            const current = Math.max(1, parseInt(exp.currentInstallment) || 1);
+            const total = Math.max(1, parseInt(exp.totalInstallments) || 1);
+
+            if (isInst && total > 1) {
+              // Calcular retroatividade
+              const offset = current - 1;
+              const absMonth = activeYear * 12 + activeMonth - 1 - offset;
+              const startYear = Math.floor(absMonth / 12);
+              const startMonth = (absMonth % 12) + 1;
+              const totalValue = instVal * total;
+
+              window.App.State.adicionarDespesa(
+                desc,
+                totalValue,
+                "Cartão de Crédito",
+                startMonth,
+                total,
+                false,
+                startYear
+              );
+            } else {
+              // Compra comum
+              window.App.State.adicionarDespesa(
+                desc,
+                instVal,
+                "Cartão de Crédito",
+                activeMonth,
+                1,
+                false,
+                activeYear
+              );
+            }
+            importedCount++;
+          });
+
+          hidePdfImportModal();
+          showStatus(`Importação concluída: ${importedCount} despesas cadastradas!`);
         });
       }
     },
