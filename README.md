@@ -33,6 +33,10 @@ A aplicação adota o padrão Single Page Application (SPA) em Vanilla JS modern
    npm run dev
    ```
 3. Alternativamente, você pode abrir o arquivo `index.html` diretamente em seu navegador (protocolo `file:///`) clicando duas vezes sobre ele.
+4. Para compilar o Tailwind CSS de produção (opcional para otimização de performance), execute:
+   ```bash
+   npm run build:css
+   ```
 
 ## Persistência e Backup de Dados
 Por ser uma aplicação estritamente local (sem banco de dados em nuvem), todos os seus perfis e despesas são salvos automaticamente no **LocalStorage** do navegador. 

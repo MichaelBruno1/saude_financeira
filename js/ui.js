@@ -3,6 +3,118 @@
 window.App = window.App || {};
 
 window.App.UI = (() => {
+  const DOM_IDS = {
+    ADD_CATEGORY_FORM: "add-category-form",
+    ADD_EXPENSE_BTN: "add-expense-btn",
+    AI_ANALYSIS_LOADER: "ai-analysis-loader",
+    AI_ANALYSIS_RESULT_CARD: "ai-analysis-result-card",
+    AI_ANALYSIS_TEXT_CONTENT: "ai-analysis-text-content",
+    AI_ANALYSIS_TIMESTAMP: "ai-analysis-timestamp",
+    BACKUP_WARNING_BANNER: "backup-warning-banner",
+    BTN_CLOSE_BACKUP_BANNER: "btn-close-backup-banner",
+    BTN_OPEN_PDF_IMPORT: "btn-open-pdf-import",
+    CANCEL_SALARY_BTN: "cancel-salary-btn",
+    CATEGORIES_COLORS_LIST: "categories-colors-list",
+    CLOSE_EXPENSE_MODAL_BTN: "close-expense-modal-btn",
+    CLOSE_FINANCING_MODAL_BTN: "close-financing-modal-btn",
+    CLOSE_PDF_IMPORT_MODAL_BTN: "close-pdf-import-modal-btn",
+    CLOSE_PROFILE_MODAL_BTN: "close-profile-modal-btn",
+    CSV_FILE_INPUT: "csv-file-input",
+    DELETE_PROFILE_BTN: "delete-profile-btn",
+    EDIT_SALARY_BTN: "edit-salary-btn",
+    EXPENSE_COUNT_BADGE: "expense-count-badge",
+    EXPENSE_MODAL: "expense-modal",
+    EXPENSES_TABLE_BODY: "expenses-table-body",
+    EXPORT_CSV_BTN: "export-csv-btn",
+    FINANCING_CONTAINER: "financing-container",
+    FINANCING_INSTALLMENT_VAL: "financing-installment-val",
+    FINANCING_INSTALLMENTS_COUNT: "financing-installments-count",
+    FINANCING_MODAL: "financing-modal",
+    FINANCING_NAME: "financing-name",
+    FINANCING_REGISTER_FORM: "financing-register-form",
+    FINANCING_START_MONTH: "financing-start-month",
+    FINANCING_START_YEAR: "financing-start-year",
+    FINANCING_TABLE_BODY: "financing-table-body",
+    FINANCING_TOTAL_VAL: "financing-total-val",
+    FINANCING_TR_RATE: "financing-tr-rate",
+    GENERATE_AI_ANALYSIS_BTN: "generate-ai-analysis-btn",
+    HEADER_PROFILE_NAME: "header-profile-name",
+    IMPORT_CSV_BTN: "import-csv-btn",
+    KPI_DESPESAS: "kpi-despesas",
+    KPI_SALARIO: "kpi-salario",
+    KPI_SALDO: "kpi-saldo",
+    MODAL_CANCEL_BTN: "modal-cancel-btn",
+    MODAL_EXPENSE_CANCEL_BTN: "modal-expense-cancel-btn",
+    MODAL_EXPENSE_CAT: "modal-expense-cat",
+    MODAL_EXPENSE_CREATE_FORM: "modal-expense-create-form",
+    MODAL_EXPENSE_DESC: "modal-expense-desc",
+    MODAL_EXPENSE_INSTALLMENTS: "modal-expense-installments",
+    MODAL_EXPENSE_INSTALLMENTS_CONTAINER: "modal-expense-installments-container",
+    MODAL_EXPENSE_MONTH: "modal-expense-month",
+    MODAL_EXPENSE_RECURRENT: "modal-expense-recurrent",
+    MODAL_EXPENSE_VAL: "modal-expense-val",
+    MODAL_EXPENSE_YEAR: "modal-expense-year",
+    MODAL_FINANCING_CANCEL_BTN: "modal-financing-cancel-btn",
+    MODAL_NEW_PROFILE_NAME: "modal-new-profile-name",
+    MODAL_NEW_PROFILE_SALARY: "modal-new-profile-salary",
+    MODAL_PROFILE_CREATE_FORM: "modal-profile-create-form",
+    MONTH_TABS_CONTAINER: "month-tabs-container",
+    MONTHLY_EXPENSES_CONTAINER: "monthly-expenses-container",
+    NEW_CATEGORY_COLOR: "new-category-color",
+    NEW_CATEGORY_COLOR_HEX: "new-category-color-hex",
+    NEW_CATEGORY_NAME: "new-category-name",
+    NEW_PROFILE_MODAL: "new-profile-modal",
+    PDF_IMPORT_CANCEL_BTN: "pdf-import-cancel-btn",
+    PDF_IMPORT_CONFIRM_BTN: "pdf-import-confirm-btn",
+    PDF_IMPORT_FILE_INPUT: "pdf-import-file-input",
+    PDF_IMPORT_LOADING: "pdf-import-loading",
+    PDF_IMPORT_MODAL: "pdf-import-modal",
+    PDF_IMPORT_REVIEW_CONTAINER: "pdf-import-review-container",
+    PDF_IMPORT_SELECT_ALL: "pdf-import-select-all",
+    PDF_IMPORT_STATUS_TEXT: "pdf-import-status-text",
+    PDF_IMPORT_TABLE_BODY: "pdf-import-table-body",
+    PDF_IMPORT_UPLOAD_ZONE: "pdf-import-upload-zone",
+    PLANNER_COMPARISON_TABLE_BODY: "planner-comparison-table-body",
+    PLANNER_METHOD_SELECT: "planner-method-select",
+    REPORTS_BUDGET_PROGRESS_CONTAINER: "reports-budget-progress-container",
+    REPORTS_CONTAINER: "reports-container",
+    REPORTS_PIZZA_MONTH_SELECT: "reports-pizza-month-select",
+    SALARY_EDIT_MODE: "salary-edit-mode",
+    SALARY_INPUT: "salary-input",
+    SALARY_VIEW_MODE: "salary-view-mode",
+    SAVE_SALARY_BTN: "save-salary-btn",
+    SETTINGS_CONTAINER: "settings-container",
+    SETTINGS_PLANNER_INFO: "settings-planner-info",
+    SETTINGS_PLANNER_INPUTS_GRID: "settings-planner-inputs-grid",
+    SETTINGS_PLANNER_LIMITS_FORM: "settings-planner-limits-form",
+    SETTINGS_PLANNER_METHOD_SELECT: "settings-planner-method-select",
+    SETTINGS_PLANNER_SOBRA_SPAN: "settings-planner-sobra-span",
+    SETTINGS_PLANNER_TOTAL_SUM: "settings-planner-total-sum",
+    SETTINGS_PLANNER_WARNING: "settings-planner-warning",
+    SIDEBAR_DESPESAS_BTN: "sidebar-despesas-btn",
+    SIDEBAR_FINANCIAMENTO_BTN: "sidebar-financiamento-btn",
+    SIDEBAR_NEW_PROFILE_BTN: "sidebar-new-profile-btn",
+    SIDEBAR_PROFILE_SELECT: "sidebar-profile-select",
+    SIDEBAR_RELATORIOS_BTN: "sidebar-relatorios-btn",
+    SIDEBAR_SETTINGS_BTN: "sidebar-settings-btn",
+    SIM_KPI_JUROS_SAVED: "sim-kpi-juros-saved",
+    SIM_KPI_MONTHS_SAVED: "sim-kpi-months-saved",
+    SIM_TABLE_AMORT_JUROS: "sim-table-amort-juros",
+    SIM_TABLE_AMORT_MONTHS: "sim-table-amort-months",
+    SIM_TABLE_AMORT_TOTAL: "sim-table-amort-total",
+    SIM_TABLE_NORMAL_JUROS: "sim-table-normal-juros",
+    SIM_TABLE_NORMAL_MONTHS: "sim-table-normal-months",
+    SIM_TABLE_NORMAL_TOTAL: "sim-table-normal-total",
+    SIMULATION_RESULTS_CONTAINER: "simulation-results-container",
+    SIMULATOR_AMORTIZATION_FREQUENCY: "simulator-amortization-frequency",
+    SIMULATOR_AMORTIZATION_VAL: "simulator-amortization-val",
+    SIMULATOR_FINANCING_SELECT: "simulator-financing-select",
+    SYNC_STATUS: "sync-status",
+    THEME_TOGGLE_BTN: "theme-toggle-btn",
+    THEME_TOGGLE_BTN_TEXT: "theme-toggle-btn-text",
+    YEAR_TABS_CONTAINER: "year-tabs-container"
+  };
+
   // Elementos do DOM cached
   let sidebarProfileSelect;
   let deleteProfileBtn;
@@ -622,143 +734,143 @@ Exemplo de formato:
     // Inicialização da interface e registro de escutas
     init() {
       // Mapeamento dos elementos
-      sidebarProfileSelect = document.getElementById("sidebar-profile-select");
-      deleteProfileBtn = document.getElementById("delete-profile-btn");
-      sidebarNewProfileBtn = document.getElementById("sidebar-new-profile-btn");
+      sidebarProfileSelect = document.getElementById(DOM_IDS.SIDEBAR_PROFILE_SELECT);
+      deleteProfileBtn = document.getElementById(DOM_IDS.DELETE_PROFILE_BTN);
+      sidebarNewProfileBtn = document.getElementById(DOM_IDS.SIDEBAR_NEW_PROFILE_BTN);
       
-      newProfileModal = document.getElementById("new-profile-modal");
-      closeProfileModalBtn = document.getElementById("close-profile-modal-btn");
-      modalCancelBtn = document.getElementById("modal-cancel-btn");
-      modalProfileCreateForm = document.getElementById("modal-profile-create-form");
+      newProfileModal = document.getElementById(DOM_IDS.NEW_PROFILE_MODAL);
+      closeProfileModalBtn = document.getElementById(DOM_IDS.CLOSE_PROFILE_MODAL_BTN);
+      modalCancelBtn = document.getElementById(DOM_IDS.MODAL_CANCEL_BTN);
+      modalProfileCreateForm = document.getElementById(DOM_IDS.MODAL_PROFILE_CREATE_FORM);
       
-      exportCsvBtn = document.getElementById("export-csv-btn");
-      csvFileInput = document.getElementById("csv-file-input");
-      importCsvBtn = document.getElementById("import-csv-btn");
-      syncStatus = document.getElementById("sync-status");
+      exportCsvBtn = document.getElementById(DOM_IDS.EXPORT_CSV_BTN);
+      csvFileInput = document.getElementById(DOM_IDS.CSV_FILE_INPUT);
+      importCsvBtn = document.getElementById(DOM_IDS.IMPORT_CSV_BTN);
+      syncStatus = document.getElementById(DOM_IDS.SYNC_STATUS);
       
-      headerProfileName = document.getElementById("header-profile-name");
-      kpiSalario = document.getElementById("kpi-salario");
-      kpiDespesas = document.getElementById("kpi-despesas");
-      kpiSaldo = document.getElementById("kpi-saldo");
+      headerProfileName = document.getElementById(DOM_IDS.HEADER_PROFILE_NAME);
+      kpiSalario = document.getElementById(DOM_IDS.KPI_SALARIO);
+      kpiDespesas = document.getElementById(DOM_IDS.KPI_DESPESAS);
+      kpiSaldo = document.getElementById(DOM_IDS.KPI_SALDO);
       
-      salaryViewMode = document.getElementById("salary-view-mode");
-      salaryEditMode = document.getElementById("salary-edit-mode");
-      editSalaryBtn = document.getElementById("edit-salary-btn");
-      salaryInput = document.getElementById("salary-input");
-      saveSalaryBtn = document.getElementById("save-salary-btn");
-      cancelSalaryBtn = document.getElementById("cancel-salary-btn");
+      salaryViewMode = document.getElementById(DOM_IDS.SALARY_VIEW_MODE);
+      salaryEditMode = document.getElementById(DOM_IDS.SALARY_EDIT_MODE);
+      editSalaryBtn = document.getElementById(DOM_IDS.EDIT_SALARY_BTN);
+      salaryInput = document.getElementById(DOM_IDS.SALARY_INPUT);
+      saveSalaryBtn = document.getElementById(DOM_IDS.SAVE_SALARY_BTN);
+      cancelSalaryBtn = document.getElementById(DOM_IDS.CANCEL_SALARY_BTN);
       
-      monthTabsContainer = document.getElementById("month-tabs-container");
-      yearTabsContainer = document.getElementById("year-tabs-container");
-      addExpenseBtn = document.getElementById("add-expense-btn");
-      sidebarRelatoriosBtn = document.getElementById("sidebar-relatorios-btn");
-      sidebarFinanciamentoBtn = document.getElementById("sidebar-financiamento-btn");
-      sidebarDespesasBtn = document.getElementById("sidebar-despesas-btn");
-      sidebarSettingsBtn = document.getElementById("sidebar-settings-btn");
+      monthTabsContainer = document.getElementById(DOM_IDS.MONTH_TABS_CONTAINER);
+      yearTabsContainer = document.getElementById(DOM_IDS.YEAR_TABS_CONTAINER);
+      addExpenseBtn = document.getElementById(DOM_IDS.ADD_EXPENSE_BTN);
+      sidebarRelatoriosBtn = document.getElementById(DOM_IDS.SIDEBAR_RELATORIOS_BTN);
+      sidebarFinanciamentoBtn = document.getElementById(DOM_IDS.SIDEBAR_FINANCIAMENTO_BTN);
+      sidebarDespesasBtn = document.getElementById(DOM_IDS.SIDEBAR_DESPESAS_BTN);
+      sidebarSettingsBtn = document.getElementById(DOM_IDS.SIDEBAR_SETTINGS_BTN);
       
       // Configurações
-      settingsContainer = document.getElementById("settings-container");
-      themeToggleBtn = document.getElementById("theme-toggle-btn");
-      themeToggleBtnText = document.getElementById("theme-toggle-btn-text");
-      addCategoryForm = document.getElementById("add-category-form");
-      newCategoryName = document.getElementById("new-category-name");
-      newCategoryColor = document.getElementById("new-category-color");
-      newCategoryColorHex = document.getElementById("new-category-color-hex");
-      categoriesColorsList = document.getElementById("categories-colors-list");
+      settingsContainer = document.getElementById(DOM_IDS.SETTINGS_CONTAINER);
+      themeToggleBtn = document.getElementById(DOM_IDS.THEME_TOGGLE_BTN);
+      themeToggleBtnText = document.getElementById(DOM_IDS.THEME_TOGGLE_BTN_TEXT);
+      addCategoryForm = document.getElementById(DOM_IDS.ADD_CATEGORY_FORM);
+      newCategoryName = document.getElementById(DOM_IDS.NEW_CATEGORY_NAME);
+      newCategoryColor = document.getElementById(DOM_IDS.NEW_CATEGORY_COLOR);
+      newCategoryColorHex = document.getElementById(DOM_IDS.NEW_CATEGORY_COLOR_HEX);
+      categoriesColorsList = document.getElementById(DOM_IDS.CATEGORIES_COLORS_LIST);
       
       // Modal Despesas
-      expenseModal = document.getElementById("expense-modal");
-      closeExpenseModalBtn = document.getElementById("close-expense-modal-btn");
-      modalExpenseCancelBtn = document.getElementById("modal-expense-cancel-btn");
-      modalExpenseCreateForm = document.getElementById("modal-expense-create-form");
-      modalExpenseDesc = document.getElementById("modal-expense-desc");
-      modalExpenseVal = document.getElementById("modal-expense-val");
-      modalExpenseMonth = document.getElementById("modal-expense-month");
-      modalExpenseYear = document.getElementById("modal-expense-year");
-      modalExpenseCat = document.getElementById("modal-expense-cat");
-      modalExpenseInstallmentsContainer = document.getElementById("modal-expense-installments-container");
-      modalExpenseInstallments = document.getElementById("modal-expense-installments");
+      expenseModal = document.getElementById(DOM_IDS.EXPENSE_MODAL);
+      closeExpenseModalBtn = document.getElementById(DOM_IDS.CLOSE_EXPENSE_MODAL_BTN);
+      modalExpenseCancelBtn = document.getElementById(DOM_IDS.MODAL_EXPENSE_CANCEL_BTN);
+      modalExpenseCreateForm = document.getElementById(DOM_IDS.MODAL_EXPENSE_CREATE_FORM);
+      modalExpenseDesc = document.getElementById(DOM_IDS.MODAL_EXPENSE_DESC);
+      modalExpenseVal = document.getElementById(DOM_IDS.MODAL_EXPENSE_VAL);
+      modalExpenseMonth = document.getElementById(DOM_IDS.MODAL_EXPENSE_MONTH);
+      modalExpenseYear = document.getElementById(DOM_IDS.MODAL_EXPENSE_YEAR);
+      modalExpenseCat = document.getElementById(DOM_IDS.MODAL_EXPENSE_CAT);
+      modalExpenseInstallmentsContainer = document.getElementById(DOM_IDS.MODAL_EXPENSE_INSTALLMENTS_CONTAINER);
+      modalExpenseInstallments = document.getElementById(DOM_IDS.MODAL_EXPENSE_INSTALLMENTS);
 
       // Modal Financiamentos
-      financingModal = document.getElementById("financing-modal");
-      closeFinancingModalBtn = document.getElementById("close-financing-modal-btn");
-      modalFinancingCancelBtn = document.getElementById("modal-financing-cancel-btn");
-      financingTableBody = document.getElementById("financing-table-body");
+      financingModal = document.getElementById(DOM_IDS.FINANCING_MODAL);
+      closeFinancingModalBtn = document.getElementById(DOM_IDS.CLOSE_FINANCING_MODAL_BTN);
+      modalFinancingCancelBtn = document.getElementById(DOM_IDS.MODAL_FINANCING_CANCEL_BTN);
+      financingTableBody = document.getElementById(DOM_IDS.FINANCING_TABLE_BODY);
       
       // Modal de Importação PDF
-      btnOpenPdfImport = document.getElementById("btn-open-pdf-import");
-      pdfImportModal = document.getElementById("pdf-import-modal");
-      closePdfImportModalBtn = document.getElementById("close-pdf-import-modal-btn");
-      pdfImportUploadZone = document.getElementById("pdf-import-upload-zone");
-      pdfImportFileInput = document.getElementById("pdf-import-file-input");
-      pdfImportLoading = document.getElementById("pdf-import-loading");
-      pdfImportStatusText = document.getElementById("pdf-import-status-text");
-      pdfImportReviewContainer = document.getElementById("pdf-import-review-container");
-      pdfImportSelectAll = document.getElementById("pdf-import-select-all");
-      pdfImportTableBody = document.getElementById("pdf-import-table-body");
-      pdfImportCancelBtn = document.getElementById("pdf-import-cancel-btn");
-      pdfImportConfirmBtn = document.getElementById("pdf-import-confirm-btn");
+      btnOpenPdfImport = document.getElementById(DOM_IDS.BTN_OPEN_PDF_IMPORT);
+      pdfImportModal = document.getElementById(DOM_IDS.PDF_IMPORT_MODAL);
+      closePdfImportModalBtn = document.getElementById(DOM_IDS.CLOSE_PDF_IMPORT_MODAL_BTN);
+      pdfImportUploadZone = document.getElementById(DOM_IDS.PDF_IMPORT_UPLOAD_ZONE);
+      pdfImportFileInput = document.getElementById(DOM_IDS.PDF_IMPORT_FILE_INPUT);
+      pdfImportLoading = document.getElementById(DOM_IDS.PDF_IMPORT_LOADING);
+      pdfImportStatusText = document.getElementById(DOM_IDS.PDF_IMPORT_STATUS_TEXT);
+      pdfImportReviewContainer = document.getElementById(DOM_IDS.PDF_IMPORT_REVIEW_CONTAINER);
+      pdfImportSelectAll = document.getElementById(DOM_IDS.PDF_IMPORT_SELECT_ALL);
+      pdfImportTableBody = document.getElementById(DOM_IDS.PDF_IMPORT_TABLE_BODY);
+      pdfImportCancelBtn = document.getElementById(DOM_IDS.PDF_IMPORT_CANCEL_BTN);
+      pdfImportConfirmBtn = document.getElementById(DOM_IDS.PDF_IMPORT_CONFIRM_BTN);
       
-      backupWarningBanner = document.getElementById("backup-warning-banner");
-      btnCloseBackupBanner = document.getElementById("btn-close-backup-banner");
+      backupWarningBanner = document.getElementById(DOM_IDS.BACKUP_WARNING_BANNER);
+      btnCloseBackupBanner = document.getElementById(DOM_IDS.BTN_CLOSE_BACKUP_BANNER);
       
       // Containers da aba de relatórios
-      monthlyExpensesContainer = document.getElementById("monthly-expenses-container");
-      reportsContainer = document.getElementById("reports-container");
-      reportsPizzaMonthSelect = document.getElementById("reports-pizza-month-select");
+      monthlyExpensesContainer = document.getElementById(DOM_IDS.MONTHLY_EXPENSES_CONTAINER);
+      reportsContainer = document.getElementById(DOM_IDS.REPORTS_CONTAINER);
+      reportsPizzaMonthSelect = document.getElementById(DOM_IDS.REPORTS_PIZZA_MONTH_SELECT);
       if (reportsPizzaMonthSelect) {
         reportsPizzaMonthSelect.value = String(new Date().getMonth() + 1);
       }
-      reportsBudgetProgressContainer = document.getElementById("reports-budget-progress-container");
+      reportsBudgetProgressContainer = document.getElementById(DOM_IDS.REPORTS_BUDGET_PROGRESS_CONTAINER);
       
       // Containers da aba de financiamentos
-      financingContainer = document.getElementById("financing-container");
-      financingRegisterForm = document.getElementById("financing-register-form");
-      financingNameInput = document.getElementById("financing-name");
-      financingTotalValInput = document.getElementById("financing-total-val");
-      financingInstallmentValInput = document.getElementById("financing-installment-val");
-      financingInstallmentsCountInput = document.getElementById("financing-installments-count");
-      financingTrRateInput = document.getElementById("financing-tr-rate");
+      financingContainer = document.getElementById(DOM_IDS.FINANCING_CONTAINER);
+      financingRegisterForm = document.getElementById(DOM_IDS.FINANCING_REGISTER_FORM);
+      financingNameInput = document.getElementById(DOM_IDS.FINANCING_NAME);
+      financingTotalValInput = document.getElementById(DOM_IDS.FINANCING_TOTAL_VAL);
+      financingInstallmentValInput = document.getElementById(DOM_IDS.FINANCING_INSTALLMENT_VAL);
+      financingInstallmentsCountInput = document.getElementById(DOM_IDS.FINANCING_INSTALLMENTS_COUNT);
+      financingTrRateInput = document.getElementById(DOM_IDS.FINANCING_TR_RATE);
 
-      simulatorFinancingSelect = document.getElementById("simulator-financing-select");
-      simulatorAmortizationVal = document.getElementById("simulator-amortization-val");
-      simulatorAmortizationFrequency = document.getElementById("simulator-amortization-frequency");
+      simulatorFinancingSelect = document.getElementById(DOM_IDS.SIMULATOR_FINANCING_SELECT);
+      simulatorAmortizationVal = document.getElementById(DOM_IDS.SIMULATOR_AMORTIZATION_VAL);
+      simulatorAmortizationFrequency = document.getElementById(DOM_IDS.SIMULATOR_AMORTIZATION_FREQUENCY);
 
-      simulationResultsContainer = document.getElementById("simulation-results-container");
-      simKpiJurosSaved = document.getElementById("sim-kpi-juros-saved");
-      simKpiMonthsSaved = document.getElementById("sim-kpi-months-saved");
-      simTableNormalMonths = document.getElementById("sim-table-normal-months");
-      simTableNormalJuros = document.getElementById("sim-table-normal-juros");
-      simTableNormalTotal = document.getElementById("sim-table-normal-total");
-      simTableAmortMonths = document.getElementById("sim-table-amort-months");
-      simTableAmortJuros = document.getElementById("sim-table-amort-juros");
-      simTableAmortTotal = document.getElementById("sim-table-amort-total");
+      simulationResultsContainer = document.getElementById(DOM_IDS.SIMULATION_RESULTS_CONTAINER);
+      simKpiJurosSaved = document.getElementById(DOM_IDS.SIM_KPI_JUROS_SAVED);
+      simKpiMonthsSaved = document.getElementById(DOM_IDS.SIM_KPI_MONTHS_SAVED);
+      simTableNormalMonths = document.getElementById(DOM_IDS.SIM_TABLE_NORMAL_MONTHS);
+      simTableNormalJuros = document.getElementById(DOM_IDS.SIM_TABLE_NORMAL_JUROS);
+      simTableNormalTotal = document.getElementById(DOM_IDS.SIM_TABLE_NORMAL_TOTAL);
+      simTableAmortMonths = document.getElementById(DOM_IDS.SIM_TABLE_AMORT_MONTHS);
+      simTableAmortJuros = document.getElementById(DOM_IDS.SIM_TABLE_AMORT_JUROS);
+      simTableAmortTotal = document.getElementById(DOM_IDS.SIM_TABLE_AMORT_TOTAL);
 
-      expenseCountBadge = document.getElementById("expense-count-badge");
-      expensesTableBody = document.getElementById("expenses-table-body");
+      expenseCountBadge = document.getElementById(DOM_IDS.EXPENSE_COUNT_BADGE);
+      expensesTableBody = document.getElementById(DOM_IDS.EXPENSES_TABLE_BODY);
 
       // Planejador Financeiro
-      plannerMethodSelect = document.getElementById("planner-method-select");
-      plannerComparisonTableBody = document.getElementById("planner-comparison-table-body");
-      settingsPlannerMethodSelect = document.getElementById("settings-planner-method-select");
-      settingsPlannerLimitsForm = document.getElementById("settings-planner-limits-form");
-      settingsPlannerInputsGrid = document.getElementById("settings-planner-inputs-grid");
-      settingsPlannerTotalSum = document.getElementById("settings-planner-total-sum");
-      settingsPlannerWarning = document.getElementById("settings-planner-warning");
-      settingsPlannerInfo = document.getElementById("settings-planner-info");
-      settingsPlannerSobraSpan = document.getElementById("settings-planner-sobra-span");
+      plannerMethodSelect = document.getElementById(DOM_IDS.PLANNER_METHOD_SELECT);
+      plannerComparisonTableBody = document.getElementById(DOM_IDS.PLANNER_COMPARISON_TABLE_BODY);
+      settingsPlannerMethodSelect = document.getElementById(DOM_IDS.SETTINGS_PLANNER_METHOD_SELECT);
+      settingsPlannerLimitsForm = document.getElementById(DOM_IDS.SETTINGS_PLANNER_LIMITS_FORM);
+      settingsPlannerInputsGrid = document.getElementById(DOM_IDS.SETTINGS_PLANNER_INPUTS_GRID);
+      settingsPlannerTotalSum = document.getElementById(DOM_IDS.SETTINGS_PLANNER_TOTAL_SUM);
+      settingsPlannerWarning = document.getElementById(DOM_IDS.SETTINGS_PLANNER_WARNING);
+      settingsPlannerInfo = document.getElementById(DOM_IDS.SETTINGS_PLANNER_INFO);
+      settingsPlannerSobraSpan = document.getElementById(DOM_IDS.SETTINGS_PLANNER_SOBRA_SPAN);
 
       // Inteligência Artificial (LLM)
-      generateAiAnalysisBtn = document.getElementById("generate-ai-analysis-btn");
-      aiAnalysisLoader = document.getElementById("ai-analysis-loader");
-      aiAnalysisResultCard = document.getElementById("ai-analysis-result-card");
-      aiAnalysisTimestamp = document.getElementById("ai-analysis-timestamp");
-      aiAnalysisTextContent = document.getElementById("ai-analysis-text-content");
+      generateAiAnalysisBtn = document.getElementById(DOM_IDS.GENERATE_AI_ANALYSIS_BTN);
+      aiAnalysisLoader = document.getElementById(DOM_IDS.AI_ANALYSIS_LOADER);
+      aiAnalysisResultCard = document.getElementById(DOM_IDS.AI_ANALYSIS_RESULT_CARD);
+      aiAnalysisTimestamp = document.getElementById(DOM_IDS.AI_ANALYSIS_TIMESTAMP);
+      aiAnalysisTextContent = document.getElementById(DOM_IDS.AI_ANALYSIS_TEXT_CONTENT);
 
       // --- Bind de Mascaramento Monetário ---
       const monetaryFields = [
         salaryInput,
-        document.getElementById("modal-new-profile-salary"),
+        document.getElementById(DOM_IDS.MODAL_NEW_PROFILE_SALARY),
         modalExpenseVal,
         financingTotalValInput,
         financingInstallmentValInput,
@@ -805,7 +917,7 @@ Exemplo de formato:
       // 3. Controle do Modal de Perfil (Abrir/Fechar)
       sidebarNewProfileBtn.addEventListener("click", () => {
         newProfileModal.classList.remove("hidden");
-        document.getElementById("modal-new-profile-name").focus();
+        document.getElementById(DOM_IDS.MODAL_NEW_PROFILE_NAME).focus();
       });
 
       const hideProfileModal = () => {
@@ -819,8 +931,8 @@ Exemplo de formato:
       // 4. Submissão de Novo Perfil pelo Modal
       modalProfileCreateForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        const nome = document.getElementById("modal-new-profile-name").value.trim();
-        const salario = parseBRLValue(document.getElementById("modal-new-profile-salary").value);
+        const nome = document.getElementById(DOM_IDS.MODAL_NEW_PROFILE_NAME).value.trim();
+        const salario = parseBRLValue(document.getElementById(DOM_IDS.MODAL_NEW_PROFILE_SALARY).value);
 
         if (!nome) {
           alert("Por favor, digite um nome válido.");
@@ -893,7 +1005,7 @@ Exemplo de formato:
         modalExpenseInstallmentsContainer.classList.add("hidden");
         modalExpenseInstallments.value = "1";
         
-        const recurrentInput = document.getElementById("modal-expense-recurrent");
+        const recurrentInput = document.getElementById(DOM_IDS.MODAL_EXPENSE_RECURRENT);
         if (recurrentInput) recurrentInput.value = "nao";
         
         editingExpenseId = null;
@@ -934,8 +1046,8 @@ Exemplo de formato:
           financingNameInput.disabled = false;
           financingTotalValInput.disabled = false;
           financingInstallmentValInput.disabled = false;
-          document.getElementById("financing-start-month").disabled = false;
-          document.getElementById("financing-start-year").disabled = false;
+          document.getElementById(DOM_IDS.FINANCING_START_MONTH).disabled = false;
+          document.getElementById(DOM_IDS.FINANCING_START_YEAR).disabled = false;
 
           // Resetar formulário
           financingRegisterForm.reset();
@@ -978,7 +1090,7 @@ Exemplo de formato:
         const mes = state.mesAtivo > 12 ? 1 : state.mesAtivo;
         const ano_inicio = state.anoAtivo;
         const parc = parseInt(modalExpenseInstallments.value);
-        const recorrente = document.getElementById("modal-expense-recurrent").value === "sim";
+        const recorrente = document.getElementById(DOM_IDS.MODAL_EXPENSE_RECURRENT).value === "sim";
 
         if (!desc) {
           alert("Por favor, digite uma descrição.");
@@ -1092,8 +1204,8 @@ Exemplo de formato:
             const nome = financingNameInput.value.trim();
             const total = parseBRLValue(financingTotalValInput.value);
             const parcVal = parseBRLValue(financingInstallmentValInput.value);
-            const mesInicio = parseInt(document.getElementById("financing-start-month").value) || 1;
-            const anoInicio = parseInt(document.getElementById("financing-start-year").value) || new Date().getFullYear();
+            const mesInicio = parseInt(document.getElementById(DOM_IDS.FINANCING_START_MONTH).value) || 1;
+            const anoInicio = parseInt(document.getElementById(DOM_IDS.FINANCING_START_YEAR).value) || new Date().getFullYear();
 
             if (!nome) {
               alert("Nome do financiamento inválido.");
@@ -2113,8 +2225,8 @@ Informe:
                   financingInstallmentValInput.value = formatBRLInput(found.valorParcela.toFixed(2));
                   financingInstallmentsCountInput.value = found.parcelasTotais;
                   financingTrRateInput.value = found.taxaTR;
-                  document.getElementById("financing-start-month").value = found.mes_inicio;
-                  document.getElementById("financing-start-year").value = found.ano_inicio;
+                  document.getElementById(DOM_IDS.FINANCING_START_MONTH).value = found.mes_inicio;
+                  document.getElementById(DOM_IDS.FINANCING_START_YEAR).value = found.ano_inicio;
 
                   // Ajustar títulos do modal
                   const modalTitle = financingModal.querySelector("h3");
@@ -2126,8 +2238,8 @@ Informe:
                   financingNameInput.disabled = true;
                   financingTotalValInput.disabled = true;
                   financingInstallmentValInput.disabled = true;
-                  document.getElementById("financing-start-month").disabled = true;
-                  document.getElementById("financing-start-year").disabled = true;
+                  document.getElementById(DOM_IDS.FINANCING_START_MONTH).disabled = true;
+                  document.getElementById(DOM_IDS.FINANCING_START_YEAR).disabled = true;
 
                   financingModal.classList.remove("hidden");
                   financingInstallmentsCountInput.focus();
@@ -2310,7 +2422,7 @@ Informe:
                   modalExpenseCat.value = found.categoria;
                   modalExpenseInstallments.value = found.parcelas;
                   
-                  const recurrentInput = document.getElementById("modal-expense-recurrent");
+                  const recurrentInput = document.getElementById(DOM_IDS.MODAL_EXPENSE_RECURRENT);
                   if (recurrentInput) {
                     recurrentInput.value = found.recorrente ? "sim" : "nao";
                   }

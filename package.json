@@ -6,14 +6,17 @@
   "scripts": {
     "dev": "lite-server",
     "lint": "eslint js/**/*.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:css": "npx @tailwindcss/cli -i css/app.css -o css/tailwind.min.css --minify"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@tailwindcss/cli": "^4.3.2",
     "eslint": "^9.0.0",
     "lite-server": "^2.6.1",
+    "tailwindcss": "^4.3.2",
     "vitest": "^1.6.0"
   }
 }

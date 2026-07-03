@@ -99,6 +99,7 @@ O projeto não possui testes de integração (DOM + State) nem testes E2E (Playw
 | **Severity**| Baixa                                                            |
 | **Tipo**    | Performance / Boas Práticas                                      |
 | **Desde**   | v0.1.0                                                           |
+| **Status**  | Resolvido (v1.1.3)                                               |
 
 ### Descrição
 O Tailwind CSS é carregado via CDN e interpretado em runtime no navegador, gerando todas as classes possíveis. Para produção, o recomendado é usar o CLI do Tailwind para gerar apenas as classes utilizadas (purge/tree-shaking).
@@ -108,10 +109,10 @@ O Tailwind CSS é carregado via CDN e interpretado em runtime no navegador, gera
 - Impacto em conexões lentas.
 - Não recomendado para projetos comerciais.
 
-### Solução Proposta
-Manter CDN como comportamento padrão (compatível com `file:///`). Se houver necessidade de otimizar, adicionar um script de build separado que gere o CSS purgado sem quebrar o modo `file:///`.
-
-### Esforço Estimado: Baixo (opcional)
+### Resolução (v1.1.3)
+- Adicionado suporte nativo à compilação local do Tailwind CSS v4 usando `@tailwindcss/cli`.
+- Criado o arquivo de entrada `css/app.css` e o script `npm run build:css` para gerar o bundle otimizado e minificado `css/tailwind.min.css`.
+- O modo padrão por CDN é mantido para manter compatibilidade imediata com execuções locais via protocolo `file:///`, porém o build otimizado está totalmente disponível e configurado para deploy em produção.
 
 ---
 
@@ -144,7 +145,8 @@ O único mecanismo de persistência automática é o `localStorage`. Se o usuár
 |-------------|------------------------------------------------------------------|
 | **Severity**| Baixa                                                            |
 | **Tipo**    | Manutenibilidade                                                 |
-| **Desde**   | v0.3.0                                                           |
+| **Desde**   | v0.3.0 |
+| **Status**  | Resolvido (v1.1.3)                                               |
 
 ### Descrição
 O `ui.js` referencia dezenas de IDs de elementos DOM como strings literais espalhadas pelo código. Renomear um ID no HTML requer busca manual no `ui.js`.
@@ -153,17 +155,9 @@ O `ui.js` referencia dezenas de IDs de elementos DOM como strings literais espal
 - Erros silenciosos se um ID for renomeado ou removido.
 - Dificuldade de refatorar o HTML.
 
-### Solução Proposta
-Centralizar todos os IDs em um objeto de configuração:
-```javascript
-const DOM_IDS = {
-  BTN_ADD_EXPENSE: "btn-add-expense",
-  EXPENSE_MODAL: "expense-modal",
-  // ...
-};
-```
-
-### Esforço Estimado: Baixo
+### Resolução (v1.1.3)
+- Centralizados todos os 109 IDs de elementos DOM utilizados no `js/ui.js` dentro de um objeto de configuração `DOM_IDS` declarado no topo do módulo IIFE.
+- Todas as chamadas de `document.getElementById` foram alteradas para referenciar a chave correspondente em `DOM_IDS` (ex: `document.getElementById(DOM_IDS.SIDEBAR_PROFILE_SELECT)`), facilitando futuras manutenções e renomeações de IDs.
 
 ---
 
@@ -174,6 +168,6 @@ const DOM_IDS = {
 | TD-001  | `ui.js` monolítico                          | Média    | Alto    |
 | TD-002  | Re-renderização total                       | Baixa/Média | Médio |
 | TD-003  | Sem testes de integração/E2E               | Média    | Alto    |
-| TD-004  | Tailwind via CDN em produção               | Baixa    | Baixo   |
+| TD-004  | Tailwind via CDN em produção               | Baixa    | Resolvido (v1.1.3) |
 | TD-005  | LocalStorage como único backup             | Média    | Resolvido (v1.1.3) |
-| TD-006  | IDs DOM hardcoded                          | Baixa    | Baixo   |
+| TD-006  | IDs DOM hardcoded                          | Baixa    | Resolvido (v1.1.3) |
