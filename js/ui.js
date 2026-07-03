@@ -255,6 +255,12 @@ window.App.UI = (() => {
   let backupWarningBanner;
   let btnCloseBackupBanner;
 
+  // LLM custom settings variables
+  let llmSettingsForm;
+  let settingsLlmUrl;
+  let settingsLlmKey;
+  let settingsLlmModel;
+
   // Controle de edição
   let editingExpenseId = null;
   let editingFinancingId = null;
@@ -285,6 +291,18 @@ window.App.UI = (() => {
     if (!formattedString) return 0;
     const clean = formattedString.replace(/\./g, "").replace(",", ".");
     return parseFloat(clean) || 0;
+  }
+
+  function getLlmConfig() {
+    const state = window.App.State.getState();
+    const stateConfig = state.llmConfig || {};
+    const staticConfig = window.App.LlmConfig || {};
+
+    return {
+      apiUrl: String(stateConfig.apiUrl || staticConfig.apiUrl || "").trim(),
+      apiKey: String(stateConfig.apiKey || staticConfig.apiKey || "").trim(),
+      model: String(stateConfig.model || staticConfig.model || "").trim()
+    };
   }
 
   // Renderizar campos de edição de limites de porcentagem do planejador
@@ -425,17 +443,14 @@ window.App.UI = (() => {
 
   async function sendTextToLlm(text) {
     // A. Carregar configuração
-    const config = window.App.LlmConfig;
-    if (!config) {
-      throw new Error("Não foi possível carregar as configurações de 'llm_config.js'. Certifique-se de que o arquivo existe na raiz do projeto.");
-    }
+    const config = getLlmConfig();
     
-    const apiUrl = String(config.apiUrl || "").trim();
-    const apiKey = String(config.apiKey || "").trim();
-    const model = String(config.model || "").trim();
+    const apiUrl = config.apiUrl;
+    const apiKey = config.apiKey;
+    const model = config.model;
 
-    if (!apiUrl || !apiKey || !model) {
-      throw new Error("Configuração incompleta em 'llm_config.js'. Certifique-se de preencher apiUrl, apiKey e model.");
+    if (!apiUrl || !model) {
+      throw new Error("Configuração da LLM incompleta. Certifique-se de preencher URL Base e Modelo nas Configurações.");
     }
 
     // B. Carregar o template de prompt
@@ -817,6 +832,11 @@ Exemplo de formato:
       
       backupWarningBanner = document.getElementById(DOM_IDS.BACKUP_WARNING_BANNER);
       btnCloseBackupBanner = document.getElementById(DOM_IDS.BTN_CLOSE_BACKUP_BANNER);
+      
+      llmSettingsForm = document.getElementById(DOM_IDS.LLM_SETTINGS_FORM);
+      settingsLlmUrl = document.getElementById(DOM_IDS.SETTINGS_LLM_URL);
+      settingsLlmKey = document.getElementById(DOM_IDS.SETTINGS_LLM_KEY);
+      settingsLlmModel = document.getElementById(DOM_IDS.SETTINGS_LLM_MODEL);
       
       // Containers da aba de relatórios
       monthlyExpensesContainer = document.getElementById(DOM_IDS.MONTHLY_EXPENSES_CONTAINER);
@@ -1316,21 +1336,14 @@ Exemplo de formato:
 
           try {
             // A. Carregar configuração
-            const config = window.App.LlmConfig;
-            if (!config) {
-              throw new Error("Não foi possível carregar as configurações de 'llm_config.js'. Certifique-se de que o arquivo existe na raiz do projeto.");
-            }
+            const config = getLlmConfig();
             
-            const apiUrl = String(config.apiUrl || "").trim();
-            const apiKey = String(config.apiKey || "").trim();
-            const model = String(config.model || "").trim();
+            const apiUrl = config.apiUrl;
+            const apiKey = config.apiKey;
+            const model = config.model;
 
-            if (!apiUrl || !apiKey || !model) {
-              throw new Error("Configuração incompleta em 'llm_config.js'. Certifique-se de preencher apiUrl, apiKey e model.");
-            }
-
-            if (apiKey === "SUA_API_KEY_AQUI") {
-              throw new Error("Chave de API não configurada em 'llm_config.js'. Abra o arquivo e altere a chave de API para uma válida.");
+            if (!apiUrl || !model) {
+              throw new Error("Configuração da LLM incompleta. Certifique-se de preencher URL Base e Modelo nas Configurações.");
             }
 
             // B. Carregar o template de prompt
@@ -1696,6 +1709,24 @@ Informe:
           if (backupWarningBanner) backupWarningBanner.classList.add("hidden");
         });
       }
+
+      if (llmSettingsForm) {
+        console.log("UI: Registro do Evento submit do form LLM efetuado.");
+        llmSettingsForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const urlVal = settingsLlmUrl.value.trim();
+          const keyVal = settingsLlmKey.value.trim();
+          const modelVal = settingsLlmModel.value.trim();
+          console.log("UI: Submetendo formulário de LLM:", { urlVal, modelVal });
+
+          try {
+            window.App.State.atualizarLlmConfig(urlVal, keyVal, modelVal);
+            showStatus("Configuração da LLM atualizada!");
+          } catch (err) {
+            showStatus(err.message, true);
+          }
+        });
+      }
     },
 
     // Renderizar Abas de Anos (Gerados dinamicamente com base nas despesas comuns e ano atual)
@@ -1812,6 +1843,21 @@ Informe:
         });
 
         categoriesColorsList.appendChild(card);
+      }
+
+      // 3. Preencher formulário de configuração da LLM
+      if (settingsLlmUrl && settingsLlmKey && settingsLlmModel) {
+        const llm = state.llmConfig || {};
+        console.log("UI: Preenchendo inputs da LLM com dados do estado:", llm);
+        settingsLlmUrl.value = llm.apiUrl || "";
+        settingsLlmKey.value = llm.apiKey || "";
+        settingsLlmModel.value = llm.model || "";
+      } else {
+        console.warn("UI: Inputs da LLM ausentes na árvore DOM ao tentar preencher:", {
+          settingsLlmUrl: !!settingsLlmUrl,
+          settingsLlmKey: !!settingsLlmKey,
+          settingsLlmModel: !!settingsLlmModel
+        });
       }
 
       // Renderizar formulário do Planejador Financeiro nas configurações

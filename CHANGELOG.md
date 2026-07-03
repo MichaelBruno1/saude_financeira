@@ -2,6 +2,14 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.1.7] - 2026-07-03
+
+### Corrigido
+- **Persistência de Configurações LLM**:
+  - Corrigido o bug na injeção do event listener de submissão do formulário de LLM causado por incompatibilidade de quebras de linha CRLF em ambientes Windows.
+  - Adicionados testes automatizados com `vitest` para validação e cobertura do ciclo de persistência e eventos de DOM das configurações de LLM.
+  - Adicionados console logs de debug estruturados no carregamento e escrita do estado (State/Storage/UI) para facilitar inspeção em tempo de execução.
+
 ## [1.1.6] - 2026-07-03
 
 ### Modificado

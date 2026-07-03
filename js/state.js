@@ -617,6 +617,7 @@ window.App.State = (() => {
         apiKey: String(apiKey || "").trim(),
         model: String(model || "").trim()
       };
+      console.log("State: Configuração da LLM atualizada no estado central:", _state.llmConfig);
       notify("llmConfig");
       return true;
     }
