@@ -228,6 +228,7 @@ Adicionar uma validação no método `processPdfFile` que conta a quantidade de 
 | **Severity**| Baixa                                                            |
 | **Tipo**    | Confiabilidade / Offline-first                                   |
 | **Desde**   | v0.1.0                                                           |
+| **Status**  | Resolvido (v1.1.6)                                               |
 
 ### Descrição
 A aplicação depende de servidores externos CDN para carregar bibliotecas como `Chart.js`, `pdf.js` e a fonte `Outfit` do Google Fonts.
@@ -235,10 +236,9 @@ A aplicação depende de servidores externos CDN para carregar bibliotecas como 
 ### Impacto
 - Se o usuário abrir o arquivo `index.html` pela primeira vez totalmente offline e sem cache prévio, os gráficos e o processador de PDF não funcionarão e a fonte padrão do navegador será renderizada.
 
-### Solução Proposta
-Baixar e hospedar as bibliotecas (`chart.js`, `pdf.min.js`, `pdf.worker.min.js`) e fontes localmente na pasta `public/` ou `js/vendor/` do projeto, removendo conexões de rede CDN externas obrigatórias.
-
-### Esforço Estimado: Baixo
+### Resolução (v1.1.6)
+- Baixados e hospedados os scripts de terceiros (`chart.js`, `pdf.min.js`, `pdf.worker.min.js`) localmente na pasta `public/` do projeto.
+- Removido o uso das CDNs da internet no HTML e JS para esses recursos, tornando o sistema totalmente resiliente e funcional offline.
 
 ---
 
@@ -255,4 +255,4 @@ Baixar e hospedar as bibliotecas (`chart.js`, `pdf.min.js`, `pdf.worker.min.js`)
 | TD-007  | Recorrências limitadas ao ano de início     | Alta     | Resolvido (v1.1.4) |
 | TD-008  | Configuração LLM hardcoded                  | Média    | Resolvido (v1.1.5) |
 | TD-009  | Falta de validação e OCR no PDF             | Média    | Baixo   |
-| TD-010  | Dependência de bibliotecas via CDN          | Baixa    | Baixo   |
+| TD-010  | Dependência de bibliotecas via CDN          | Baixa    | Resolvido (v1.1.6) |

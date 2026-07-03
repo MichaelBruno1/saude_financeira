@@ -2,6 +2,12 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.1.6] - 2026-07-03
+
+### Modificado
+- **TD-010 (Hospedagem local de bibliotecas)**:
+  - Removido o uso de CDN para as bibliotecas de frontend (`Chart.js`, `pdf.js` e `pdf.worker.js`). Os scripts foram baixados e hospedados localmente na pasta `public/` para garantir o funcionamento offline-first e a segurança e privacidade da aplicação.
+
 ## [1.1.5] - 2026-07-03
 
 ### Adicionado

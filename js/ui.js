@@ -398,7 +398,7 @@ window.App.UI = (() => {
     try {
       const arrayBuffer = await file.arrayBuffer();
       // Configure worker CDN
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "public/pdf.worker.min.js";
       const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let rawText = "";
 
