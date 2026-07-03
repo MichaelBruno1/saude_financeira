@@ -2,6 +2,12 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.1.4] - 2026-07-03
+
+### Corrigido
+- **TD-007 (Recorrência de Despesas)**:
+  - Corrigido o bug na lógica de recorrência no motor financeiro (`js/engine.js`). Agora, despesas recorrentes (ex: assinaturas) incidem corretamente em todos os anos e meses futuros a partir da data de início, em vez de ficarem limitadas ao ano inicial de lançamento.
+
 ## [1.1.3] - 2026-07-03
 
 ### Adicionado

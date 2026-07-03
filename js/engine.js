@@ -31,13 +31,14 @@ window.App.Engine = (() => {
       const valorTotal = parseFloat(despesa.valor) || 0;
       const targetYear = parseInt(anoSelecionado) || new Date().getFullYear();
 
-      // Se for recorrente, repete o valor total para todos os meses a partir de mes_inicio até 12 no ano de inicio
+      // Se for recorrente, repete o valor total para todos os meses a partir de mes_inicio do ano de início
       if (despesa.recorrente) {
-        if (targetYear === S_year && mesSelecionado >= S && mesSelecionado <= 12) {
+        if (targetYear > S_year || (targetYear === S_year && mesSelecionado >= S)) {
+          const index = (targetYear - S_year) * 12 + mesSelecionado - S + 1;
           return {
             active: true,
-            index: mesSelecionado - S + 1,
-            total: 12 - S + 1,
+            index: index,
+            total: Infinity,
             valorParcela: valorTotal
           };
         }

@@ -162,6 +162,7 @@ O `ui.js` referencia dezenas de IDs de elementos DOM como strings literais espal
 | **Severity**| Alta                                                             |
 | **Tipo**    | Correção Funcional / Lógica                                      |
 | **Desde**   | v0.2.0                                                           |
+| **Status**  | Resolvido (v1.1.4)                                               |
 
 ### Descrição
 No arquivo `js/engine.js`, o método `getInstallmentInfo` possui uma limitação lógica que restringe as despesas marcadas como `recorrente: true` apenas ao ano fiscal de início (`S_year`) e até o mês 12.
@@ -170,10 +171,8 @@ No arquivo `js/engine.js`, o método `getInstallmentInfo` possui uma limitação
 - Despesas recorrentes (ex: assinaturas, mensalidades) não são replicadas nos anos subsequentes ao ano de início.
 - Projeções de longo prazo e transição de ano ativo perdem dados importantes de custo recorrente.
 
-### Solução Proposta
-Ajustar a lógica do `if (despesa.recorrente)` no `js/engine.js` para permitir a incidência em qualquer ano ativo que seja maior ou igual ao ano de início da despesa recorrente.
-
-### Esforço Estimado: Baixo
+### Resolução (v1.1.4)
+- Corrigida a lógica da função `getInstallmentInfo` no `js/engine.js` para permitir a repetição em qualquer mês e ano ativo posterior à data de início da despesa recorrente.
 
 ---
 
@@ -252,7 +251,7 @@ Baixar e hospedar as bibliotecas (`chart.js`, `pdf.min.js`, `pdf.worker.min.js`)
 | TD-004  | Tailwind via CDN em produção               | Baixa    | Resolvido (v1.1.3) |
 | TD-005  | LocalStorage como único backup             | Média    | Resolvido (v1.1.3) |
 | TD-006  | IDs DOM hardcoded                          | Baixa    | Resolvido (v1.1.3) |
-| TD-007  | Recorrências limitadas ao ano de início     | Alta     | Baixo   |
+| TD-007  | Recorrências limitadas ao ano de início     | Alta     | Resolvido (v1.1.4) |
 | TD-008  | Configuração LLM hardcoded                  | Média    | Baixo   |
 | TD-009  | Falta de validação e OCR no PDF             | Média    | Baixo   |
 | TD-010  | Dependência de bibliotecas via CDN          | Baixa    | Baixo   |
