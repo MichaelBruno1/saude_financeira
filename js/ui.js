@@ -1891,11 +1891,11 @@ Informe:
     },
 
     // Renderizar dados do Estado no DOM
-    render(state) {
+    render(state, changedKey = "all") {
       const { perfis, perfilAtivo, despesas, mesAtivo, anoAtivo, financiamentos } = state;
 
       // Verificar recomendação de backup
-      if (backupWarningBanner) {
+      if (backupWarningBanner && (changedKey === "all" || changedKey === "ultimoBackup" || changedKey === "despesas" || changedKey === "financiamentos")) {
         const ultimoBackup = state.ultimoBackup;
         const quinzeDiasMs = 15 * 24 * 60 * 60 * 1000;
         
@@ -1909,7 +1909,7 @@ Informe:
       }
 
       // Aplicar Tema Claro/Escuro
-      if (document.body) {
+      if (document.body && (changedKey === "all" || changedKey === "theme")) {
         if (state.theme === "light") {
           document.body.classList.add("theme-light");
         } else {
@@ -1925,7 +1925,7 @@ Informe:
 
       // Alternar visualização ativa dos botões do menu lateral esquerdo
       if (sidebarDespesasBtn) {
-        if (mesAtivo <= 12) {
+        if (mesAtivo <= 12 && (changedKey === "all" || changedKey === "despesas" || changedKey === "financiamentos" || changedKey === "calendario" || changedKey === "perfilAtivo")) {
           sidebarDespesasBtn.classList.add("sidebar-nav-active");
         } else {
           sidebarDespesasBtn.classList.remove("sidebar-nav-active");

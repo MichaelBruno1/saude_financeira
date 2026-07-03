@@ -6,8 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
   window.App.UI.init();
 
   // 2. Inscrever o Renderizador da UI nas atualizações do Estado Central
-  window.App.State.subscribe((state) => {
-    window.App.UI.render(state);
+  window.App.State.subscribe((state, changedKey) => {
+    window.App.UI.render(state, changedKey);
   });
 
   // 3. Inscrever o Storage Engine nas atualizações do Estado Central (persistência síncrona automática)

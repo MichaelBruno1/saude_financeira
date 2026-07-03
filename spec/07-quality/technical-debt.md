@@ -47,6 +47,7 @@ Dividir em módulos menores:
 | **Severity**| Baixa (atual) / Média (com > 500 despesas)                      |
 | **Tipo**    | Performance                                                      |
 | **Desde**   | v0.2.0                                                           |
+| **Status**  | Resolvido (v1.1.3)                                               |
 
 ### Descrição
 A cada mutação de estado, o método `render(state)` re-renderiza **toda** a interface, inclusive partes que não foram afetadas pela mudança.
@@ -55,17 +56,10 @@ A cada mutação de estado, o método `render(state)` re-renderiza **toda** a in
 - Com poucos dados: imperceptível (< 10ms).
 - Com muitos dados (centenas de despesas de vários anos): pode causar lag perceptível.
 
-### Solução Proposta
-Implementar renderização seletiva:
-```javascript
-render(state, changedKey) {
-  if (changedKey === "theme") { applyTheme(state); return; }
-  if (changedKey === "despesas") { renderTabela(state); renderKPIs(state); return; }
-  // ...
-}
-```
-
-### Esforço Estimado: Médio
+### Resolução (v1.1.3)
+- Implementada a renderização seletiva/condicional na UI.
+- O State Manager (`js/state.js`) agora emite o nome da propriedade alterada (`changedKey`) ao disparar a notificação para os inscritos.
+- O método `render(state, changedKey)` no `js/ui.js` analisa o `changedKey` e renderiza apenas os blocos correspondentes da interface (ex: alterando apenas o tema do body e configs ao mudar de tema, ou renderizando apenas a tabela de gastos ao atualizar despesas), otimizando consideravelmente a performance em grandes bases de dados.
 
 ---
 
@@ -166,7 +160,7 @@ O `ui.js` referencia dezenas de IDs de elementos DOM como strings literais espal
 | ID      | Dívida                                      | Severity | Esforço |
 |---------|---------------------------------------------|----------|---------|
 | TD-001  | `ui.js` monolítico                          | Média    | Alto    |
-| TD-002  | Re-renderização total                       | Baixa/Média | Médio |
+| TD-002  | Re-renderização total                       | Baixa/Média | Resolvido (v1.1.3) |
 | TD-003  | Sem testes de integração/E2E               | Média    | Alto    |
 | TD-004  | Tailwind via CDN em produção               | Baixa    | Resolvido (v1.1.3) |
 | TD-005  | LocalStorage como único backup             | Média    | Resolvido (v1.1.3) |

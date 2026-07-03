@@ -68,12 +68,12 @@ window.App.State = (() => {
   const _listeners = [];
 
   // Notificar todos os inscritos sobre a mudança de estado
-  function notify() {
+  function notify(changedKey = "all") {
     // Passar uma cópia profunda para garantir imutabilidade fora do estado central
     const stateCopy = JSON.parse(JSON.stringify(_state));
     _listeners.forEach(callback => {
       try {
-        callback(stateCopy);
+        callback(stateCopy, changedKey);
       } catch (err) {
         console.error("Erro ao executar listener de estado:", err);
       }
@@ -280,7 +280,7 @@ window.App.State = (() => {
       }
       if (_state.mesAtivo !== mesInt) {
         _state.mesAtivo = mesInt;
-        notify();
+        notify("calendario");
         return true;
       }
       return false;
@@ -294,7 +294,7 @@ window.App.State = (() => {
       }
       if (_state.anoAtivo !== anoInt) {
         _state.anoAtivo = anoInt;
-        notify();
+        notify("calendario");
         return true;
       }
       return false;
@@ -319,7 +319,7 @@ window.App.State = (() => {
 
       _state.perfis.push(novoPerfil);
       _state.perfilAtivo = nomeFormatado; // Ativa automaticamente o recém criado
-      notify();
+      notify("perfis");
       return novoPerfil;
     },
 
@@ -342,7 +342,7 @@ window.App.State = (() => {
         _state.perfilAtivo = _state.perfis.length > 0 ? _state.perfis[0].nome : null;
       }
 
-      notify();
+      notify("perfis");
       return true;
     },
 
@@ -355,7 +355,7 @@ window.App.State = (() => {
       const perfil = _state.perfis.find(p => p.nome === _state.perfilAtivo);
       if (perfil) {
         perfil.salario = Math.max(0, parseFloat(novoSalario) || 0);
-        notify();
+        notify("perfis");
         return true;
       }
       return false;
@@ -368,7 +368,7 @@ window.App.State = (() => {
         throw new Error("Perfil não encontrado.");
       }
       _state.perfilAtivo = nome;
-      notify();
+      notify("perfilAtivo");
       return true;
     },
 
@@ -396,7 +396,7 @@ window.App.State = (() => {
       };
 
       _state.despesas.push(novoGasto);
-      notify();
+      notify("despesas");
       return novoGasto;
     },
 
@@ -408,7 +408,7 @@ window.App.State = (() => {
       }
 
       _state.despesas.splice(index, 1);
-      notify();
+      notify("despesas");
       return true;
     },
 
@@ -432,7 +432,7 @@ window.App.State = (() => {
       d.parcelas = Math.max(1, parseInt(parcelas) || 1);
       d.recorrente = !!recorrente;
 
-      notify();
+      notify("despesas");
       return d;
     },
 
@@ -474,7 +474,7 @@ window.App.State = (() => {
       };
 
       _state.financiamentos.push(novo);
-      notify();
+      notify("financiamentos");
       return novo;
     },
 
@@ -494,7 +494,7 @@ window.App.State = (() => {
       f.parcelasTotais = parseInt(parcelasTotais);
       f.taxaTR = parseFloat(taxaTR);
 
-      notify();
+      notify("financiamentos");
       return f;
     },
 
@@ -506,7 +506,7 @@ window.App.State = (() => {
       }
 
       _state.financiamentos.splice(idx, 1);
-      notify();
+      notify("financiamentos");
       return true;
     },
 
@@ -533,7 +533,7 @@ window.App.State = (() => {
         }
       });
 
-      notify();
+      notify("categorias");
       return true;
     },
 
@@ -548,14 +548,14 @@ window.App.State = (() => {
       }
 
       _state.categorias[nome] = corHex;
-      notify();
+      notify("categorias");
       return true;
     },
 
     // Alternar o tema do projeto entre claro e escuro
     toggleTheme() {
       _state.theme = _state.theme === "light" ? "dark" : "light";
-      notify();
+      notify("theme");
       return _state.theme;
     },
 
@@ -593,14 +593,14 @@ window.App.State = (() => {
 
       _state.planejamento[metodo]["Investimento"] = (_state.planejamento[metodo]["Investimento"] || 0) + sobra;
 
-      notify();
+      notify("planejamento");
       return true;
     },
 
     // Atualizar data/hora do último backup em CSV realizado
     atualizarUltimoBackup() {
       _state.ultimoBackup = Date.now();
-      notify();
+      notify("ultimoBackup");
       return true;
     }
   };
