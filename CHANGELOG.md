@@ -2,6 +2,20 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.2.0] - 2026-07-06
+
+### Adicionado
+- **Agente Financeiro Inteligente**:
+  - Adicionado o botão "Fale com o seu Agente" na tela de despesas mensais.
+  - Implementado o modal de chat para interação direta com o agente financeiro.
+  - Criado o prompt do sistema (`prompts/agente.md`) parametrizado para guiar o agente financeiro, garantindo que ele responda apenas sobre despesas cadastradas, recuse perguntas fora do escopo, e não edite configurações globais nem crie categorias.
+  - Implementada a execução segura de ações requisitadas pelo agente (cadastrar e editar despesas com fallbacks de campos existentes), garantindo bloqueio caso tente criar categorias inexistentes.
+  - Adicionados testes automatizados de integração em `tests/agentChat.test.js` cobrindo sucesso das ações de criação/edição e validação de restrições de categoria.
+
+### Modificado
+- **Interface**:
+  - Ajustado o tamanho dos botões "Importar Fatura PDF" e "Adicionar Gasto" na barra de ferramentas de despesas mensais para ficarem visualmente equivalentes e organizados.
+
 ## [1.1.7] - 2026-07-03
 
 ### Corrigido

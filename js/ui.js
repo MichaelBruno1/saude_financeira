@@ -116,7 +116,14 @@ window.App.UI = (() => {
     LLM_SETTINGS_FORM: "llm-settings-form",
     SETTINGS_LLM_URL: "settings-llm-url",
     SETTINGS_LLM_KEY: "settings-llm-key",
-    SETTINGS_LLM_MODEL: "settings-llm-model"
+    SETTINGS_LLM_MODEL: "settings-llm-model",
+    BTN_CHAT_AGENT: "btn-chat-agent",
+    AGENT_CHAT_MODAL: "agent-chat-modal",
+    CLOSE_AGENT_CHAT_MODAL_BTN: "close-agent-chat-modal-btn",
+    AGENT_CHAT_MESSAGES: "agent-chat-messages",
+    AGENT_CHAT_LOADER: "agent-chat-loader",
+    AGENT_CHAT_FORM: "agent-chat-form",
+    AGENT_CHAT_INPUT: "agent-chat-input"
   };
 
   // Elementos do DOM cached
@@ -260,6 +267,16 @@ window.App.UI = (() => {
   let settingsLlmUrl;
   let settingsLlmKey;
   let settingsLlmModel;
+
+  // Agente Financeiro Inteligente
+  let btnChatAgent;
+  let agentChatModal;
+  let closeAgentChatModalBtn;
+  let agentChatMessages;
+  let agentChatLoader;
+  let agentChatForm;
+  let agentChatInput;
+  let agentChatHistory = [];
 
   // Controle de edição
   let editingExpenseId = null;
@@ -560,6 +577,192 @@ Exemplo de formato:
     }
   }
 
+  async function askFinancialAgent(userMessage) {
+    // 1. Carregar configuração
+    const config = getLlmConfig();
+    const apiUrl = config.apiUrl;
+    const apiKey = config.apiKey;
+    const model = config.model;
+
+    if (!apiUrl || !model) {
+      throw new Error("Configuração da LLM incompleta. Certifique-se de preencher URL Base e Modelo nas Configurações.");
+    }
+
+    // 2. Carregar o template de prompt
+    let promptTemplate = "";
+    try {
+      const response = await fetch("prompts/agente.md");
+      if (response.ok) {
+        promptTemplate = await response.text();
+      } else {
+        throw new Error(`Erro HTTP! Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.warn("Erro ao carregar o prompt de 'prompts/agente.md' via fetch. Usando fallback local:", err);
+      // Fallback template
+      promptTemplate = `Você é o Agente Financeiro Inteligente integrado à aplicação Saúde Financeira.
+Sua principal função é responder às dúvidas do usuário sobre suas despesas cadastradas e ajudá-lo a cadastrar ou editar despesas.
+
+## Restrições Críticas (Siga Estritamente):
+1. **Foco em Gastos/Despesas**: Você só pode responder dúvidas sobre as despesas cadastradas do usuário. Não responda a perguntas não relacionadas aos gastos ou finanças pessoais do usuário. Se o usuário fizer uma pergunta geral (ex: "Qual a capital da França?" ou "Quem descobriu o Brasil?"), responda educadamente dizendo que você é um agente financeiro e só pode ajudar com as despesas e orçamento dele.
+2. **Edição e Criação**:
+   - Você **PODE** propor a criação de uma nova despesa (\`adicionarDespesa\`) se o usuário solicitar explicitamente (ex: "cadastra mercado de 50 reais").
+   - Você **PODE** propor a edição de uma despesa existente (\`editarDespesa\`) se o usuário solicitar explicitamente (ex: "altere o valor da despesa X para 100 reais").
+   - Você **NÃO PODE** criar novas categorias. As categorias permitidas estão listadas abaixo. Se o usuário sugerir uma categoria que não existe, mapeie para uma categoria existente (como "Outros" ou a que for mais apropriada) ou solicite que ele escolha uma existente, mas nunca invente ou tente criar uma nova.
+   - Você **NÃO PODE** editar as configurações gerais do sistema (como limites do planejador, temas, backups, etc.) ou criar/excluir perfis.
+   - Você **NÃO PODE** alterar nenhuma regra de negócio.
+3. **Formato da Resposta**:
+   Você deve responder ESTRITAMENTE em formato JSON respeitando a seguinte estrutura. Não adicione nenhuma explicação extra fora do JSON e não envolva o JSON em blocos de código markdown (como \`\`\`json). A resposta deve ser um JSON válido cru:
+   {
+     "message": "Mensagem amigável explicando sua resposta ou confirmação da ação...",
+     "action": {
+       "type": "adicionarDespesa" | "editarDespesa" | "none",
+       "params": {
+         "descricao": "Nome da despesa",
+         "valor": 150.00,
+         "categoria": "Moradia",
+         "mes_inicio": 7,
+         "ano_inicio": 2026,
+         "parcelas": 1,
+         "recorrente": false
+       }
+     }
+   }
+
+## Contexto de Negócio do Usuário:
+- **Perfil Ativo**: {{PERFIL}}
+- **Categorias Permitidas**: {{CATEGORIAS}}
+- **Mês Ativo de Referência**: {{MES_ATIVO}}
+- **Ano Ativo de Referência**: {{ANO_ATIVO}}
+
+### Lista de Despesas Cadastradas:
+{{DESPESAS}}
+
+### Lista de Financiamentos Ativos:
+{{FINANCIAMENTOS}}
+
+## Histórico da Conversa:
+{{HISTORICO_CHAT}}
+
+## Nova Pergunta do Usuário:
+{{PERGUNTA}}`;
+    }
+
+    // 3. Montar o contexto real
+    const state = window.App.State.getState();
+    const activeProfileName = state.perfilAtivo || "Principal";
+    const profileExpenses = state.despesas.filter(d => d.perfil === activeProfileName);
+    const profileFinancing = state.financiamentos.filter(f => f.perfil === activeProfileName);
+    const categoriesList = Object.keys(state.categorias || {}).join(", ");
+    
+    // Formatar historico do chat
+    const formattedHistory = agentChatHistory.map(h => `${h.role === 'user' ? 'Usuário' : 'Agente'}: ${h.content}`).join("\n");
+
+    // Substituir os placeholders no prompt
+    let promptText = promptTemplate
+      .replace("{{PERFIL}}", activeProfileName)
+      .replace("{{CATEGORIAS}}", categoriesList)
+      .replace("{{MES_ATIVO}}", `${state.mesAtivo} (${MONTHS[state.mesAtivo - 1] || ""})`)
+      .replace("{{ANO_ATIVO}}", String(state.anoAtivo))
+      .replace("{{DESPESAS}}", JSON.stringify(profileExpenses, null, 2))
+      .replace("{{FINANCIAMENTOS}}", JSON.stringify(profileFinancing, null, 2))
+      .replace("{{HISTORICO_CHAT}}", formattedHistory || "(Sem histórico anterior)")
+      .replace("{{PERGUNTA}}", userMessage);
+
+    // 4. Executar chamada à API da LLM
+    const requestBody = {
+      model: model,
+      messages: [
+        { role: "user", content: promptText }
+      ],
+      temperature: 0.1
+    };
+
+    const response = await fetch(`${apiUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Erro na chamada do Agente (${response.status}): ${errText}`);
+    }
+
+    const resData = await response.json();
+    let choiceText = resData.choices && resData.choices[0] && resData.choices[0].message && resData.choices[0].message.content;
+
+    if (!choiceText) {
+      throw new Error("O agente retornou uma resposta vazia.");
+    }
+
+    choiceText = choiceText.trim();
+    if (choiceText.startsWith("```")) {
+      choiceText = choiceText.replace(/^```[a-zA-Z]*\n/, "");
+      choiceText = choiceText.replace(/\n```$/, "");
+    }
+    choiceText = choiceText.trim();
+
+    try {
+      return JSON.parse(choiceText);
+    } catch (jsonErr) {
+      console.error("Erro ao parsear JSON do Agente:", choiceText, jsonErr);
+      // Fallback em caso de falha de formatação JSON: tentar criar uma mensagem amigável a partir da string crua
+      return {
+        message: choiceText,
+        action: { type: "none" }
+      };
+    }
+  }
+
+  function appendChatMessage(role, content) {
+    if (!agentChatMessages) return;
+    const msgDiv = document.createElement("div");
+    
+    if (role === "user") {
+      msgDiv.className = "flex items-start justify-end space-x-2.5 max-w-[85%] ml-auto";
+      msgDiv.innerHTML = `
+        <div class="bg-indigo-655 text-white p-3 rounded-2xl rounded-tr-none border border-indigo-600/30 leading-relaxed break-words">
+          ${content}
+        </div>
+        <div class="w-6 h-6 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 shrink-0 text-[10px] select-none">👤</div>
+      `;
+    } else if (role === "agent") {
+      msgDiv.className = "flex items-start space-x-2.5 max-w-[85%]";
+      msgDiv.innerHTML = `
+        <div class="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0 text-[10px] select-none">🤖</div>
+        <div class="bg-slate-850 text-slate-350 p-3 rounded-2xl rounded-tl-none border border-slate-800/40 leading-relaxed break-words">
+          ${content}
+        </div>
+      `;
+    } else if (role === "system") {
+      msgDiv.className = "flex items-center justify-center py-1";
+      msgDiv.innerHTML = `
+        <div class="bg-emerald-950/40 text-emerald-450 border border-emerald-900/30 px-3 py-1 rounded-lg text-xxs font-semibold">
+          ✨ ${content}
+        </div>
+      `;
+    } else if (role === "system-error") {
+      msgDiv.className = "flex items-center justify-center py-1";
+      msgDiv.innerHTML = `
+        <div class="bg-rose-950/40 text-rose-450 border border-rose-900/30 px-3 py-1 rounded-lg text-xxs font-semibold">
+          ⚠️ ${content}
+        </div>
+      `;
+    }
+    
+    agentChatMessages.appendChild(msgDiv);
+  }
+
+  function scrollToBottom() {
+    if (agentChatMessages) {
+      agentChatMessages.scrollTop = agentChatMessages.scrollHeight;
+    }
+  }
+
   function renderReviewTable() {
     if (pdfImportLoading) pdfImportLoading.classList.add("hidden");
     if (pdfImportReviewContainer) pdfImportReviewContainer.classList.remove("hidden");
@@ -837,6 +1040,14 @@ Exemplo de formato:
       settingsLlmUrl = document.getElementById(DOM_IDS.SETTINGS_LLM_URL);
       settingsLlmKey = document.getElementById(DOM_IDS.SETTINGS_LLM_KEY);
       settingsLlmModel = document.getElementById(DOM_IDS.SETTINGS_LLM_MODEL);
+
+      btnChatAgent = document.getElementById(DOM_IDS.BTN_CHAT_AGENT);
+      agentChatModal = document.getElementById(DOM_IDS.AGENT_CHAT_MODAL);
+      closeAgentChatModalBtn = document.getElementById(DOM_IDS.CLOSE_AGENT_CHAT_MODAL_BTN);
+      agentChatMessages = document.getElementById(DOM_IDS.AGENT_CHAT_MESSAGES);
+      agentChatLoader = document.getElementById(DOM_IDS.AGENT_CHAT_LOADER);
+      agentChatForm = document.getElementById(DOM_IDS.AGENT_CHAT_FORM);
+      agentChatInput = document.getElementById(DOM_IDS.AGENT_CHAT_INPUT);
       
       // Containers da aba de relatórios
       monthlyExpensesContainer = document.getElementById(DOM_IDS.MONTHLY_EXPENSES_CONTAINER);
@@ -1724,6 +1935,133 @@ Informe:
             showStatus("Configuração da LLM atualizada!");
           } catch (err) {
             showStatus(err.message, true);
+          }
+        });
+      }
+
+      // --- Event Listeners do Agente Financeiro ---
+      if (btnChatAgent) {
+        btnChatAgent.addEventListener("click", () => {
+          if (agentChatModal) {
+            agentChatModal.classList.remove("hidden");
+            scrollToBottom();
+          }
+        });
+      }
+
+      if (closeAgentChatModalBtn) {
+        closeAgentChatModalBtn.addEventListener("click", () => {
+          if (agentChatModal) agentChatModal.classList.add("hidden");
+        });
+      }
+
+      if (agentChatModal) {
+        agentChatModal.addEventListener("click", (e) => {
+          if (e.target === agentChatModal) {
+            agentChatModal.classList.add("hidden");
+          }
+        });
+      }
+
+      if (agentChatForm) {
+        agentChatForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const userMsg = agentChatInput.value.trim();
+          if (!userMsg) return;
+
+          // 1. Adicionar mensagem do usuário no log visual
+          appendChatMessage("user", userMsg);
+          agentChatInput.value = "";
+
+          // Adicionar no histórico em memória
+          agentChatHistory.push({ role: "user", content: userMsg });
+
+          // 2. Mostrar carregador de digitação
+          if (agentChatLoader) agentChatLoader.classList.remove("hidden");
+          scrollToBottom();
+
+          try {
+            // 3. Chamar agente inteligente (LLM)
+            const agentResponse = await askFinancialAgent(userMsg);
+            
+            // 4. Ocultar carregador
+            if (agentChatLoader) agentChatLoader.classList.add("hidden");
+
+            // 5. Adicionar resposta do agente no log visual
+            const agentMsg = agentResponse.message || "Entendido.";
+            appendChatMessage("agent", agentMsg);
+
+            // Adicionar no histórico
+            agentChatHistory.push({ role: "agent", content: agentMsg });
+
+            // 6. Tratar ação de negócio se existir
+            if (agentResponse.action && agentResponse.action.type && agentResponse.action.type !== "none") {
+              const type = agentResponse.action.type;
+              const params = agentResponse.action.params || {};
+
+              try {
+                if (type === "adicionarDespesa") {
+                  // Validar categoria
+                  const state = window.App.State.getState();
+                  const cat = String(params.categoria || "").trim();
+                  if (!state.categorias[cat]) {
+                    throw new Error(`A categoria "${cat}" não existe. O Agente não tem permissão para criar categorias.`);
+                  }
+                  
+                  // Lançar despesa
+                  const desc = String(params.descricao || "Nova despesa").trim();
+                  const val = parseFloat(params.valor) || 0;
+                  const mes = parseInt(params.mes_inicio) || state.mesAtivo;
+                  const ano = parseInt(params.ano_inicio) || state.anoAtivo;
+                  const parc = parseInt(params.parcelas) || 1;
+                  const rec = !!params.recorrente;
+
+                  window.App.State.adicionarDespesa(desc, val, cat, mes, parc, rec, ano);
+                  appendChatMessage("system", `Despesa "${desc}" de R$ ${val.toFixed(2)} cadastrada com sucesso em ${cat}!`);
+                } else if (type === "editarDespesa") {
+                  if (!params.id) {
+                    throw new Error("ID da despesa inválido ou ausente na ação de edição.");
+                  }
+
+                  const state = window.App.State.getState();
+                  const existing = state.despesas.find(d => d.id === params.id && d.perfil === state.perfilAtivo);
+                  if (!existing) {
+                    throw new Error("A despesa informada não foi encontrada para edição.");
+                  }
+
+                  // Validar categoria se fornecida
+                  let cat = existing.categoria;
+                  if (params.categoria !== undefined) {
+                    const reqCat = String(params.categoria || "").trim();
+                    if (!state.categorias[reqCat]) {
+                      throw new Error(`A categoria "${reqCat}" não existe. O Agente não tem permissão para criar categorias.`);
+                    }
+                    cat = reqCat;
+                  }
+
+                  const desc = params.descricao !== undefined ? String(params.descricao).trim() : existing.descricao;
+                  const val = params.valor !== undefined ? parseFloat(params.valor) : existing.valor;
+                  const mes = params.mes_inicio !== undefined ? parseInt(params.mes_inicio) : existing.mes_inicio;
+                  const ano = params.ano_inicio !== undefined ? parseInt(params.ano_inicio) : existing.ano_inicio;
+                  const parc = params.parcelas !== undefined ? parseInt(params.parcelas) : existing.parcelas;
+                  const rec = params.recorrente !== undefined ? !!params.recorrente : existing.recorrente;
+
+                  window.App.State.atualizarDespesa(params.id, desc, val, cat, mes, parc, rec, ano);
+                  appendChatMessage("system", `Despesa "${desc}" atualizada com sucesso!`);
+                }
+              } catch (actionErr) {
+                console.error("Erro na execução da ação do Agente:", actionErr);
+                appendChatMessage("system-error", `Erro na Ação: ${actionErr.message}`);
+              }
+            }
+
+            scrollToBottom();
+
+          } catch (agentErr) {
+            console.error("Erro no chat do Agente:", agentErr);
+            if (agentChatLoader) agentChatLoader.classList.add("hidden");
+            appendChatMessage("system-error", `Erro do Agente: ${agentErr.message}`);
+            scrollToBottom();
           }
         });
       }

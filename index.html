@@ -115,7 +115,7 @@
         <div id="sync-status" class="text-[10px] text-center font-medium mt-1.5 hidden transition"></div>
       </div>
       <div class="text-center pt-2">
-        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.1.7 • Controle Financeiro</p>
+        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.2.0 • Controle Financeiro</p>
       </div>
     </div>
   </aside>
@@ -182,7 +182,7 @@
         </button>
         <button id="btn-open-pdf-import" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 transition shadow-lg shrink-0 self-start sm:self-auto focus:outline-none">
           <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path></svg>
-          <span>Importar Fatura PDF</span>
+          <span>Importar Fatura</span>
         </button>
         <nav class="flex space-x-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none flex-1" id="month-tabs-container">
           <!-- Dynamically populated from JS -->
@@ -198,8 +198,14 @@
         <!-- Full Width Expenses Table -->
         <div class="bg-slate-950/30 border border-slate-800 rounded-2xl p-6 space-y-4">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-bold text-white">Despesas Lançadas no Mês</h3>
-            <span id="expense-count-badge" class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-full font-semibold">0 total</span>
+            <div class="flex items-center space-x-3">
+              <h3 class="text-lg font-bold text-white">Despesas Lançadas no Mês</h3>
+              <span id="expense-count-badge" class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-full font-semibold">0 total</span>
+            </div>
+            <button id="btn-chat-agent" class="bg-emerald-600 hover:bg-emerald-550 text-white text-xs font-semibold py-2 px-4 rounded-xl flex items-center justify-center space-x-2 transition shadow-lg shadow-emerald-600/10 focus:outline-none cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+              <span>Fale com o seu Agente</span>
+            </button>
           </div>
           
           <div class="overflow-x-auto">
@@ -854,6 +860,50 @@
         <button type="button" id="pdf-import-cancel-btn" class="w-1/2 bg-slate-850 hover:bg-slate-800 text-slate-300 font-medium py-3 rounded-xl transition text-sm">Cancelar</button>
         <button type="button" id="pdf-import-confirm-btn" class="w-1/2 bg-indigo-650 hover:bg-indigo-600 text-white font-medium py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-650/20 disabled:opacity-50 disabled:cursor-not-allowed" disabled>Confirmar Lançamento</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Agent Chat Modal Container -->
+  <div id="agent-chat-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden transition-all duration-300">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl modal-animate-in flex flex-col h-[500px] space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 border-slate-800">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Agente Financeiro Inteligente</h3>
+            <p class="text-xxs text-slate-500 font-medium">Tire dúvidas ou solicite cadastro/edição de gastos</p>
+          </div>
+        </div>
+        <button id="close-agent-chat-modal-btn" class="text-slate-500 hover:text-slate-300 transition focus:outline-none cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Messages Log -->
+      <div id="agent-chat-messages" class="flex-1 overflow-y-auto space-y-3 p-2 scrollbar-none text-xs">
+        <!-- Initial message -->
+        <div class="flex items-start space-x-2.5 max-w-[85%]">
+          <div class="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0 text-[10px] select-none">🤖</div>
+          <div class="bg-slate-850 text-slate-350 p-3 rounded-2xl rounded-tl-none border border-slate-800/40 leading-relaxed">
+            Olá! Sou o seu Agente Financeiro. Posso te ajudar a analisar seus gastos cadastrados, calcular médias ou adicionar/editar despesas sob demanda. Como posso ajudar hoje?
+          </div>
+        </div>
+      </div>
+
+      <!-- Thinking Indicator -->
+      <div id="agent-chat-loader" class="hidden flex items-center space-x-2 text-xxs text-slate-500 font-mono pl-10">
+        <span class="animate-pulse">O agente está analisando os dados...</span>
+      </div>
+
+      <!-- Form -->
+      <form id="agent-chat-form" class="flex items-center space-x-2 pt-2 border-t border-slate-800/60">
+        <input type="text" id="agent-chat-input" required placeholder="Ex: Quanto gastei com Lazer? / Adicione um gasto..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-350 focus:outline-none focus:border-indigo-500 transition">
+        <button type="submit" class="bg-emerald-600 hover:bg-emerald-550 text-white p-3 rounded-xl transition shadow-lg shadow-emerald-600/10 cursor-pointer focus:outline-none flex items-center justify-center">
+          <svg class="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+        </button>
+      </form>
     </div>
   </div>
 
