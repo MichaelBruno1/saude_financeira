@@ -1,4 +1,4 @@
-﻿# Dívidas Técnicas — Saúde Financeira
+# Dívidas Técnicas — Saúde Financeira
 
 > **Spec Layer**: Quality
 > **Versão**: 1.3.6
@@ -415,7 +415,7 @@ id: crypto.randomUUID()
 | **Severity** | Média                      |
 | **Tipo**     | Portabilidade / DevEx      |
 | **Desde**    | v0.1.0                     |
-| **Status**   | Aberto                     |
+| **Status**   | **Resolvido (v1.3.7)**     |
 
 ### Descrição
 O projeto não possui configuração Docker. Para executar, o usuário precisa ter Node.js e npm instalados localmente. Isso cria dependência no ambiente do host e dificulta a portabilidade entre máquinas e dispositivos.
@@ -463,7 +463,7 @@ docker-compose up -d
 | TD-013 | `console.log` de debug em produção             | Baixa       | **Aberto**               | Baixo        |
 | TD-014 | Lógica de investimentos misturada no `ui.js`   | Média       | **Aberto**               | Médio        |
 | TD-015 | Gerador de IDs sem unicidade global garantida  | Baixa/Média | **Aberto**               | Muito Baixo  |
-| TD-016 | Ausência de suporte Docker / docker-compose    | Média       | **Aberto**               | Baixo        |
+| TD-016 | Ausência de suporte Docker / docker-compose    | Média       | Resolvido (v1.3.7)       | —            |
 
 ### Priorização dos Débitos Abertos
 
@@ -474,7 +474,6 @@ docker-compose up -d
 **Média Severidade / Baixo Esforço** — Quick wins:
 - TD-009: Validação de PDF com feedback amigável
 - TD-014: Extrair lógica de investimentos para `engine.js`
-- TD-016: Docker / docker-compose
 
 **Baixa Severidade / Esforço Mínimo** — Fazer quando conveniente:
 - TD-012: Remover `ui.js.tmp` e adicionar ao `.gitignore`

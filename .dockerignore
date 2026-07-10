@@ -1,0 +1,33 @@
+# Dependencias de desenvolvimento
+node_modules/
+
+# Controle de versao
+.git/
+.gitignore
+
+# Arquivos temporarios e de editor
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Documentacao e especificacoes (nao necessarias em runtime)
+spec/
+README.md
+CHANGELOG.md
+*.md
+
+# Configuracao de ferramentas de desenvolvimento
+package.json
+package-lock.json
+eslint.config.js
+tailwind.config.js
+bs-config.json
+vitest.config.*
+
+# Testes
+tests/
+
+# CSS fonte (apenas o compilado e necessario)
+css/app.css

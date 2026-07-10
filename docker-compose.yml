@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  saude-financeira:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: saude-financeira
+    ports:
+      - "8080:80"
+    restart: unless-stopped
