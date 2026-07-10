@@ -119,7 +119,7 @@
         <div id="sync-status" class="text-[10px] text-center font-medium mt-1.5 hidden transition"></div>
       </div>
       <div class="text-center pt-2">
-        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.3.0 • Controle Financeiro</p>
+        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.3.2 • Controle Financeiro</p>
       </div>
     </div>
   </aside>
@@ -544,10 +544,48 @@
             <h3 class="text-base font-bold text-white">Carteira de Investimentos</h3>
             <p class="text-xs text-slate-400">Acompanhe e analise a distribuição de seus investimentos e aportes.</p>
           </div>
-          <!-- KPI Total Invested -->
-          <div class="bg-indigo-950/20 border border-indigo-900/30 px-6 py-3 rounded-2xl flex flex-col justify-center">
-            <span class="text-xxs font-bold text-slate-500 uppercase tracking-wider">Total Investido</span>
-            <span id="kpi-total-investido" class="text-xl font-bold text-indigo-400">R$ 0,00</span>
+          <!-- KPIs Grid -->
+          <div class="flex flex-wrap gap-4 items-center">
+            <!-- KPI Reserva de Emergencia Ideal -->
+            <div class="bg-slate-950/40 border border-slate-800 px-5 py-2.5 rounded-2xl flex flex-col justify-center min-w-[12rem] group relative">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Reserva de Emergência Ideal</span>
+                <div class="relative inline-block text-left">
+                  <span class="cursor-pointer text-slate-500 hover:text-slate-400 text-[10px] select-none">ⓘ</span>
+                  <div class="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-slate-900 border border-slate-800 text-[10px] text-slate-400 rounded-lg p-2 shadow-xl z-50">
+                    O valor é dinâmico e corresponde a 6x a soma das despesas recorrentes cadastradas.
+                  </div>
+                </div>
+              </div>
+              <span id="kpi-reserva-emergencia" class="text-base font-bold text-indigo-400 mt-0.5">R$ 0,00</span>
+            </div>
+
+            <!-- KPI Total Invested -->
+            <div class="bg-indigo-950/20 border border-indigo-900/30 px-5 py-2.5 rounded-2xl flex flex-col justify-center min-w-[8rem]">
+              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Total Investido</span>
+              <span id="kpi-total-investido" class="text-base font-bold text-indigo-400">R$ 0,00</span>
+            </div>
+
+            <!-- KPI FGTS -->
+            <div class="bg-slate-950/40 border border-slate-800 px-5 py-2.5 rounded-2xl flex flex-col justify-center min-w-[10rem] relative">
+              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Valor FGTS</span>
+              <div class="flex items-center space-x-1.5 mt-0.5">
+                <span id="kpi-fgts-view" class="text-base font-bold text-slate-300">R$ 0,00</span>
+                <input type="text" id="kpi-fgts-input" class="hidden bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-0.5 w-24 focus:outline-none focus:border-indigo-500 font-bold" value="">
+                <button id="btn-edit-fgts" class="text-slate-500 hover:text-slate-300 transition focus:outline-none">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+                <button id="btn-save-fgts" class="hidden text-emerald-500 hover:text-emerald-400 transition focus:outline-none">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- KPI Investimento + FGTS -->
+            <div class="bg-emerald-950/15 border border-emerald-900/30 px-5 py-2.5 rounded-2xl flex flex-col justify-center min-w-[9rem]">
+              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Investimento + FGTS</span>
+              <span id="kpi-total-com-fgts" class="text-base font-bold text-emerald-400">R$ 0,00</span>
+            </div>
           </div>
         </div>
 

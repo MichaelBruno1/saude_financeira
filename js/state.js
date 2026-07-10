@@ -7,7 +7,7 @@ window.App.State = (() => {
     perfis: [],       // Array de { nome, salario }
     perfilAtivo: null, // String contendo o nome do perfil selecionado
     despesas: [],      // Array de { id, perfil, descricao, valor, categoria, mes_inicio, parcelas }
-    categoriasInvestimento: ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "Outros"],
+    categoriasInvestimento: ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "FGTS", "Outros"],
     mesAtivo: 1,       // Mês ativo selecionado (1 a 16)
     anoAtivo: new Date().getFullYear(), // Ano ativo selecionado
     financiamentos: [], // Array de { id, perfil, nome, valorTotal, valorParcela, parcelasTotais, taxaTR }
@@ -113,7 +113,8 @@ window.App.State = (() => {
       
       _state.perfis = Array.isArray(newState.perfis) ? newState.perfis.map(p => ({
         nome: String(p.nome).trim(),
-        salario: parseFloat(p.salario) || 0
+        salario: parseFloat(p.salario) || 0,
+        fgts: parseFloat(p.fgts) || 0
       })) : [];
       
       _state.perfilAtivo = newState.perfilAtivo ? String(newState.perfilAtivo).trim() : null;
@@ -133,7 +134,10 @@ window.App.State = (() => {
 
       _state.categoriasInvestimento = Array.isArray(newState.categoriasInvestimento)
         ? newState.categoriasInvestimento.map(c => String(c).trim())
-        : ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "Outros"];
+        : ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "FGTS", "Outros"];
+      if (!_state.categoriasInvestimento.includes("FGTS")) {
+        _state.categoriasInvestimento.push("FGTS");
+      }
 
       _state.mesAtivo = newState.mesAtivo ? Math.min(16, Math.max(1, parseInt(newState.mesAtivo) || 1)) : 1;
       _state.anoAtivo = newState.anoAtivo ? parseInt(newState.anoAtivo) || new Date().getFullYear() : new Date().getFullYear();
@@ -312,6 +316,19 @@ window.App.State = (() => {
       return true;
     },
 
+    atualizarFgts(valor) {
+      if (!_state.perfilAtivo) {
+        throw new Error("Não há perfil ativo para atualizar o FGTS.");
+      }
+      const ativo = _state.perfis.find(p => p.nome === _state.perfilAtivo);
+      if (ativo) {
+        ativo.fgts = Math.max(0, parseFloat(valor) || 0);
+        notify("perfis");
+        return true;
+      }
+      return false;
+    },
+
     // Selecionar o ano ativo
     selecionarAno(ano) {
       const anoInt = parseInt(ano);
@@ -340,7 +357,8 @@ window.App.State = (() => {
 
       const novoPerfil = {
         nome: nomeFormatado,
-        salario: Math.max(0, parseFloat(salario) || 0)
+        salario: Math.max(0, parseFloat(salario) || 0),
+        fgts: 0
       };
 
       _state.perfis.push(novoPerfil);

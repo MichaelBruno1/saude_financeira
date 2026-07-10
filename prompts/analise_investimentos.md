@@ -5,7 +5,10 @@ Analise a carteira de investimentos do usuário abaixo e retorne um diagnóstico
 **Perfil:** {{PERFIL}}
 **Renda/Salário Declarado:** R$ {{SALARIO}}
 
-**Total Investido:** R$ {{TOTAL_INVESTIDO}}
+**Total Investido (Excluindo FGTS):** R$ {{TOTAL_INVESTIDO}}
+**Saldo no FGTS:** R$ {{FGTS}}
+**Patrimônio Total (Investimentos + FGTS):** R$ {{TOTAL_COM_FGTS}}
+**Reserva de Emergência Ideal (Alvo Calculado):** R$ {{RESERVA_EMERGENCIA}}
 
 ### Alocação por Categoria de Investimento:
 {{DETALHE_INVESTIMENTOS}}

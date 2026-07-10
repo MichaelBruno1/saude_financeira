@@ -2,6 +2,26 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.3.2] - 2026-07-10
+
+### Adicionado
+- **Reserva de Emergência Ideal**:
+  - Novo card informativo exibido na carteira de investimentos que calcula de forma dinâmica o valor correspondente a 6x a soma das despesas recorrentes ativas.
+  - Hover informativo com tooltip/disclaimer explicando a regra de cálculo.
+- **Gráfico e Análise Inteligente de Investimento**:
+  - Integração do valor do FGTS na visualização do gráfico de alocação de investimentos.
+  - Inclusão do saldo do FGTS e da Reserva de Emergência Ideal no contexto processado pela LLM na Análise Inteligente.
+- **Cabeçalho de KPIs**:
+  - Correção na atualização das despesas e saldo disponível no header de modo que exiba dados do mês calendário atual quando em abas de nível administrativo.
+
+## [1.3.1] - 2026-07-10
+
+### Adicionado
+- **Suporte a FGTS**:
+  - Categoria nativa de investimento `"FGTS"` adicionada por padrão.
+  - KPI de Valor FGTS na tela de investimentos com edição inline e persistência por perfil de usuário.
+  - KPI combinado `"Investimento + FGTS"` exibindo a soma de investimentos ativos e saldo do FGTS.
+
 ## [1.3.0] - 2026-07-10
 
 ### Adicionado

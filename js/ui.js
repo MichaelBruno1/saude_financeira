@@ -131,6 +131,12 @@ window.App.UI = (() => {
     SIDEBAR_INVESTIMENTOS_BTN: "sidebar-investimentos-btn",
     INVESTMENTS_CONTAINER: "investments-container",
     KPI_TOTAL_INVESTIDO: "kpi-total-investido",
+    KPI_RESERVA_EMERGENCIA: "kpi-reserva-emergencia",
+    KPI_FGTS_VIEW: "kpi-fgts-view",
+    KPI_FGTS_INPUT: "kpi-fgts-input",
+    BTN_EDIT_FGTS: "btn-edit-fgts",
+    BTN_SAVE_FGTS: "btn-save-fgts",
+    KPI_TOTAL_COM_FGTS: "kpi-total-com-fgts",
     INVESTMENTS_TABLE_BODY: "investments-table-body",
     GENERATE_INVESTMENTS_ANALYSIS_BTN: "generate-investments-analysis-btn",
     INVESTMENTS_ANALYSIS_LOADER: "investments-analysis-loader",
@@ -306,6 +312,12 @@ window.App.UI = (() => {
   let sidebarInvestimentosBtn;
   let investmentsContainer;
   let kpiTotalInvestido;
+  let kpiReservaEmergencia;
+  let kpiFgtsView;
+  let kpiFgtsInput;
+  let btnEditFgts;
+  let btnSaveFgts;
+  let kpiTotalComFgts;
   let investmentsTableBody;
   let generateInvestmentsAnalysisBtn;
   let investmentsAnalysisLoader;
@@ -921,6 +933,12 @@ Distribuição de Investimentos:
     const activeProfileName = state.perfilAtivo || "Principal";
     const profile = state.perfis.find(p => p.nome === activeProfileName) || { salario: 0 };
 
+    const fgtsVal = profile.fgts || 0;
+    const recurrentExpensesSum = state.despesas
+      .filter(d => d.perfil === activeProfileName && d.recorrente === true)
+      .reduce((sum, d) => sum + d.valor, 0);
+    const targetReserve = recurrentExpensesSum * 6;
+
     const investExpenses = state.despesas.filter(d => d.perfil === activeProfileName && d.categoria === "Investimento");
     const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
 
@@ -929,14 +947,25 @@ Distribuição de Investimentos:
       const sub = d.subcategoria || "Outros";
       investDistribution[sub] = (investDistribution[sub] || 0) + d.valor;
     });
-    const detailInvestmentsText = Object.entries(investDistribution)
-      .map(([sub, val]) => `- ${sub}: R$ ${val.toFixed(2)} (${((val / (totalInvested || 1)) * 100).toFixed(1)}%)`)
+
+    // Incluir o FGTS na distribuição detalhada enviada à LLM
+    const investDistributionCombined = { ...investDistribution };
+    if (fgtsVal > 0) {
+      investDistributionCombined["FGTS"] = (investDistributionCombined["FGTS"] || 0) + fgtsVal;
+    }
+    const combinedTotal = totalInvested + fgtsVal;
+
+    const detailInvestmentsText = Object.entries(investDistributionCombined)
+      .map(([sub, val]) => `- ${sub}: R$ ${val.toFixed(2)} (${((val / (combinedTotal || 1)) * 100).toFixed(1)}%)`)
       .join("\n");
 
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
       .replace("{{SALARIO}}", profile.salario.toFixed(2))
       .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
+      .replace("{{FGTS}}", fgtsVal.toFixed(2))
+      .replace("{{TOTAL_COM_FGTS}}", combinedTotal.toFixed(2))
+      .replace("{{RESERVA_EMERGENCIA}}", targetReserve.toFixed(2))
       .replace("{{DETALHE_INVESTIMENTOS}}", detailInvestmentsText || "Nenhum investimento cadastrado.");
 
     const response = await fetch(`${apiUrl}/chat/completions`, {
@@ -1313,6 +1342,12 @@ Distribuição de Investimentos:
       sidebarInvestimentosBtn = document.getElementById(DOM_IDS.SIDEBAR_INVESTIMENTOS_BTN);
       investmentsContainer = document.getElementById(DOM_IDS.INVESTMENTS_CONTAINER);
       kpiTotalInvestido = document.getElementById(DOM_IDS.KPI_TOTAL_INVESTIDO);
+      kpiReservaEmergencia = document.getElementById(DOM_IDS.KPI_RESERVA_EMERGENCIA);
+      kpiFgtsView = document.getElementById(DOM_IDS.KPI_FGTS_VIEW);
+      kpiFgtsInput = document.getElementById(DOM_IDS.KPI_FGTS_INPUT);
+      btnEditFgts = document.getElementById(DOM_IDS.BTN_EDIT_FGTS);
+      btnSaveFgts = document.getElementById(DOM_IDS.BTN_SAVE_FGTS);
+      kpiTotalComFgts = document.getElementById(DOM_IDS.KPI_TOTAL_COM_FGTS);
       investmentsTableBody = document.getElementById(DOM_IDS.INVESTMENTS_TABLE_BODY);
       generateInvestmentsAnalysisBtn = document.getElementById(DOM_IDS.GENERATE_INVESTMENTS_ANALYSIS_BTN);
       investmentsAnalysisLoader = document.getElementById(DOM_IDS.INVESTMENTS_ANALYSIS_LOADER);
@@ -1508,6 +1543,56 @@ Distribuição de Investimentos:
           cancelSalaryBtn.click();
         }
       });
+
+      // --- FGTS Edit and Mask Listeners ---
+      if (btnEditFgts && kpiFgtsInput && kpiFgtsView && btnSaveFgts) {
+        kpiFgtsInput.addEventListener("input", () => {
+          kpiFgtsInput.value = formatBRLInput(kpiFgtsInput.value);
+        });
+
+        btnEditFgts.addEventListener("click", () => {
+          const state = window.App.State.getState();
+          const activeProfileName = state.perfilAtivo || "Principal";
+          const profile = state.perfis.find(p => p.nome === activeProfileName) || { fgts: 0 };
+          kpiFgtsInput.value = formatBRLInput((profile.fgts || 0).toFixed(2));
+          kpiFgtsView.classList.add("hidden");
+          btnEditFgts.classList.add("hidden");
+          kpiFgtsInput.classList.remove("hidden");
+          btnSaveFgts.classList.remove("hidden");
+          kpiFgtsInput.focus();
+        });
+
+        const cancelFgtsEdit = () => {
+          kpiFgtsInput.classList.add("hidden");
+          btnSaveFgts.classList.add("hidden");
+          kpiFgtsView.classList.remove("hidden");
+          btnEditFgts.classList.remove("hidden");
+        };
+
+        btnSaveFgts.addEventListener("click", () => {
+          const novoFgts = parseBRLValue(kpiFgtsInput.value);
+          if (isNaN(novoFgts) || novoFgts < 0) {
+            showStatus("Digite um valor válido de FGTS.", true);
+            return;
+          }
+
+          try {
+            window.App.State.atualizarFgts(novoFgts);
+            cancelFgtsEdit();
+            showStatus("Valor de FGTS atualizado!");
+          } catch (err) {
+            showStatus(err.message, true);
+          }
+        });
+
+        kpiFgtsInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            btnSaveFgts.click();
+          } else if (e.key === "Escape") {
+            cancelFgtsEdit();
+          }
+        });
+      }
 
 
 
@@ -2586,8 +2671,26 @@ Informe:
       const investExpenses = despesas.filter(d => d.perfil === perfilAtivo && d.categoria === "Investimento");
       const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
 
+      const activeProfile = state.perfis.find(p => p.nome === perfilAtivo) || { fgts: 0 };
+      const fgtsVal = activeProfile.fgts || 0;
+
+      // Calcular Reserva de Emergência Ideal (6x despesas recorrentes do perfil ativo)
+      const recurrentExpensesSum = despesas
+        .filter(d => d.perfil === perfilAtivo && d.recorrente === true)
+        .reduce((sum, d) => sum + d.valor, 0);
+      const targetReserve = recurrentExpensesSum * 6;
+
+      if (kpiReservaEmergencia) {
+        kpiReservaEmergencia.textContent = formatCurrency(targetReserve);
+      }
       if (kpiTotalInvestido) {
         kpiTotalInvestido.textContent = formatCurrency(totalInvested);
+      }
+      if (kpiFgtsView) {
+        kpiFgtsView.textContent = formatCurrency(fgtsVal);
+      }
+      if (kpiTotalComFgts) {
+        kpiTotalComFgts.textContent = formatCurrency(totalInvested + fgtsVal);
       }
 
       // Preencher tabela de aportes
@@ -2624,6 +2727,10 @@ Informe:
         const subcat = d.subcategoria || "Outros";
         distribution[subcat] = (distribution[subcat] || 0) + d.valor;
       });
+
+      if (fgtsVal > 0) {
+        distribution["FGTS"] = (distribution["FGTS"] || 0) + fgtsVal;
+      }
 
       if (window.App.Charts) {
         window.App.Charts.renderInvestmentsChart("investments-chart-canvas", distribution);
@@ -2799,19 +2906,18 @@ Informe:
 
       const ativo = perfis.find(p => p.nome === perfilAtivo);
 
-      // --- AJUSTE: Não atualizar os KPIs do Header ao ir para Relatório/Financiamento ---
-      if (mesAtivo <= 12) {
-        const summary = window.App.Engine.calculateMonthlySummary(ativo, mesAtivo, despesas, financiamentos, anoAtivo);
-        if (kpiDespesas) {
-          kpiDespesas.textContent = formatCurrency(summary.totalGastos);
-        }
-        if (kpiSaldo) {
-          kpiSaldo.textContent = formatCurrency(summary.saldoRestante);
-          if (summary.saldoRestante >= 0) {
-            kpiSaldo.className = "text-lg font-bold text-emerald-400";
-          } else {
-            kpiSaldo.className = "text-lg font-bold text-rose-400";
-          }
+      // --- AJUSTE: Sempre atualizar os KPIs do Header. Se estiver em abas administrativas, usar o mês calendário atual ---
+      const activeHeaderMonth = mesAtivo <= 12 ? mesAtivo : (new Date().getMonth() + 1);
+      const summary = window.App.Engine.calculateMonthlySummary(ativo, activeHeaderMonth, despesas, financiamentos, anoAtivo);
+      if (kpiDespesas) {
+        kpiDespesas.textContent = formatCurrency(summary.totalGastos);
+      }
+      if (kpiSaldo) {
+        kpiSaldo.textContent = formatCurrency(summary.saldoRestante);
+        if (summary.saldoRestante >= 0) {
+          kpiSaldo.className = "text-lg font-bold text-emerald-400";
+        } else {
+          kpiSaldo.className = "text-lg font-bold text-rose-400";
         }
       }
 
