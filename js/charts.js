@@ -6,6 +6,7 @@ window.App.Charts = (() => {
   let pizzaChartInstance = null;
   let lineChartInstance = null;
   let plannerChartInstance = null;
+  let investmentsChartInstance = null;
 
   // Cores de categorias consistentes com Tailwind e paletas premium
   const CATEGORY_COLORS = {
@@ -281,6 +282,88 @@ window.App.Charts = (() => {
               callbacks: {
                 label: function(context) {
                   return ` ${context.label}: ${context.raw}%`;
+                }
+              }
+            }
+          }
+        }
+      });
+    },
+
+    renderInvestmentsChart(canvasId, investmentsData) {
+      if (investmentsChartInstance) {
+        investmentsChartInstance.destroy();
+        investmentsChartInstance = null;
+      }
+
+      const canvas = document.getElementById(canvasId);
+      const placeholder = document.getElementById("investments-chart-placeholder");
+      const container = document.getElementById("investments-chart-canvas-container");
+
+      if (!canvas) return;
+
+      const labels = Object.keys(investmentsData);
+      const values = Object.values(investmentsData);
+      const total = values.reduce((sum, val) => sum + val, 0);
+
+      if (total === 0) {
+        if (container) container.classList.add("hidden");
+        if (placeholder) placeholder.classList.remove("hidden");
+        return;
+      }
+
+      if (placeholder) placeholder.classList.add("hidden");
+      if (container) container.classList.remove("hidden");
+
+      // Generate soft pleasant colors for different investment categories
+      const palette = [
+        "#3b82f6", // blue-500
+        "#10b981", // emerald-500
+        "#8b5cf6", // violet-500
+        "#f59e0b", // amber-500
+        "#ec4899", // pink-500
+        "#14b8a6", // teal-500
+        "#f43f5e", // rose-500
+        "#64748b"  // slate-500
+      ];
+      const backgroundColors = labels.map((_, i) => palette[i % palette.length]);
+
+      const ctx = canvas.getContext("2d");
+      investmentsChartInstance = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: backgroundColors,
+            borderColor: "#0f172a",
+            borderWidth: 2,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                color: "#94a3b8",
+                font: { size: 11, family: "Inter, sans-serif" },
+                padding: 12
+              }
+            },
+            tooltip: {
+              backgroundColor: "rgba(15, 23, 42, 0.95)",
+              titleColor: "#f8fafc",
+              bodyColor: "#94a3b8",
+              borderColor: "rgba(255, 255, 255, 0.1)",
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  const val = context.raw || 0;
+                  const pct = ((val / total) * 100).toFixed(1);
+                  return ` R$ ${val.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} (${pct}%)`;
                 }
               }
             }

@@ -2,6 +2,26 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.3.0] - 2026-07-10
+
+### Adicionado
+- **Módulo de Investimentos**:
+  - Nova aba "Investimentos" na barra lateral de navegação.
+  - Painel com total investido (KPI), detalhamento histórico de aportes e gráfico de rosca mostrando a distribuição por categoria (CDB, Previdência, Fundos, etc.).
+  - Botão de "Análise Inteligente" integrado que analisa o salário, total investido e classes de ativos com uma LLM.
+- **Plano de Economia (Relatórios)**:
+  - Botão "Gerar Plano de Economia" nos relatórios que compõe um diagnóstico aprofundado e plano prático de corte de gastos e amortização de dívidas.
+- **Configurações de Investimento**:
+  - Formulário para registrar novas subcategorias de investimento no painel de configurações.
+- **Seleção de Mês na Importação de Fatura**:
+  - Dropdown para selecionar a qual mês e ano a fatura pertence antes de confirmar o lançamento.
+- **Testes**:
+  - Suíte de testes unitários em `tests/investments.test.js` validando renderização de investimentos e navegação.
+
+### Modificado
+- **Interface**:
+  - Aumentado o tamanho da fonte do resultado da análise financeira inteligente para `text-sm`.
+
 ## [1.2.0] - 2026-07-06
 
 ### Adicionado

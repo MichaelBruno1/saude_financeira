@@ -123,7 +123,29 @@ window.App.UI = (() => {
     AGENT_CHAT_MESSAGES: "agent-chat-messages",
     AGENT_CHAT_LOADER: "agent-chat-loader",
     AGENT_CHAT_FORM: "agent-chat-form",
-    AGENT_CHAT_INPUT: "agent-chat-input"
+    AGENT_CHAT_INPUT: "agent-chat-input",
+    
+    // Investimentos & Plano Economia
+    MODAL_EXPENSE_INVESTMENT_CONTAINER: "modal-expense-investment-container",
+    MODAL_EXPENSE_INVESTMENT_CAT: "modal-expense-investment-cat",
+    SIDEBAR_INVESTIMENTOS_BTN: "sidebar-investimentos-btn",
+    INVESTMENTS_CONTAINER: "investments-container",
+    KPI_TOTAL_INVESTIDO: "kpi-total-investido",
+    INVESTMENTS_TABLE_BODY: "investments-table-body",
+    GENERATE_INVESTMENTS_ANALYSIS_BTN: "generate-investments-analysis-btn",
+    INVESTMENTS_ANALYSIS_LOADER: "investments-analysis-loader",
+    INVESTMENTS_ANALYSIS_RESULT_CARD: "investments-analysis-result-card",
+    INVESTMENTS_ANALYSIS_TIMESTAMP: "investments-analysis-timestamp",
+    INVESTMENTS_ANALYSIS_TEXT_CONTENT: "investments-analysis-text-content",
+    ADD_INVESTMENT_CATEGORY_FORM: "add-investment-category-form",
+    NEW_INVESTMENT_CATEGORY_NAME: "new-investment-category-name",
+    SETTINGS_INVESTMENT_CATEGORIES_LIST: "settings-investment-categories-list",
+
+    GENERATE_SAVINGS_PLAN_BTN: "generate-savings-plan-btn",
+    SAVINGS_PLAN_LOADER: "savings-plan-loader",
+    SAVINGS_PLAN_RESULT_CARD: "savings-plan-result-card",
+    SAVINGS_PLAN_TIMESTAMP: "savings-plan-timestamp",
+    SAVINGS_PLAN_TEXT_CONTENT: "savings-plan-text-content"
   };
 
   // Elementos do DOM cached
@@ -278,6 +300,29 @@ window.App.UI = (() => {
   let agentChatInput;
   let agentChatHistory = [];
 
+  // Investimentos
+  let modalExpenseInvestmentContainer;
+  let modalExpenseInvestmentCat;
+  let sidebarInvestimentosBtn;
+  let investmentsContainer;
+  let kpiTotalInvestido;
+  let investmentsTableBody;
+  let generateInvestmentsAnalysisBtn;
+  let investmentsAnalysisLoader;
+  let investmentsAnalysisResultCard;
+  let investmentsAnalysisTimestamp;
+  let investmentsAnalysisTextContent;
+  let addInvestmentCategoryForm;
+  let newInvestmentCategoryName;
+  let settingsInvestmentCategoriesList;
+
+  // Plano de Economia
+  let generateSavingsPlanBtn;
+  let savingsPlanLoader;
+  let savingsPlanResultCard;
+  let savingsPlanTimestamp;
+  let savingsPlanTextContent;
+
   // Controle de edição
   let editingExpenseId = null;
   let editingFinancingId = null;
@@ -290,6 +335,35 @@ window.App.UI = (() => {
   // Utilitário de formatação de moeda BRL para exibição textual
   function formatCurrency(value) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  }
+
+  function parseMarkdownToHTML(text) {
+    if (!text) return "";
+    let html = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n\n/g, "</p><p>")
+      .replace(/\n/g, "<br>")
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/### (.*?)(<br>|<\/p>)/g, "<h3 class='text-xs font-bold text-indigo-300 mt-4 mb-2 uppercase tracking-wider'>$1</h3>$2")
+      .replace(/## (.*?)(<br>|<\/p>)/g, "<h2 class='text-sm font-bold text-white mt-5 mb-2'>$1</h2>$2")
+      .replace(/- (.*?)(<br>)/g, "<li class='list-disc list-inside ml-2 text-slate-400'>$1</li>");
+    return `<p>${html}</p>`;
+  }
+
+  function renderInvestmentCategoriesDropdown() {
+    if (!modalExpenseInvestmentCat) return;
+    modalExpenseInvestmentCat.innerHTML = "";
+    const state = window.App.State.getState();
+    const list = state.categoriasInvestimento || ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "Outros"];
+    list.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      modalExpenseInvestmentCat.appendChild(opt);
+    });
   }
 
   // Mascaramento monetário em tempo real para campos de input
@@ -718,6 +792,179 @@ Sua principal função é responder às dúvidas do usuário sobre suas despesas
     }
   }
 
+  async function askSavingsPlan() {
+    const config = getLlmConfig();
+    const apiUrl = config.apiUrl;
+    const apiKey = config.apiKey;
+    const model = config.model;
+
+    if (!apiUrl || !model) {
+      throw new Error("Configuração da LLM incompleta. Certifique-se de preencher URL Base e Modelo nas Configurações.");
+    }
+
+    let promptTemplate = "";
+    try {
+      const response = await fetch("prompts/plano_economia.md");
+      if (response.ok) {
+        promptTemplate = await response.text();
+      } else {
+        throw new Error(`Erro HTTP! Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.warn("Erro ao carregar o prompt de 'prompts/plano_economia.md' via fetch. Usando fallback local:", err);
+      promptTemplate = `Você é um consultor financeiro especialista em economia. Analise a renda, gastos e investimentos do usuário. Dê conselhos práticos e bem-humorados.
+
+Dados do usuário:
+Renda: R$ {{SALARIO}}
+Gastos: {{GASTOS_REAIS}}
+Investimentos: {{DISTRIBUICAO_INVESTIMENTOS}} (Total: R$ {{TOTAL_INVESTIDO}})
+Dívidas/Financiamentos: {{DETALHE_FINANCIAMENTOS}}`;
+    }
+
+    const state = window.App.State.getState();
+    const activeProfileName = state.perfilAtivo || "Principal";
+    const profile = state.perfis.find(p => p.nome === activeProfileName) || { salario: 0 };
+    
+    const mesRef = state.mesAtivo <= 12 ? state.mesAtivo : 1;
+    const summary = window.App.Engine.calculateMonthlySummary(profile, mesRef, state.despesas, state.financiamentos, state.anoAtivo);
+    const gastosReaisText = Object.entries(summary.gastosPorCategoria)
+      .map(([cat, val]) => `- ${cat}: R$ ${val.toFixed(2)}`)
+      .join("\n");
+
+    const investExpenses = state.despesas.filter(d => d.perfil === activeProfileName && d.categoria === "Investimento");
+    const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
+    const investDistribution = {};
+    investExpenses.forEach(d => {
+      const sub = d.subcategoria || "Outros";
+      investDistribution[sub] = (investDistribution[sub] || 0) + d.valor;
+    });
+    const investDistributionText = Object.entries(investDistribution)
+      .map(([sub, val]) => `- ${sub}: R$ ${val.toFixed(2)}`)
+      .join("\n");
+
+    const profileFinancing = state.financiamentos.filter(f => f.perfil === activeProfileName);
+    const detailFinancingText = profileFinancing.length > 0 
+      ? profileFinancing.map(f => `- ${f.nome}: R$ ${f.valorTotal.toFixed(2)} (Parcela: R$ ${f.valorParcela.toFixed(2)}, TR: ${f.taxaTR}%)`).join("\n")
+      : "Nenhum financiamento cadastrado.";
+
+    const plannerMethod = state.planejamentoSelectedMethod || "Equilibrado";
+    const plannerLimits = state.planejamento && state.planejamento[plannerMethod] || {};
+    const plannerLimitsText = Object.entries(plannerLimits)
+      .map(([cat, pct]) => `- ${cat}: ${pct}% (Limite: R$ ${((profile.salario * pct) / 100).toFixed(2)})`)
+      .join("\n");
+
+    let promptText = promptTemplate
+      .replace("{{PERFIL}}", activeProfileName)
+      .replace("{{SALARIO}}", profile.salario.toFixed(2))
+      .replace("{{METODO_PLANEJADOR}}", plannerMethod)
+      .replace("{{LIMITES_PLANEJADOR}}", plannerLimitsText)
+      .replace("{{GASTOS_REAIS}}", gastosReaisText || "Nenhum gasto cadastrado.")
+      .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
+      .replace("{{DISTRIBUICAO_INVESTIMENTOS}}", investDistributionText || "Nenhum investimento cadastrado.")
+      .replace("{{DETALHE_FINANCIAMENTOS}}", detailFinancingText);
+
+    const response = await fetch(`${apiUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: "user", content: promptText }],
+        temperature: 0.3
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Erro na API da LLM (${response.status}): ${errText}`);
+    }
+
+    const resData = await response.json();
+    const resultText = resData.choices && resData.choices[0] && resData.choices[0].message && resData.choices[0].message.content;
+    if (!resultText) {
+      throw new Error("A LLM retornou um plano de economia vazio.");
+    }
+    return resultText;
+  }
+
+  async function askInvestmentsAnalysis() {
+    const config = getLlmConfig();
+    const apiUrl = config.apiUrl;
+    const apiKey = config.apiKey;
+    const model = config.model;
+
+    if (!apiUrl || !model) {
+      throw new Error("Configuração da LLM incompleta. Certifique-se de preencher URL Base e Modelo nas Configurações.");
+    }
+
+    let promptTemplate = "";
+    try {
+      const response = await fetch("prompts/analise_investimentos.md");
+      if (response.ok) {
+        promptTemplate = await response.text();
+      } else {
+        throw new Error(`Erro HTTP! Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.warn("Erro ao carregar o prompt de 'prompts/analise_investimentos.md' via fetch. Usando fallback local:", err);
+      promptTemplate = `Você é um consultor financeiro especialista em alocação de investimentos. Analise a carteira de investimentos do usuário. Dê um diagnóstico objetivo e bem-humorado.
+
+Renda Declarada: R$ {{SALARIO}}
+Total Investido: R$ {{TOTAL_INVESTIDO}}
+Distribuição de Investimentos:
+{{DETALHE_INVESTIMENTOS}}`;
+    }
+
+    const state = window.App.State.getState();
+    const activeProfileName = state.perfilAtivo || "Principal";
+    const profile = state.perfis.find(p => p.nome === activeProfileName) || { salario: 0 };
+
+    const investExpenses = state.despesas.filter(d => d.perfil === activeProfileName && d.categoria === "Investimento");
+    const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
+
+    const investDistribution = {};
+    investExpenses.forEach(d => {
+      const sub = d.subcategoria || "Outros";
+      investDistribution[sub] = (investDistribution[sub] || 0) + d.valor;
+    });
+    const detailInvestmentsText = Object.entries(investDistribution)
+      .map(([sub, val]) => `- ${sub}: R$ ${val.toFixed(2)} (${((val / (totalInvested || 1)) * 100).toFixed(1)}%)`)
+      .join("\n");
+
+    let promptText = promptTemplate
+      .replace("{{PERFIL}}", activeProfileName)
+      .replace("{{SALARIO}}", profile.salario.toFixed(2))
+      .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
+      .replace("{{DETALHE_INVESTIMENTOS}}", detailInvestmentsText || "Nenhum investimento cadastrado.");
+
+    const response = await fetch(`${apiUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: "user", content: promptText }],
+        temperature: 0.3
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Erro na API da LLM (${response.status}): ${errText}`);
+    }
+
+    const resData = await response.json();
+    const resultText = resData.choices && resData.choices[0] && resData.choices[0].message && resData.choices[0].message.content;
+    if (!resultText) {
+      throw new Error("A LLM retornou um diagnóstico de investimentos vazio.");
+    }
+    return resultText;
+  }
+
   function appendChatMessage(role, content) {
     if (!agentChatMessages) return;
     const msgDiv = document.createElement("div");
@@ -766,6 +1013,17 @@ Sua principal função é responder às dúvidas do usuário sobre suas despesas
   function renderReviewTable() {
     if (pdfImportLoading) pdfImportLoading.classList.add("hidden");
     if (pdfImportReviewContainer) pdfImportReviewContainer.classList.remove("hidden");
+
+    const state = window.App.State.getState();
+    const pdfMonthSelect = document.getElementById("pdf-import-month-select");
+    const pdfYearSelect = document.getElementById("pdf-import-year-select");
+    if (pdfMonthSelect) {
+      pdfMonthSelect.value = String(state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1));
+    }
+    if (pdfYearSelect) {
+      pdfYearSelect.value = String(state.anoAtivo);
+    }
+
     if (pdfImportTableBody) {
       pdfImportTableBody.innerHTML = "";
 
@@ -1048,6 +1306,28 @@ Sua principal função é responder às dúvidas do usuário sobre suas despesas
       agentChatLoader = document.getElementById(DOM_IDS.AGENT_CHAT_LOADER);
       agentChatForm = document.getElementById(DOM_IDS.AGENT_CHAT_FORM);
       agentChatInput = document.getElementById(DOM_IDS.AGENT_CHAT_INPUT);
+
+      // Bindings de Investimentos & Plano de Economia
+      modalExpenseInvestmentContainer = document.getElementById(DOM_IDS.MODAL_EXPENSE_INVESTMENT_CONTAINER);
+      modalExpenseInvestmentCat = document.getElementById(DOM_IDS.MODAL_EXPENSE_INVESTMENT_CAT);
+      sidebarInvestimentosBtn = document.getElementById(DOM_IDS.SIDEBAR_INVESTIMENTOS_BTN);
+      investmentsContainer = document.getElementById(DOM_IDS.INVESTMENTS_CONTAINER);
+      kpiTotalInvestido = document.getElementById(DOM_IDS.KPI_TOTAL_INVESTIDO);
+      investmentsTableBody = document.getElementById(DOM_IDS.INVESTMENTS_TABLE_BODY);
+      generateInvestmentsAnalysisBtn = document.getElementById(DOM_IDS.GENERATE_INVESTMENTS_ANALYSIS_BTN);
+      investmentsAnalysisLoader = document.getElementById(DOM_IDS.INVESTMENTS_ANALYSIS_LOADER);
+      investmentsAnalysisResultCard = document.getElementById(DOM_IDS.INVESTMENTS_ANALYSIS_RESULT_CARD);
+      investmentsAnalysisTimestamp = document.getElementById(DOM_IDS.INVESTMENTS_ANALYSIS_TIMESTAMP);
+      investmentsAnalysisTextContent = document.getElementById(DOM_IDS.INVESTMENTS_ANALYSIS_TEXT_CONTENT);
+      addInvestmentCategoryForm = document.getElementById(DOM_IDS.ADD_INVESTMENT_CATEGORY_FORM);
+      newInvestmentCategoryName = document.getElementById(DOM_IDS.NEW_INVESTMENT_CATEGORY_NAME);
+      settingsInvestmentCategoriesList = document.getElementById(DOM_IDS.SETTINGS_INVESTMENT_CATEGORIES_LIST);
+
+      generateSavingsPlanBtn = document.getElementById(DOM_IDS.GENERATE_SAVINGS_PLAN_BTN);
+      savingsPlanLoader = document.getElementById(DOM_IDS.SAVINGS_PLAN_LOADER);
+      savingsPlanResultCard = document.getElementById(DOM_IDS.SAVINGS_PLAN_RESULT_CARD);
+      savingsPlanTimestamp = document.getElementById(DOM_IDS.SAVINGS_PLAN_TIMESTAMP);
+      savingsPlanTextContent = document.getElementById(DOM_IDS.SAVINGS_PLAN_TEXT_CONTENT);
       
       // Containers da aba de relatórios
       monthlyExpensesContainer = document.getElementById(DOM_IDS.MONTHLY_EXPENSES_CONTAINER);
@@ -1259,14 +1539,22 @@ Sua principal função é responder às dúvidas do usuário sobre suas despesas
       if (closeFinancingModalBtn) closeFinancingModalBtn.addEventListener("click", hideFinancingModal);
       if (modalFinancingCancelBtn) modalFinancingCancelBtn.addEventListener("click", hideFinancingModal);
 
-      // Tratamento condicional para "Cartão de Crédito"
+      // Tratamento condicional para "Cartão de Crédito" e "Investimento"
       modalExpenseCat.addEventListener("change", (e) => {
-        if (e.target.value === "Cartão de Crédito") {
+        const val = e.target.value;
+        if (val === "Cartão de Crédito") {
           modalExpenseInstallmentsContainer.classList.remove("hidden");
           modalExpenseInstallments.focus();
         } else {
           modalExpenseInstallmentsContainer.classList.add("hidden");
           modalExpenseInstallments.value = "1";
+        }
+
+        if (val === "Investimento") {
+          modalExpenseInvestmentContainer.classList.remove("hidden");
+          renderInvestmentCategoriesDropdown();
+        } else {
+          modalExpenseInvestmentContainer.classList.add("hidden");
         }
       });
 
@@ -1340,12 +1628,14 @@ Sua principal função é responder às dúvidas do usuário sobre suas despesas
           return;
         }
 
+        const subcat = cat === "Investimento" && modalExpenseInvestmentCat ? modalExpenseInvestmentCat.value : "";
+
         try {
           if (editingExpenseId) {
-            window.App.State.atualizarDespesa(editingExpenseId, desc, valor, cat, mes, parc, recorrente, ano_inicio);
+            window.App.State.atualizarDespesa(editingExpenseId, desc, valor, cat, mes, parc, recorrente, ano_inicio, subcat);
             showStatus("Gasto atualizado com sucesso!");
           } else {
-            window.App.State.adicionarDespesa(desc, valor, cat, mes, parc, recorrente, ano_inicio);
+            window.App.State.adicionarDespesa(desc, valor, cat, mes, parc, recorrente, ano_inicio, subcat);
             showStatus("Gasto lançado com sucesso!");
           }
           hideExpenseModal();
@@ -1858,11 +2148,14 @@ Informe:
           if (checkedBoxes.length === 0) return;
 
           const state = window.App.State.getState();
-          const activeMonth = state.mesAtivo;
-          const activeYear = state.anoAtivo;
+          const pdfMonthSelect = document.getElementById("pdf-import-month-select");
+          const pdfYearSelect = document.getElementById("pdf-import-year-select");
 
-          if (activeMonth > 12) {
-            alert("Por favor, navegue para um mês de Janeiro a Dezembro na barra superior para realizar os lançamentos.");
+          const activeMonth = pdfMonthSelect ? parseInt(pdfMonthSelect.value) : state.mesAtivo;
+          const activeYear = pdfYearSelect ? parseInt(pdfYearSelect.value) : state.anoAtivo;
+
+          if (activeMonth > 12 || activeMonth < 1) {
+            alert("Por favor, selecione um mês de Janeiro a Dezembro para realizar os lançamentos.");
             return;
           }
 
@@ -1935,6 +2228,79 @@ Informe:
             showStatus("Configuração da LLM atualizada!");
           } catch (err) {
             showStatus(err.message, true);
+          }
+        });
+      }
+
+      // --- Event Listeners de Investimentos & Plano de Economia ---
+      if (sidebarInvestimentosBtn) {
+        sidebarInvestimentosBtn.addEventListener("click", () => {
+          window.App.State.selecionarMes(16);
+        });
+      }
+
+      if (addInvestmentCategoryForm && newInvestmentCategoryName) {
+        addInvestmentCategoryForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const name = newInvestmentCategoryName.value.trim();
+          try {
+            window.App.State.adicionarCategoriaInvestimento(name);
+            newInvestmentCategoryName.value = "";
+            showStatus("Subcategoria cadastrada com sucesso!");
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      }
+
+      if (generateSavingsPlanBtn) {
+        generateSavingsPlanBtn.addEventListener("click", async () => {
+          if (savingsPlanLoader) savingsPlanLoader.classList.remove("hidden");
+          if (savingsPlanResultCard) savingsPlanResultCard.classList.add("hidden");
+          generateSavingsPlanBtn.disabled = true;
+
+          try {
+            const planText = await askSavingsPlan();
+            if (savingsPlanTextContent) {
+              savingsPlanTextContent.innerHTML = parseMarkdownToHTML(planText);
+            }
+            if (savingsPlanTimestamp) {
+              const now = new Date();
+              savingsPlanTimestamp.textContent = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+            }
+            if (savingsPlanResultCard) savingsPlanResultCard.classList.remove("hidden");
+          } catch (err) {
+            console.error("Erro ao gerar plano de economia:", err);
+            alert(`Erro ao gerar plano de economia: ${err.message}`);
+          } finally {
+            if (savingsPlanLoader) savingsPlanLoader.classList.add("hidden");
+            generateSavingsPlanBtn.disabled = false;
+          }
+        });
+      }
+
+      if (generateInvestmentsAnalysisBtn) {
+        generateInvestmentsAnalysisBtn.addEventListener("click", async () => {
+          if (investmentsAnalysisLoader) investmentsAnalysisLoader.classList.remove("hidden");
+          if (investmentsAnalysisResultCard) investmentsAnalysisResultCard.classList.add("hidden");
+          generateInvestmentsAnalysisBtn.disabled = true;
+
+          try {
+            const analysisText = await askInvestmentsAnalysis();
+            if (investmentsAnalysisTextContent) {
+              investmentsAnalysisTextContent.innerHTML = parseMarkdownToHTML(analysisText);
+            }
+            if (investmentsAnalysisTimestamp) {
+              const now = new Date();
+              investmentsAnalysisTimestamp.textContent = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+            }
+            if (investmentsAnalysisResultCard) investmentsAnalysisResultCard.classList.remove("hidden");
+          } catch (err) {
+            console.error("Erro ao gerar análise de investimentos:", err);
+            alert(`Erro ao gerar análise de investimentos: ${err.message}`);
+          } finally {
+            if (investmentsAnalysisLoader) investmentsAnalysisLoader.classList.add("hidden");
+            generateInvestmentsAnalysisBtn.disabled = false;
           }
         });
       }
@@ -2201,6 +2567,67 @@ Informe:
       // Renderizar formulário do Planejador Financeiro nas configurações
       renderPlannerSettingsForm();
 
+      // 4. Renderizar a lista de subcategorias de investimento
+      if (settingsInvestmentCategoriesList) {
+        settingsInvestmentCategoriesList.innerHTML = "";
+        const list = state.categoriasInvestimento || ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "Outros"];
+        list.forEach(c => {
+          const badge = document.createElement("span");
+          badge.className = "bg-slate-900 border border-slate-800 text-slate-400 text-xxs px-2.5 py-1 rounded-lg font-semibold";
+          badge.textContent = c;
+          settingsInvestmentCategoriesList.appendChild(badge);
+        });
+      }
+    },
+
+    // Renderizar carteira de investimentos no DOM
+    renderInvestimentos(state) {
+      const { despesas, perfilAtivo } = state;
+      const investExpenses = despesas.filter(d => d.perfil === perfilAtivo && d.categoria === "Investimento");
+      const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
+
+      if (kpiTotalInvestido) {
+        kpiTotalInvestido.textContent = formatCurrency(totalInvested);
+      }
+
+      // Preencher tabela de aportes
+      if (investmentsTableBody) {
+        investmentsTableBody.innerHTML = "";
+        if (investExpenses.length === 0) {
+          investmentsTableBody.innerHTML = `
+            <tr>
+              <td colspan="4" class="text-center py-8 text-slate-500 text-xs font-medium">
+                Nenhum investimento cadastrado.
+              </td>
+            </tr>
+          `;
+        } else {
+          investExpenses.forEach(d => {
+            const tr = document.createElement("tr");
+            tr.className = "hover:bg-slate-900/30 transition-colors border-b border-slate-850/50";
+            tr.innerHTML = `
+              <td class="py-3 px-3 font-semibold text-slate-250">${d.descricao}</td>
+              <td class="py-3 px-3">
+                <span class="bg-indigo-950/40 text-indigo-400 border border-indigo-900/30 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">${d.subcategoria || "Outros"}</span>
+              </td>
+              <td class="py-3 px-3 font-bold text-emerald-400">R$ ${d.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+              <td class="py-3 px-3 text-slate-400">${d.mes_inicio}/${d.ano_inicio}</td>
+            `;
+            investmentsTableBody.appendChild(tr);
+          });
+        }
+      }
+
+      // Agrupar por subcategoria para o gráfico
+      const distribution = {};
+      investExpenses.forEach(d => {
+        const subcat = d.subcategoria || "Outros";
+        distribution[subcat] = (distribution[subcat] || 0) + d.valor;
+      });
+
+      if (window.App.Charts) {
+        window.App.Charts.renderInvestmentsChart("investments-chart-canvas", distribution);
+      }
     },
 
     // Renderizar Abas de Meses (Janeiro a Dezembro apenas)
@@ -2340,10 +2767,17 @@ Informe:
           sidebarSettingsBtn.classList.remove("sidebar-nav-active");
         }
       }
+      if (sidebarInvestimentosBtn) {
+        if (mesAtivo === 16) {
+          sidebarInvestimentosBtn.classList.add("sidebar-nav-active");
+        } else {
+          sidebarInvestimentosBtn.classList.remove("sidebar-nav-active");
+        }
+      }
 
-      // --- AJUSTE: Ocultar meses e renomear botão quando na aba de financiamento/configurações ---
+      // --- AJUSTE: Ocultar meses e renomear botão quando na aba de financiamento/configurações/investimentos ---
       const addBtnSpan = addExpenseBtn.querySelector("span");
-      if (mesAtivo === 14 || mesAtivo === 15) {
+      if (mesAtivo === 14 || mesAtivo === 15 || mesAtivo === 16) {
         if (monthTabsContainer) monthTabsContainer.classList.add("hidden");
         if (yearTabsContainer) yearTabsContainer.classList.add("hidden");
         if (mesAtivo === 14) {
@@ -2389,6 +2823,7 @@ Informe:
         if (monthlyExpensesContainer) monthlyExpensesContainer.classList.add("hidden");
         if (financingContainer) financingContainer.classList.add("hidden");
         if (settingsContainer) settingsContainer.classList.add("hidden");
+        if (investmentsContainer) investmentsContainer.classList.add("hidden");
         if (reportsContainer) reportsContainer.classList.remove("hidden");
 
         if (reportsContainer && !reportsContainer.classList.contains("hidden")) {
@@ -2518,6 +2953,7 @@ Informe:
         if (monthlyExpensesContainer) monthlyExpensesContainer.classList.add("hidden");
         if (reportsContainer) reportsContainer.classList.add("hidden");
         if (settingsContainer) settingsContainer.classList.add("hidden");
+        if (investmentsContainer) investmentsContainer.classList.add("hidden");
         if (financingContainer) financingContainer.classList.remove("hidden");
 
         // A. Renderizar tabela de financiamentos ativos
@@ -2668,14 +3104,25 @@ Informe:
         if (reportsContainer) reportsContainer.classList.add("hidden");
         if (financingContainer) financingContainer.classList.add("hidden");
         if (monthlyExpensesContainer) monthlyExpensesContainer.classList.add("hidden");
+        if (investmentsContainer) investmentsContainer.classList.add("hidden");
         if (settingsContainer) settingsContainer.classList.remove("hidden");
 
         this.renderConfiguracoes(state);
+      } else if (mesAtivo === 16) {
+        // --- TELA DE INVESTIMENTOS (ABA 16) ---
+        if (reportsContainer) reportsContainer.classList.add("hidden");
+        if (financingContainer) financingContainer.classList.add("hidden");
+        if (monthlyExpensesContainer) monthlyExpensesContainer.classList.add("hidden");
+        if (settingsContainer) settingsContainer.classList.add("hidden");
+        if (investmentsContainer) investmentsContainer.classList.remove("hidden");
+
+        this.renderInvestimentos(state);
       } else {
         // --- TELA DE GASTOS COMUNS (ABAS 1-12) ---
         if (reportsContainer) reportsContainer.classList.add("hidden");
         if (financingContainer) financingContainer.classList.add("hidden");
         if (settingsContainer) settingsContainer.classList.add("hidden");
+        if (investmentsContainer) investmentsContainer.classList.add("hidden");
         if (monthlyExpensesContainer) monthlyExpensesContainer.classList.remove("hidden");
 
         // Preencher Tabela de Despesas do Mês com dados reais distribuídos + Financiamentos
@@ -2820,6 +3267,21 @@ Informe:
                     modalExpenseInstallmentsContainer.classList.remove("hidden");
                   } else {
                     modalExpenseInstallmentsContainer.classList.add("hidden");
+                  }
+
+                  // Mostrar subcategoria caso investimento
+                  if (found.categoria === "Investimento") {
+                    if (modalExpenseInvestmentContainer) {
+                      modalExpenseInvestmentContainer.classList.remove("hidden");
+                      renderInvestmentCategoriesDropdown();
+                      if (modalExpenseInvestmentCat) {
+                        modalExpenseInvestmentCat.value = found.subcategoria || "";
+                      }
+                    }
+                  } else {
+                    if (modalExpenseInvestmentContainer) {
+                      modalExpenseInvestmentContainer.classList.add("hidden");
+                    }
                   }
 
                   expenseModal.classList.remove("hidden");

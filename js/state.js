@@ -7,7 +7,8 @@ window.App.State = (() => {
     perfis: [],       // Array de { nome, salario }
     perfilAtivo: null, // String contendo o nome do perfil selecionado
     despesas: [],      // Array de { id, perfil, descricao, valor, categoria, mes_inicio, parcelas }
-    mesAtivo: 1,       // Mês ativo selecionado (1 a 14)
+    categoriasInvestimento: ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "Outros"],
+    mesAtivo: 1,       // Mês ativo selecionado (1 a 16)
     anoAtivo: new Date().getFullYear(), // Ano ativo selecionado
     financiamentos: [], // Array de { id, perfil, nome, valorTotal, valorParcela, parcelasTotais, taxaTR }
     categorias: {       // Objeto de nome -> cor hex
@@ -123,13 +124,18 @@ window.App.State = (() => {
         descricao: String(d.descricao).trim(),
         valor: parseFloat(d.valor) || 0,
         categoria: String(d.categoria).trim(),
+        subcategoria: d.subcategoria ? String(d.subcategoria).trim() : "",
         mes_inicio: parseInt(d.mes_inicio) || 1,
         ano_inicio: parseInt(d.ano_inicio) || new Date().getFullYear(),
         parcelas: parseInt(d.parcelas) || 1,
         recorrente: !!d.recorrente
       })) : [];
 
-      _state.mesAtivo = newState.mesAtivo ? Math.min(15, Math.max(1, parseInt(newState.mesAtivo) || 1)) : 1;
+      _state.categoriasInvestimento = Array.isArray(newState.categoriasInvestimento)
+        ? newState.categoriasInvestimento.map(c => String(c).trim())
+        : ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "Outros"];
+
+      _state.mesAtivo = newState.mesAtivo ? Math.min(16, Math.max(1, parseInt(newState.mesAtivo) || 1)) : 1;
       _state.anoAtivo = newState.anoAtivo ? parseInt(newState.anoAtivo) || new Date().getFullYear() : new Date().getFullYear();
 
       _state.financiamentos = Array.isArray(newState.financiamentos) ? newState.financiamentos.map(f => ({
@@ -281,8 +287,8 @@ window.App.State = (() => {
     // Selecionar o mês ativo
     selecionarMes(mes) {
       const mesInt = parseInt(mes);
-      if (isNaN(mesInt) || mesInt < 1 || mesInt > 15) {
-        throw new Error("Mês inválido. Deve ser entre 1 e 15.");
+      if (isNaN(mesInt) || mesInt < 1 || mesInt > 16) {
+        throw new Error("Mês inválido. Deve ser entre 1 e 16.");
       }
       if (_state.mesAtivo !== mesInt) {
         _state.mesAtivo = mesInt;
@@ -290,6 +296,20 @@ window.App.State = (() => {
         return true;
       }
       return false;
+    },
+
+    adicionarCategoriaInvestimento(nome) {
+      const formatado = String(nome).trim();
+      if (!formatado) throw new Error("O nome da categoria de investimento não pode ser vazio.");
+      if (!_state.categoriasInvestimento) {
+        _state.categoriasInvestimento = ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "Outros"];
+      }
+      if (_state.categoriasInvestimento.some(c => c.toLowerCase() === formatado.toLowerCase())) {
+        throw new Error(`A categoria de investimento "${formatado}" já existe.`);
+      }
+      _state.categoriasInvestimento.push(formatado);
+      notify("categoriasInvestimento");
+      return true;
     },
 
     // Selecionar o ano ativo
@@ -378,69 +398,71 @@ window.App.State = (() => {
       return true;
     },
 
-    // Adicionar gasto à base
-    adicionarDespesa(descricao, valor, categoria, mes_inicio, parcelas, recorrente, ano_inicio) {
-      if (!_state.perfilAtivo) {
-        throw new Error("Não há perfil ativo para lançar a despesa.");
-      }
-
-      const descFormatada = String(descricao).trim();
-      if (!descFormatada) {
-        throw new Error("A descrição da despesa não pode ser vazia.");
-      }
-
-      const novoGasto = {
-        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-        perfil: _state.perfilAtivo,
-        descricao: descFormatada,
-        valor: Math.max(0, parseFloat(valor) || 0),
-        categoria: String(categoria).trim() || "Outros",
-        mes_inicio: Math.min(12, Math.max(1, parseInt(mes_inicio) || 1)),
-        ano_inicio: parseInt(ano_inicio) || _state.anoAtivo || new Date().getFullYear(),
-        parcelas: Math.max(1, parseInt(parcelas) || 1),
-        recorrente: !!recorrente
-      };
-
-      _state.despesas.push(novoGasto);
-      notify("despesas");
-      return novoGasto;
-    },
-
-    // Remover despesa por ID
-    removerDespesa(id) {
-      const index = _state.despesas.findIndex(d => d.id === id);
-      if (index === -1) {
-        throw new Error("Despesa não encontrada.");
-      }
-
-      _state.despesas.splice(index, 1);
-      notify("despesas");
-      return true;
-    },
-
-    // Atualizar despesa por ID
-    atualizarDespesa(id, descricao, valor, categoria, mes_inicio, parcelas, recorrente, ano_inicio) {
-      const d = _state.despesas.find(item => item.id === id);
-      if (!d) {
-        throw new Error("Despesa não encontrada.");
-      }
-
-      const descFormatada = String(descricao).trim();
-      if (!descFormatada) {
-        throw new Error("A descrição da despesa não pode ser vazia.");
-      }
-
-      d.descricao = descFormatada;
-      d.valor = Math.max(0, parseFloat(valor) || 0);
-      d.categoria = String(categoria).trim() || "Outros";
-      d.mes_inicio = Math.min(12, Math.max(1, parseInt(mes_inicio) || 1));
-      d.ano_inicio = parseInt(ano_inicio) || d.ano_inicio || new Date().getFullYear();
-      d.parcelas = Math.max(1, parseInt(parcelas) || 1);
-      d.recorrente = !!recorrente;
-
-      notify("despesas");
-      return d;
-    },
+     // Adicionar gasto à base
+     adicionarDespesa(descricao, valor, categoria, mes_inicio, parcelas, recorrente, ano_inicio, subcategoria) {
+       if (!_state.perfilAtivo) {
+         throw new Error("Não há perfil ativo para lançar a despesa.");
+       }
+ 
+       const descFormatada = String(descricao).trim();
+       if (!descFormatada) {
+         throw new Error("A descrição da despesa não pode ser vazia.");
+       }
+ 
+       const novoGasto = {
+         id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+         perfil: _state.perfilAtivo,
+         descricao: descFormatada,
+         valor: Math.max(0, parseFloat(valor) || 0),
+         categoria: String(categoria).trim() || "Outros",
+         subcategoria: subcategoria ? String(subcategoria).trim() : "",
+         mes_inicio: Math.min(12, Math.max(1, parseInt(mes_inicio) || 1)),
+         ano_inicio: parseInt(ano_inicio) || _state.anoAtivo || new Date().getFullYear(),
+         parcelas: Math.max(1, parseInt(parcelas) || 1),
+         recorrente: !!recorrente
+       };
+ 
+       _state.despesas.push(novoGasto);
+       notify("despesas");
+       return novoGasto;
+     },
+ 
+     // Remover despesa por ID
+     removerDespesa(id) {
+       const index = _state.despesas.findIndex(d => d.id === id);
+       if (index === -1) {
+         throw new Error("Despesa não encontrada.");
+       }
+ 
+       _state.despesas.splice(index, 1);
+       notify("despesas");
+       return true;
+     },
+ 
+     // Atualizar despesa por ID
+     atualizarDespesa(id, descricao, valor, categoria, mes_inicio, parcelas, recorrente, ano_inicio, subcategoria) {
+       const d = _state.despesas.find(item => item.id === id);
+       if (!d) {
+         throw new Error("Despesa não encontrada.");
+       }
+ 
+       const descFormatada = String(descricao).trim();
+       if (!descFormatada) {
+         throw new Error("A descrição da despesa não pode ser vazia.");
+       }
+ 
+       d.descricao = descFormatada;
+       d.valor = Math.max(0, parseFloat(valor) || 0);
+       d.categoria = String(categoria).trim() || "Outros";
+       d.subcategoria = subcategoria ? String(subcategoria).trim() : "";
+       d.mes_inicio = Math.min(12, Math.max(1, parseInt(mes_inicio) || 1));
+       d.ano_inicio = parseInt(ano_inicio) || d.ano_inicio || new Date().getFullYear();
+       d.parcelas = Math.max(1, parseInt(parcelas) || 1);
+       d.recorrente = !!recorrente;
+ 
+       notify("despesas");
+       return d;
+     },
 
     // Adicionar financiamento
     adicionarFinanciamento(nome, valorTotal, valorParcela, parcelasTotais, taxaTR, mesInicio, anoInicio) {
