@@ -177,4 +177,41 @@ describe('Investments Feature integration', () => {
     ui.renderInvestimentos(greenState);
     expect(domElements['kpi-reserva-emergencia'].className).toContain('text-emerald-400');
   });
+
+  it('should allow negative values for all categories in state.js (representing refunds, withdrawals, etc.)', () => {
+    const prevApp = global.window.App;
+    
+    global.window.localStorage = {
+      getItem: vi.fn().mockReturnValue(null),
+      setItem: vi.fn()
+    };
+    
+    const stateCode = fs.readFileSync('js/state.js', 'utf8');
+    eval(stateCode);
+    
+    const stateObj = window.App.State;
+    // Criar perfil para teste
+    stateObj.adicionarPerfil("TestProfile", 5000);
+    stateObj.selecionarPerfil("TestProfile");
+    
+    // 1. Add negative investment expense
+    const invGasto = stateObj.adicionarDespesa("Resgate", -100.0, "Investimento", 1, 1, false, 2026);
+    expect(invGasto.valor).toBe(-100.0);
+    
+    // 2. Add negative other expense (representing a card refund, e.g. -50)
+    const otherGasto = stateObj.adicionarDespesa("Reembolso", -50.0, "Alimentação", 1, 1, false, 2026);
+    expect(otherGasto.valor).toBe(-50.0);
+    
+    // 3. Update investment expense to negative
+    stateObj.atualizarDespesa(invGasto.id, "Resgate 2", -200.0, "Investimento", 1, 1, false, 2026);
+    const updatedInv = window.App.State.getState().despesas.find(d => d.id === invGasto.id);
+    expect(updatedInv.valor).toBe(-200.0);
+
+    // 4. Update other expense to negative
+    stateObj.atualizarDespesa(otherGasto.id, "Reembolso 2", -80.0, "Alimentação", 1, 1, false, 2026);
+    const updatedOther = window.App.State.getState().despesas.find(d => d.id === otherGasto.id);
+    expect(updatedOther.valor).toBe(-80.0);
+    
+    global.window.App = prevApp;
+  });
 });

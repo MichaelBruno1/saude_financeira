@@ -119,7 +119,7 @@
         <div id="sync-status" class="text-[10px] text-center font-medium mt-1.5 hidden transition"></div>
       </div>
       <div class="text-center pt-2">
-        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.3.3 • Saúde Financeira</p>
+        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.3.6 • Controle Financeiro</p>
       </div>
     </div>
   </aside>
@@ -352,80 +352,82 @@
           </div>
         </div>
 
-        <!-- Inteligência Artificial (Análise Inteligente) -->
-        <div class="bg-slate-950/30 border border-slate-800 p-6 rounded-2xl flex flex-col items-center space-y-6">
-          <div class="text-center space-y-1">
-            <h3 class="text-lg font-bold text-white">Análise Financeira com Inteligência Artificial</h3>
-            <p class="text-xs text-slate-400">Gere um diagnóstico aprofundado, projeção anual e dicas personalizadas para quitar dívidas.</p>
-          </div>
-          
-          <button id="generate-ai-analysis-btn" class="bg-indigo-600 hover:bg-indigo-550 text-white text-xs font-semibold py-2.5 px-6 rounded-xl transition shadow-lg shadow-indigo-600/10 focus:outline-none flex items-center space-x-2 cursor-pointer">
-            <svg class="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span>Gerar análise inteligente</span>
-          </button>
-
-          <!-- Loader (initially hidden) -->
-          <div id="ai-analysis-loader" class="hidden flex flex-col items-center space-y-3 py-6">
-            <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-xs text-slate-400 font-medium">Consultando inteligência artificial...</p>
-          </div>
-
-          <!-- Result Container (initially hidden) -->
-          <div id="ai-analysis-result-card" class="hidden w-full bg-slate-950/50 border border-slate-850 p-6 rounded-xl space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-850 pb-3">
-              <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
-                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Relatório Inteligente Gerado</span>
-              </span>
-              <span class="text-[10px] text-slate-500 font-mono" id="ai-analysis-timestamp">--:--</span>
+        <!-- Grid de Relatórios e Análises -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Inteligência Artificial (Análise Inteligente) -->
+          <div class="bg-slate-950/30 border border-slate-800 p-6 rounded-2xl flex flex-col items-center space-y-6">
+            <div class="text-center space-y-1">
+              <h3 class="text-lg font-bold text-white">Análise Financeira com Inteligência Artificial</h3>
+              <p class="text-xs text-slate-400">Gere um diagnóstico aprofundado, projeção anual e dicas personalizadas para quitar dívidas.</p>
             </div>
-            <div id="ai-analysis-text-content" class="text-sm text-slate-350 leading-relaxed space-y-4 prose prose-invert max-w-none">
-              <!-- Dynamically populated analysis text -->
+            
+            <button id="generate-ai-analysis-btn" class="bg-indigo-600 hover:bg-indigo-550 text-white text-xs font-semibold py-2.5 px-6 rounded-xl transition shadow-lg shadow-indigo-600/10 focus:outline-none flex items-center space-x-2 cursor-pointer">
+              <svg class="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Gerar análise inteligente</span>
+            </button>
+
+            <!-- Loader (initially hidden) -->
+            <div id="ai-analysis-loader" class="hidden flex flex-col items-center space-y-3 py-6">
+              <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <p class="text-xs text-slate-400 font-medium">Consultando inteligência artificial...</p>
+            </div>
+
+            <!-- Result Container (initially hidden) -->
+            <div id="ai-analysis-result-card" class="hidden w-full bg-slate-950/50 border border-slate-850 p-6 rounded-xl space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-850 pb-3">
+                <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Relatório Inteligente Gerado</span>
+                </span>
+                <span class="text-[10px] text-slate-500 font-mono" id="ai-analysis-timestamp">--:--</span>
+              </div>
+              <div id="ai-analysis-text-content" class="text-sm text-slate-350 leading-relaxed space-y-4 prose prose-invert max-w-none">
+                <!-- Dynamically populated analysis text -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Plano de Economia Card -->
+          <div class="bg-slate-950/30 border border-slate-800 p-6 rounded-2xl flex flex-col items-center space-y-6">
+            <div class="text-center space-y-1">
+              <h3 class="text-lg font-bold text-white">Plano de Economia Inteligente</h3>
+              <p class="text-xs text-slate-400">Analise sua vida financeira (renda, investimentos e gastos) para obter dicas objetivas de economia, quitação de dívidas e aumento de aportes.</p>
+            </div>
+            
+            <button id="generate-savings-plan-btn" class="bg-emerald-600 hover:bg-emerald-550 text-white text-xs font-semibold py-2.5 px-6 rounded-xl transition shadow-lg shadow-emerald-600/10 focus:outline-none flex items-center space-x-2 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+              </svg>
+              <span>Gerar Plano de Economia</span>
+            </button>
+
+            <!-- Loader -->
+            <div id="savings-plan-loader" class="hidden flex flex-col items-center space-y-3 py-6">
+              <div class="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+              <p class="text-xs text-slate-400 font-medium">Elaborando plano de economia personalizado...</p>
+            </div>
+
+            <!-- Result Card -->
+            <div id="savings-plan-result-card" class="hidden w-full bg-slate-950/50 border border-slate-850 p-6 rounded-xl space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-850 pb-3">
+                <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Plano de Economia Personalizado</span>
+                </span>
+                <span class="text-[10px] text-slate-500 font-mono" id="savings-plan-timestamp">--:--</span>
+              </div>
+              <div id="savings-plan-text-content" class="text-sm text-slate-350 leading-relaxed space-y-4 prose prose-invert max-w-none">
+                <!-- Dynamically populated savings plan markdown -->
+              </div>
             </div>
           </div>
         </div>
-
-        <!-- Plano de Economia Card -->
-        <div class="bg-slate-950/30 border border-slate-800 p-6 rounded-2xl flex flex-col items-center space-y-6">
-          <div class="text-center space-y-1">
-            <h3 class="text-lg font-bold text-white">Plano de Economia Inteligente</h3>
-            <p class="text-xs text-slate-400">Analise sua vida financeira (renda, investimentos e gastos) para obter dicas objetivas de economia, quitação de dívidas e aumento de aportes.</p>
-          </div>
-          
-          <button id="generate-savings-plan-btn" class="bg-emerald-600 hover:bg-emerald-550 text-white text-xs font-semibold py-2.5 px-6 rounded-xl transition shadow-lg shadow-emerald-600/10 focus:outline-none flex items-center space-x-2 cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
-            </svg>
-            <span>Gerar Plano de Economia</span>
-          </button>
-
-          <!-- Loader -->
-          <div id="savings-plan-loader" class="hidden flex flex-col items-center space-y-3 py-6">
-            <div class="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-xs text-slate-400 font-medium">Elaborando plano de economia personalizado...</p>
-          </div>
-
-          <!-- Result Card -->
-          <div id="savings-plan-result-card" class="hidden w-full bg-slate-950/50 border border-slate-850 p-6 rounded-xl space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-850 pb-3">
-              <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
-                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Plano de Economia Personalizado</span>
-              </span>
-              <span class="text-[10px] text-slate-500 font-mono" id="savings-plan-timestamp">--:--</span>
-            </div>
-            <div id="savings-plan-text-content" class="text-sm text-slate-350 leading-relaxed space-y-4 prose prose-invert max-w-none">
-              <!-- Dynamically populated savings plan markdown -->
-            </div>
-          </div>
-        </div>
-
       </div>
 
       <!-- Financing Container (initially hidden) -->
@@ -538,57 +540,6 @@
 
       <!-- Investments Container (initially hidden) -->
       <div id="investments-container" class="hidden space-y-8">
-        <!-- Top Toolbar -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-950/20 border border-slate-800 p-4 rounded-2xl gap-4">
-          <div>
-            <h3 class="text-base font-bold text-white">Carteira de Investimentos</h3>
-            <p class="text-xs text-slate-400">Acompanhe e analise a distribuição de seus investimentos e aportes.</p>
-          </div>
-          <!-- KPIs Grid -->
-          <div class="flex flex-wrap gap-4 items-center">
-            <!-- KPI Reserva de Emergencia Ideal -->
-            <div class="bg-slate-950/40 border border-slate-800 px-5 py-2.5 rounded-2xl flex flex-col justify-center min-w-[12rem] group relative">
-              <div class="flex items-center justify-between gap-1">
-                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Reserva de Emergência Ideal</span>
-                <div class="relative inline-block text-left">
-                  <span class="cursor-pointer text-slate-500 hover:text-slate-400 text-[10px] select-none">ⓘ</span>
-                  <div class="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-slate-900 border border-slate-800 text-[10px] text-slate-400 rounded-lg p-2 shadow-xl z-50">
-                    O valor é dinâmico e corresponde a 6x a soma das despesas recorrentes cadastradas.
-                  </div>
-                </div>
-              </div>
-              <span id="kpi-reserva-emergencia" class="text-base font-bold text-indigo-400 mt-0.5">R$ 0,00</span>
-            </div>
-
-            <!-- KPI Total Invested -->
-            <div class="bg-indigo-950/20 border border-indigo-900/30 px-5 py-2.5 rounded-2xl flex flex-col justify-center min-w-[8rem]">
-              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Total Investido</span>
-              <span id="kpi-total-investido" class="text-base font-bold text-indigo-400">R$ 0,00</span>
-            </div>
-
-            <!-- KPI FGTS -->
-            <div class="bg-slate-950/40 border border-slate-800 px-5 py-2.5 rounded-2xl flex flex-col justify-center min-w-[10rem] relative">
-              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Valor FGTS</span>
-              <div class="flex items-center space-x-1.5 mt-0.5">
-                <span id="kpi-fgts-view" class="text-base font-bold text-slate-300">R$ 0,00</span>
-                <input type="text" id="kpi-fgts-input" class="hidden bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-0.5 w-24 focus:outline-none focus:border-indigo-500 font-bold" value="">
-                <button id="btn-edit-fgts" class="text-slate-500 hover:text-slate-300 transition focus:outline-none">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                </button>
-                <button id="btn-save-fgts" class="hidden text-emerald-500 hover:text-emerald-400 transition focus:outline-none">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- KPI Investimento + FGTS -->
-            <div class="bg-emerald-950/15 border border-emerald-900/30 px-5 py-2.5 rounded-2xl flex flex-col justify-center min-w-[9rem]">
-              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Investimento + FGTS</span>
-              <span id="kpi-total-com-fgts" class="text-base font-bold text-emerald-400">R$ 0,00</span>
-            </div>
-          </div>
-        </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- Left: Investment category pie chart -->
           <div class="bg-slate-950/30 border border-slate-800 p-6 rounded-2xl flex flex-col min-h-[26rem]">
@@ -603,23 +554,60 @@
             </div>
           </div>
 
-          <!-- Right: Investment Details Table -->
-          <div class="bg-slate-950/30 border border-slate-800 p-6 rounded-2xl flex flex-col space-y-4">
-            <h4 class="text-sm font-bold text-slate-350 uppercase tracking-wider">Detalhamento dos Aportes</h4>
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse text-xs text-slate-300">
-                <thead>
-                  <tr class="border-b border-slate-800 text-slate-400 text-[10px] font-semibold uppercase tracking-wider">
-                    <th class="py-2.5 px-3">Descrição</th>
-                    <th class="py-2.5 px-3">Subcategoria</th>
-                    <th class="py-2.5 px-3">Valor</th>
-                    <th class="py-2.5 px-3">Data Ref.</th>
-                  </tr>
-                </thead>
-                <tbody id="investments-table-body" class="divide-y divide-slate-850">
-                  <!-- Dynamically populated -->
-                </tbody>
-              </table>
+          <!-- Right: Carteira de Investimentos & KPIs -->
+          <div class="bg-slate-950/30 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between space-y-6">
+            <div>
+              <h3 class="text-base font-bold text-white mb-1">Carteira de Investimentos</h3>
+              <p class="text-xs text-slate-400">Acompanhe e analise a distribuição de seus investimentos e aportes.</p>
+            </div>
+            
+            <div class="flex flex-col gap-4">
+              <!-- KPI Reserva de Emergencia Ideal -->
+              <div class="bg-slate-950/40 border border-slate-800 px-5 py-2.5 rounded-2xl flex flex-col justify-between group relative">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Reserva de Emergência Ideal</span>
+                  <div class="relative inline-block text-left leading-none">
+                    <span class="cursor-pointer text-slate-500 hover:text-slate-400 text-[10px] select-none">ⓘ</span>
+                    <div class="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-slate-900 border border-slate-800 text-[10px] text-slate-400 rounded-lg p-2 shadow-xl z-50">
+                      O valor é dinâmico e corresponde a 6x a soma das despesas recorrentes e financiamentos.
+                    </div>
+                  </div>
+                </div>
+                <span id="kpi-reserva-emergencia" class="text-base font-bold text-indigo-400 mt-1.5">R$ 0,00</span>
+              </div>
+
+              <!-- KPI Total Invested -->
+              <div class="bg-indigo-950/20 border border-indigo-900/30 px-5 py-2.5 rounded-2xl flex flex-col justify-between">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Total Investido</span>
+                </div>
+                <span id="kpi-total-investido" class="text-base font-bold text-indigo-400 mt-1.5">R$ 0,00</span>
+              </div>
+
+              <!-- KPI FGTS -->
+              <div class="bg-slate-950/40 border border-slate-800 px-5 py-2.5 rounded-2xl flex flex-col justify-between relative">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Valor FGTS</span>
+                </div>
+                <div class="flex items-center space-x-1.5 mt-1.5">
+                  <span id="kpi-fgts-view" class="text-base font-bold text-slate-300">R$ 0,00</span>
+                  <input type="text" id="kpi-fgts-input" class="hidden bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-0.5 w-24 focus:outline-none focus:border-indigo-500 font-bold" value="">
+                  <button id="btn-edit-fgts" class="text-slate-500 hover:text-slate-300 transition focus:outline-none">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                  </button>
+                  <button id="btn-save-fgts" class="hidden text-emerald-500 hover:text-emerald-400 transition focus:outline-none">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- KPI Investimento + FGTS -->
+              <div class="bg-emerald-950/15 border border-emerald-900/30 px-5 py-2.5 rounded-2xl flex flex-col justify-between">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Investimento + FGTS</span>
+                </div>
+                <span id="kpi-total-com-fgts" class="text-base font-bold text-emerald-400 mt-1.5">R$ 0,00</span>
+              </div>
             </div>
           </div>
         </div>

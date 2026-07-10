@@ -1718,16 +1718,9 @@ Distribuição de Investimentos:
           alert("Por favor, digite uma descrição.");
           return;
         }
-        if (cat !== "Investimento") {
-          if (isNaN(valor) || valor <= 0) {
-            alert("O valor da despesa deve ser maior que zero.");
-            return;
-          }
-        } else {
-          if (isNaN(valor) || valor === 0) {
-            alert("O valor do investimento ou resgate/saque não pode ser zero.");
-            return;
-          }
+        if (isNaN(valor) || valor === 0) {
+          alert("O valor do lançamento não pode ser zero.");
+          return;
         }
         if (isNaN(parc) || parc < 1) {
           alert("O número de parcelas deve ser igual ou maior que 1.");

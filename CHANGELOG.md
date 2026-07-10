@@ -2,6 +2,38 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.3.6] - 2026-07-10
+
+### Adicionado
+- **Layout de Relatórios Lado a Lado**:
+  - Organizados os cards "Análise Financeira com Inteligência Artificial" e "Plano de Economia Inteligente" em um grid flexível de duas colunas (`grid grid-cols-1 lg:grid-cols-2`) na tela de Relatórios, permitindo visualização simultânea em telas maiores.
+
+### Corrigido
+- **Layout de Investimentos Otimizado**:
+  - Removido o painel "Detalhamento dos Aportes" (tabela) da tela de Investimentos.
+  - Movidos o título, a descrição e o grid de KPIs de investimentos para o painel lateral direito, mantendo um design limpo e consolidado com o gráfico de rosca na esquerda.
+
+## [1.3.5] - 2026-07-10
+
+### Adicionado
+- **Lançamentos Negativos para Todas as Categorias**:
+  - Habilitados números negativos no modal de despesas/gastos gerais (adicionar e editar despesa), permitindo o lançamento correto de saques, resgates e reembolsos de cartões de crédito para qualquer categoria.
+  - Removido o clamping para zero (`Math.max(0, ...)`) de todas as categorias nas funções do estado em `js/state.js`.
+
+### Corrigido
+- **Alinhamento dos KPIs de Investimento**:
+  - Padronizada a estrutura HTML interna de todos os cards da seção de investimentos (Reserva de Emergência Ideal, Total Investido, Valor FGTS e Investimento + FGTS). 
+  - Todos os cards agora contam com o mesmo espaçamento superior (`mt-1.5`) e estruturação em flexbox, garantindo o alinhamento horizontal perfeito de seus títulos e de seus valores.
+
+## [1.3.4] - 2026-07-10
+
+### Corrigido
+- **Cálculo de Saques Negativos no Estado**:
+  - Removido o clamping com `Math.max(0, ...)` nas mutações `adicionarDespesa` e `atualizarDespesa` do arquivo `js/state.js` para permitir a persistência correta de valores negativos na categoria "Investimento". Outras categorias continuam limitadas a valores maiores ou iguais a zero.
+  - Correção na máscara monetária em tempo real ao digitar apenas o caractere `-`.
+- **Layout de Altura dos Cards (KPIs)**:
+  - Alterada a classe do container de KPIs de investimentos para `items-stretch` no `index.html`. Isso garante que todas as caixas de KPIs (Reserva de Emergência Ideal, Total Investido, Valor FGTS e Investimento + FGTS) possuam exatamente a mesma altura, independentemente da variação de conteúdos internos.
+
 ## [1.3.3] - 2026-07-10
 
 ### Adicionado

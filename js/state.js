@@ -427,12 +427,15 @@ window.App.State = (() => {
          throw new Error("A descrição da despesa não pode ser vazia.");
        }
  
+       const catClean = String(categoria).trim() || "Outros";
+       const valorFloat = parseFloat(valor) || 0;
+
        const novoGasto = {
          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
          perfil: _state.perfilAtivo,
          descricao: descFormatada,
-         valor: Math.max(0, parseFloat(valor) || 0),
-         categoria: String(categoria).trim() || "Outros",
+         valor: valorFloat,
+         categoria: catClean,
          subcategoria: subcategoria ? String(subcategoria).trim() : "",
          mes_inicio: Math.min(12, Math.max(1, parseInt(mes_inicio) || 1)),
          ano_inicio: parseInt(ano_inicio) || _state.anoAtivo || new Date().getFullYear(),
@@ -469,9 +472,12 @@ window.App.State = (() => {
          throw new Error("A descrição da despesa não pode ser vazia.");
        }
  
+       const catClean = String(categoria).trim() || "Outros";
+       const valorFloat = parseFloat(valor) || 0;
+
        d.descricao = descFormatada;
-       d.valor = Math.max(0, parseFloat(valor) || 0);
-       d.categoria = String(categoria).trim() || "Outros";
+       d.valor = valorFloat;
+       d.categoria = catClean;
        d.subcategoria = subcategoria ? String(subcategoria).trim() : "";
        d.mes_inicio = Math.min(12, Math.max(1, parseInt(mes_inicio) || 1));
        d.ano_inicio = parseInt(ano_inicio) || d.ano_inicio || new Date().getFullYear();
