@@ -380,13 +380,15 @@ window.App.UI = (() => {
 
   // Mascaramento monetário em tempo real para campos de input
   function formatBRLInput(value) {
-    let digits = value.replace(/\D/g, "");
+    const isNegative = String(value).trim().startsWith("-");
+    let digits = String(value).replace(/\D/g, "");
     if (digits === "") return "";
     let numberVal = parseFloat(digits) / 100;
-    return new Intl.NumberFormat('pt-BR', {
+    const formatted = new Intl.NumberFormat('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(numberVal);
+    return isNegative ? `-${formatted}` : formatted;
   }
 
   // Conversão de valor de texto formatado (BRL) para número flutuante (JS)
@@ -843,6 +845,14 @@ Dívidas/Financiamentos: {{DETALHE_FINANCIAMENTOS}}`;
       .map(([cat, val]) => `- ${cat}: R$ ${val.toFixed(2)}`)
       .join("\n");
 
+    const recurrentExpensesSum = state.despesas
+      .filter(d => d.perfil === activeProfileName && d.recorrente === true)
+      .reduce((sum, d) => sum + d.valor, 0);
+    const financingInstallmentsSum = state.financiamentos
+      .filter(f => f.perfil === activeProfileName)
+      .reduce((sum, f) => sum + f.valorParcela, 0);
+    const targetReserve = (recurrentExpensesSum + financingInstallmentsSum) * 6;
+
     const investExpenses = state.despesas.filter(d => d.perfil === activeProfileName && d.categoria === "Investimento");
     const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
     const investDistribution = {};
@@ -872,6 +882,7 @@ Dívidas/Financiamentos: {{DETALHE_FINANCIAMENTOS}}`;
       .replace("{{LIMITES_PLANEJADOR}}", plannerLimitsText)
       .replace("{{GASTOS_REAIS}}", gastosReaisText || "Nenhum gasto cadastrado.")
       .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
+      .replace("{{RESERVA_EMERGENCIA}}", targetReserve.toFixed(2))
       .replace("{{DISTRIBUICAO_INVESTIMENTOS}}", investDistributionText || "Nenhum investimento cadastrado.")
       .replace("{{DETALHE_FINANCIAMENTOS}}", detailFinancingText);
 
@@ -937,7 +948,10 @@ Distribuição de Investimentos:
     const recurrentExpensesSum = state.despesas
       .filter(d => d.perfil === activeProfileName && d.recorrente === true)
       .reduce((sum, d) => sum + d.valor, 0);
-    const targetReserve = recurrentExpensesSum * 6;
+    const financingInstallmentsSum = state.financiamentos
+      .filter(f => f.perfil === activeProfileName)
+      .reduce((sum, f) => sum + f.valorParcela, 0);
+    const targetReserve = (recurrentExpensesSum + financingInstallmentsSum) * 6;
 
     const investExpenses = state.despesas.filter(d => d.perfil === activeProfileName && d.categoria === "Investimento");
     const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
@@ -1704,9 +1718,16 @@ Distribuição de Investimentos:
           alert("Por favor, digite uma descrição.");
           return;
         }
-        if (isNaN(valor) || valor <= 0) {
-          alert("O valor da despesa deve ser maior que zero.");
-          return;
+        if (cat !== "Investimento") {
+          if (isNaN(valor) || valor <= 0) {
+            alert("O valor da despesa deve ser maior que zero.");
+            return;
+          }
+        } else {
+          if (isNaN(valor) || valor === 0) {
+            alert("O valor do investimento ou resgate/saque não pode ser zero.");
+            return;
+          }
         }
         if (isNaN(parc) || parc < 1) {
           alert("O número de parcelas deve ser igual ou maior que 1.");
@@ -2674,14 +2695,28 @@ Informe:
       const activeProfile = state.perfis.find(p => p.nome === perfilAtivo) || { fgts: 0 };
       const fgtsVal = activeProfile.fgts || 0;
 
-      // Calcular Reserva de Emergência Ideal (6x despesas recorrentes do perfil ativo)
+      // Calcular Reserva de Emergência Ideal (6x despesas recorrentes + parcelas de financiamento)
       const recurrentExpensesSum = despesas
         .filter(d => d.perfil === perfilAtivo && d.recorrente === true)
         .reduce((sum, d) => sum + d.valor, 0);
-      const targetReserve = recurrentExpensesSum * 6;
+      const financingInstallmentsSum = state.financiamentos
+        .filter(f => f.perfil === perfilAtivo)
+        .reduce((sum, f) => sum + f.valorParcela, 0);
+      const targetReserve = (recurrentExpensesSum + financingInstallmentsSum) * 6;
 
       if (kpiReservaEmergencia) {
         kpiReservaEmergencia.textContent = formatCurrency(targetReserve);
+        if (targetReserve > 0) {
+          if (totalInvested < 0.8 * targetReserve) {
+            kpiReservaEmergencia.className = "text-base font-bold text-rose-400 mt-0.5";
+          } else if (totalInvested < targetReserve) {
+            kpiReservaEmergencia.className = "text-base font-bold text-amber-400 mt-0.5";
+          } else {
+            kpiReservaEmergencia.className = "text-base font-bold text-emerald-400 mt-0.5";
+          }
+        } else {
+          kpiReservaEmergencia.className = "text-base font-bold text-emerald-400 mt-0.5";
+        }
       }
       if (kpiTotalInvestido) {
         kpiTotalInvestido.textContent = formatCurrency(totalInvested);

@@ -15,6 +15,7 @@ Analise os dados financeiros do usuário abaixo e elabore um plano de economia e
 
 **Investimentos Cadastrados:**
 **Total Investido:** R$ {{TOTAL_INVESTIDO}}
+**Reserva de Emergência Ideal Alvo:** R$ {{RESERVA_EMERGENCIA}}
 **Distribuição por Categoria:**
 {{DISTRIBUICAO_INVESTIMENTOS}}
 

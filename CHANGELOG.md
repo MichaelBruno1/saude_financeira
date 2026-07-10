@@ -2,6 +2,22 @@
 
 Todos os marcos importantes de desenvolvimento do projeto **Saúde Financeira** serão documentados neste arquivo.
 
+## [1.3.3] - 2026-07-10
+
+### Adicionado
+- **Resgates/Saques de Investimentos**:
+  - Permissão para inserir valores negativos em despesas da categoria "Investimento", subtraindo diretamente do total investido.
+  - Ajuste na máscara monetária BRL nos inputs para permitir o caractere de sinal negativo.
+- **Reserva de Emergência Ideal Ampliada**:
+  - A regra de cálculo da reserva de emergência agora considera `6 * (Soma de Despesas Recorrentes + Soma de Parcelas de Financiamento)`.
+  - Integração do valor da reserva ideal ao prompt do "Plano de Economia Inteligente".
+- **Colorização Dinâmica da Reserva**:
+  - Se o total investido for menor que 80% da reserva de emergência, a cor do KPI fica vermelha (`text-rose-400`).
+  - Se estiver entre 80% e 100% da reserva, a cor fica amarela (`text-amber-400`).
+  - Se for igual ou maior que a reserva, a cor fica verde (`text-emerald-400`).
+- **Navegação**:
+  - Reordenados os botões da barra lateral de navegação: a aba "Investimentos" agora é exibida diretamente abaixo de "Despesas Mensais".
+
 ## [1.3.2] - 2026-07-10
 
 ### Adicionado
