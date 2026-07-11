@@ -18,7 +18,8 @@ Você é um processador de dados especializado em faturas de cartão de crédito
    - `totalInstallments`: `1`.
 
 ### FORMATO DE RETORNO ESPERADO:
-Retorne ESTRITAMENTE uma lista JSON, sem explicações, tags de código markdown (como ```json) ou qualquer outro texto. Apenas o JSON válido.
+NÃO escreva nenhuma introdução, explicação ou bloco de raciocínio (como tags <think> ou explicações passo a passo). Não use blocos de código markdown (como \`\`\`json).
+Inicie sua resposta IMEDIATAMENTE com o caractere '[' do JSON e termine com ']'. Apenas o JSON válido é permitido.
 
 Exemplo de formato:
 [

@@ -125,8 +125,9 @@ window.App.UIAgent = (() => {
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         if (pdfImportStatusText) pdfImportStatusText.textContent = `Lendo página ${i} de ${pdfDoc.numPages}...`;
         const page = await pdfDoc.getPage(i);
-        const textContent = await page.getTextContent();
-        rawText += textContent.items.map(item => item.str).join(" ") + "\n";
+        const pageText = textContent.items.map(item => item.str).join(" ");
+        const cleanPageText = pageText.replace(/\s+/g, " ").trim();
+        rawText += cleanPageText + "\n";
       }
 
       if (!rawText.trim()) {
@@ -183,7 +184,8 @@ window.App.UIAgent = (() => {
    - \`totalInstallments\`: \`1\`.
 
 ### FORMATO DE RETORNO ESPERADO:
-Retorne ESTRITAMENTE uma lista JSON, sem explicações, tags de código markdown (como \`\`\`json) ou qualquer outro texto. Apenas o JSON válido.
+NÃO escreva nenhuma introdução, explicação ou bloco de raciocínio (como tags <think> ou explicações passo a passo). Não use blocos de código markdown (como \`\`\`json).
+Inicie sua resposta IMEDIATAMENTE com o caractere '[' do JSON e termine com ']'. Apenas o JSON válido é permitido.
 
 Exemplo de formato:
 [
