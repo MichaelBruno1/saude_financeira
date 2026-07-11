@@ -139,7 +139,9 @@ window.App.State = (() => {
         _state.categoriasInvestimento.push("FGTS");
       }
 
-      _state.mesAtivo = newState.mesAtivo ? Math.min(16, Math.max(1, parseInt(newState.mesAtivo) || 1)) : 1;
+      let loadedMes = newState.mesAtivo ? Math.min(16, Math.max(1, parseInt(newState.mesAtivo) || 1)) : 1;
+      if (loadedMes <= 12) { loadedMes = new Date().getMonth() + 1; }
+      _state.mesAtivo = loadedMes;
       _state.anoAtivo = newState.anoAtivo ? parseInt(newState.anoAtivo) || new Date().getFullYear() : new Date().getFullYear();
 
       _state.financiamentos = Array.isArray(newState.financiamentos) ? newState.financiamentos.map(f => ({

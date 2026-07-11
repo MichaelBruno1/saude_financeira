@@ -21,7 +21,7 @@ Escopo declarado: **projeto pessoal de uso local**. Questões de segurança, LGP
 | **Severity** | Alta                                 |
 | **Tipo**     | Manutenibilidade                     |
 | **Desde**    | v0.2.0                               |
-| **Status**   | Aberto                               |
+| **Status**   | Resolvido                            |
 
 ### Descrição
 O arquivo `js/ui.js` possui **~150 KB** e **3.432 linhas** de código. Gerencia simultaneamente: tabelas de despesas, modais, relatórios, financiamentos, configurações, análise com IA, importação de PDF, agente de chat e módulo de investimentos. Viola o Princípio da Responsabilidade Única (SRP) e é o maior ponto de risco do projeto.
@@ -448,7 +448,7 @@ docker-compose up -d
 
 | ID     | Dívida                                         | Severity    | Status                   | Esforço      |
 |--------|------------------------------------------------|-------------|--------------------------|--------------|
-| TD-001 | `ui.js` monolítico (150KB / 3.432 linhas)      | Alta        | **Aberto**               | Muito Alto   |
+| TD-001 | `ui.js` monolítico (150KB / 3.432 linhas)      | Alta        | **Resolvido**            | Muito Alto   |
 | TD-002 | Re-renderização total                          | Baixa/Média | Resolvido (v1.1.3)       | —            |
 | TD-003 | Testes com `eval`, sem E2E                     | Média       | Parcialmente resolvido   | Alto         |
 | TD-004 | Tailwind via CDN                               | Baixa       | Resolvido (v1.1.3)       | —            |

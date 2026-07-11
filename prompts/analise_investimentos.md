@@ -26,6 +26,9 @@ Faça uma crítica construtiva. Se houver poupança, explique com bom humor por 
 ### 💡 Próximos Aportes
 Sugira como o usuário deve distribuir os seus próximos aportes financeiros mensais para equilibrar a carteira.
 
+### 🔮 Previsão de Fechamento Anual
+Com base nos aportes recorrentes e o total já investido (levando em conta a média ou os aportes declarados), faça uma projeção do valor total que o usuário deverá ter investido até o fim do ano. Brinque com essa previsão (ex: se o usuário vai poder viajar para as Maldivas ou apenas para a praia mais próxima).
+
 ---
 
 ## Estilo da Resposta:

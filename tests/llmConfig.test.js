@@ -5,9 +5,10 @@ import fs from 'fs';
 global.window = {
   App: {
     State: {
-      getState: () => ({ llmConfig: { apiUrl: "", apiKey: "", model: "" } }),
-      subscribe: vi.fn(),
-      atualizarLlmConfig: vi.fn()
+      getState: () => ({
+        llmConfig: { apiUrl: "http://test", apiKey: "key", model: "m" }
+      }),
+      atualizarConfiguracaoLLM: vi.fn()
     },
     LlmConfig: { apiUrl: "http://static", apiKey: "static-key", model: "static-model" }
   }
@@ -44,8 +45,8 @@ global.document = {
 describe('UI Event Handling for LLM Settings', () => {
   it('should register submit event and call atualizarLlmConfig on submit', () => {
     // Load ui.js code
-    const uiCode = fs.readFileSync('js/ui.js', 'utf8');
-    eval(uiCode); // defines window.App.UI
+    const files = ['ui-core.js', 'ui-expenses.js', 'ui-financing.js', 'ui-reports.js', 'ui-investments.js', 'ui-settings.js', 'ui-agent.js'];
+    files.forEach(f => eval(fs.readFileSync('js/' + f, 'utf8')));
 
     const ui = window.App.UI;
     ui.init();
@@ -65,7 +66,7 @@ describe('UI Event Handling for LLM Settings', () => {
     submitCallback(mockEvent);
 
     expect(mockEvent.preventDefault).toHaveBeenCalled();
-    expect(window.App.State.atualizarLlmConfig).toHaveBeenCalledWith(
+    expect(window.App.State.atualizarConfiguracaoLLM).toHaveBeenCalledWith(
       'http://custom-url',
       'custom-key',
       'custom-model'

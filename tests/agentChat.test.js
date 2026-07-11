@@ -42,7 +42,8 @@ global.document = {
         contains: vi.fn().mockReturnValue(false)
       },
       querySelector: vi.fn().mockReturnValue({ textContent: '' }),
-      appendChild: vi.fn()
+      appendChild: vi.fn(),
+      focus: vi.fn()
     };
   }),
   createElement: vi.fn().mockImplementation((tag) => {
@@ -64,14 +65,13 @@ describe('Financial Agent Chat Integration', () => {
       'agent-chat-messages': { appendChild: vi.fn(), scrollTop: 0, scrollHeight: 100 },
       'agent-chat-loader': { classList: { add: vi.fn(), remove: vi.fn() } },
       'agent-chat-form': { addEventListener: vi.fn() },
-      'agent-chat-input': { value: '' }
+      'agent-chat-input': { value: '', focus: vi.fn() }
     };
   });
 
   it('should process adicionarDespesa action successfully when category exists', async () => {
-    // Load and evaluate ui.js code
-    const uiCode = fs.readFileSync('js/ui.js', 'utf8');
-    eval(uiCode); // defines window.App.UI
+    const files = ['ui-core.js', 'ui-expenses.js', 'ui-financing.js', 'ui-reports.js', 'ui-investments.js', 'ui-settings.js', 'ui-agent.js'];
+    files.forEach(f => eval(fs.readFileSync('js/' + f, 'utf8')));
 
     const ui = window.App.UI;
     ui.init();
@@ -143,8 +143,8 @@ describe('Financial Agent Chat Integration', () => {
   });
 
   it('should block adicionarDespesa action and show error when category does not exist', async () => {
-    const uiCode = fs.readFileSync('js/ui.js', 'utf8');
-    eval(uiCode);
+    const files = ['ui-core.js', 'ui-expenses.js', 'ui-financing.js', 'ui-reports.js', 'ui-investments.js', 'ui-settings.js', 'ui-agent.js'];
+    files.forEach(f => eval(fs.readFileSync('js/' + f, 'utf8')));
 
     const ui = window.App.UI;
     ui.init();
@@ -200,8 +200,8 @@ describe('Financial Agent Chat Integration', () => {
   });
 
   it('should process editarDespesa action successfully using existing fields as fallbacks', async () => {
-    const uiCode = fs.readFileSync('js/ui.js', 'utf8');
-    eval(uiCode);
+    const files = ['ui-core.js', 'ui-expenses.js', 'ui-financing.js', 'ui-reports.js', 'ui-investments.js', 'ui-settings.js', 'ui-agent.js'];
+    files.forEach(f => eval(fs.readFileSync('js/' + f, 'utf8')));
 
     const ui = window.App.UI;
     ui.init();

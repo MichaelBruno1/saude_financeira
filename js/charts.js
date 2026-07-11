@@ -371,5 +371,93 @@ window.App.Charts = (() => {
         }
       });
     }
+    },
+
+    renderInvestmentsScatterChart(canvasId, scatterData) {
+      // scatterData expects: { labels: ['Jan', 'Fev', ...], values: [100, 250, 400, ...] }
+      if (window.investmentsScatterChartInstance) {
+        window.investmentsScatterChartInstance.destroy();
+        window.investmentsScatterChartInstance = null;
+      }
+
+      const canvas = document.getElementById(canvasId);
+      const placeholder = document.getElementById("investments-scatter-placeholder");
+      const container = document.getElementById("investments-scatter-canvas-container");
+
+      if (!canvas) return;
+
+      const hasData = scatterData && scatterData.values && scatterData.values.length > 0 && scatterData.values.some(v => v > 0);
+      if (!hasData) {
+        if (container) container.classList.add("hidden");
+        if (placeholder) placeholder.classList.remove("hidden");
+        return;
+      }
+
+      if (placeholder) placeholder.classList.add("hidden");
+      if (container) container.classList.remove("hidden");
+
+      const ctx = canvas.getContext("2d");
+      
+      const pointData = scatterData.values.map((v, i) => ({ x: i, y: v }));
+
+      window.investmentsScatterChartInstance = new Chart(ctx, {
+        type: "scatter",
+        data: {
+          labels: scatterData.labels, // We pass labels so we can use them in ticks
+          datasets: [{
+            label: "Evolução dos Aportes",
+            data: pointData,
+            backgroundColor: "#10b981", // emerald-500
+            borderColor: "#059669",
+            borderWidth: 2,
+            pointRadius: 6,
+            pointHoverRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: {
+                color: "#64748b",
+                font: { size: 10, family: "Inter, sans-serif" },
+                callback: function(value) {
+                  return scatterData.labels[value] || '';
+                }
+              },
+              grid: { color: "rgba(255,255,255,0.05)", drawBorder: false }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                color: "#64748b",
+                font: { size: 10, family: "Inter, sans-serif" },
+                callback: function(value) {
+                  return "R$ " + value;
+                }
+              },
+              grid: { color: "rgba(255,255,255,0.05)", drawBorder: false }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "rgba(15, 23, 42, 0.95)",
+              titleColor: "#f8fafc",
+              bodyColor: "#10b981",
+              borderColor: "rgba(255, 255, 255, 0.1)",
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  const val = context.raw.y;
+                  return ` R$ ${val.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
   };
 })();

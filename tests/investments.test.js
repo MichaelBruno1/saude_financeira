@@ -90,8 +90,8 @@ describe('Investments Feature integration', () => {
   });
 
   it('should register click listener on sidebar investments button and navigate to aba 16', () => {
-    const uiCode = fs.readFileSync('js/ui.js', 'utf8');
-    eval(uiCode);
+    const files = ['ui-core.js', 'ui-expenses.js', 'ui-financing.js', 'ui-reports.js', 'ui-investments.js', 'ui-settings.js', 'ui-agent.js'];
+    files.forEach(f => eval(fs.readFileSync('js/' + f, 'utf8')));
 
     const ui = window.App.UI;
     ui.init();
@@ -101,8 +101,8 @@ describe('Investments Feature integration', () => {
   });
 
   it('should render investment portfolio table, KPI and chart correctly, adjusting for withdrawals and reserve rules', () => {
-    const uiCode = fs.readFileSync('js/ui.js', 'utf8');
-    eval(uiCode);
+    const files = ['ui-core.js', 'ui-expenses.js', 'ui-financing.js', 'ui-reports.js', 'ui-investments.js', 'ui-settings.js', 'ui-agent.js'];
+    files.forEach(f => eval(fs.readFileSync('js/' + f, 'utf8')));
 
     const ui = window.App.UI;
     ui.init();
@@ -141,8 +141,8 @@ describe('Investments Feature integration', () => {
   });
 
   it('should apply correct color class based on reserve percentages', () => {
-    const uiCode = fs.readFileSync('js/ui.js', 'utf8');
-    eval(uiCode);
+    const files = ['ui-core.js', 'ui-expenses.js', 'ui-financing.js', 'ui-reports.js', 'ui-investments.js', 'ui-settings.js', 'ui-agent.js'];
+    files.forEach(f => eval(fs.readFileSync('js/' + f, 'utf8')));
 
     const ui = window.App.UI;
     ui.init();
