@@ -135,8 +135,23 @@ window.App.UIAgent = (() => {
         throw new Error("Não foi possível extrair nenhum texto legível deste PDF.");
       }
 
+      // Filtrar linhas para enviar apenas transações financeiras e poupar contexto/tokens
+      const lines = rawText.split("\n");
+      const filteredLines = lines.filter(line => {
+        const clean = line.trim();
+        if (!clean) return false;
+        // Detecta R$, valor com vírgula (xx,xx) ou ponto (xx.xx)
+        return /R\$\s*-?\d+|\d+,\d{2}|\d+\.\d{2}/i.test(clean);
+      });
+
+      const compressedText = filteredLines.join("\n");
+
+      if (!compressedText.trim()) {
+        throw new Error("Não foi possível identificar nenhuma linha com valores monetários ou transações no PDF.");
+      }
+
       if (pdfImportStatusText) pdfImportStatusText.textContent = "Estruturando fatura com Inteligência Artificial...";
-      await sendTextToLlm(rawText);
+      await sendTextToLlm(compressedText);
 
     } catch (err) {
       console.error("Erro no processamento do PDF:", err);
