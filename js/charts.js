@@ -372,8 +372,8 @@ window.App.Charts = (() => {
       });
     },
 
-    renderInvestmentsScatterChart(canvasId, scatterData) {
-      // scatterData expects: { labels: ['Jan', 'Fev', ...], values: [100, 250, 400, ...] }
+    renderInvestmentsLineChart(canvasId, lineData) {
+      // lineData expects: { labels: ['Jan', 'Fev', ...], values: [100, 250, 400, ...] }
       if (window.investmentsScatterChartInstance) {
         window.investmentsScatterChartInstance.destroy();
         window.investmentsScatterChartInstance = null;
@@ -385,7 +385,7 @@ window.App.Charts = (() => {
 
       if (!canvas) return;
 
-      const hasData = scatterData && scatterData.values && scatterData.values.length > 0 && scatterData.values.some(v => v > 0);
+      const hasData = lineData && lineData.values && lineData.values.length > 0 && lineData.values.some(v => v > 0);
       if (!hasData) {
         if (container) container.classList.add("hidden");
         if (placeholder) placeholder.classList.remove("hidden");
@@ -396,21 +396,22 @@ window.App.Charts = (() => {
       if (container) container.classList.remove("hidden");
 
       const ctx = canvas.getContext("2d");
-      
-      const pointData = scatterData.values.map((v, i) => ({ x: i, y: v }));
 
       window.investmentsScatterChartInstance = new Chart(ctx, {
-        type: "scatter",
+        type: "line",
         data: {
-          labels: scatterData.labels, // We pass labels so we can use them in ticks
+          labels: lineData.labels,
           datasets: [{
             label: "Evolução dos Aportes",
-            data: pointData,
-            backgroundColor: "#10b981", // emerald-500
-            borderColor: "#059669",
-            borderWidth: 2,
-            pointRadius: 6,
-            pointHoverRadius: 8
+            data: lineData.values,
+            backgroundColor: "rgba(16, 185, 129, 0.1)",
+            borderColor: "#10b981",
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: "#10b981"
           }]
         },
         options: {
@@ -420,10 +421,7 @@ window.App.Charts = (() => {
             x: {
               ticks: {
                 color: "#64748b",
-                font: { size: 10, family: "Inter, sans-serif" },
-                callback: function(value) {
-                  return scatterData.labels[value] || '';
-                }
+                font: { size: 10, family: "Inter, sans-serif" }
               },
               grid: { color: "rgba(255,255,255,0.05)", drawBorder: false }
             },
@@ -449,7 +447,7 @@ window.App.Charts = (() => {
               borderWidth: 1,
               callbacks: {
                 label: function(context) {
-                  const val = context.raw.y;
+                  const val = context.raw || 0;
                   return ` R$ ${val.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
                 }
               }

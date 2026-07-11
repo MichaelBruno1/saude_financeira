@@ -182,7 +182,7 @@ window.App.UIInvestments = (() => {
            }
         }
       });
-      window.App.Charts.renderInvestmentsScatterChart("investments-scatter-canvas", {
+      window.App.Charts.renderInvestmentsLineChart("investments-scatter-canvas", {
         labels: monthLabels,
         values: scatterValues
       });

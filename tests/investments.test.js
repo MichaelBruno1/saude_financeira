@@ -112,7 +112,7 @@ describe('Investments Feature integration', () => {
 
     window.App.Charts = {
       renderInvestmentsChart: vi.fn(),
-      renderInvestmentsScatterChart: vi.fn()
+      renderInvestmentsLineChart: vi.fn()
     };
 
     const state = window.App.State.getState();
@@ -153,7 +153,7 @@ describe('Investments Feature integration', () => {
 
     window.App.Charts = {
       renderInvestmentsChart: vi.fn(),
-      renderInvestmentsScatterChart: vi.fn()
+      renderInvestmentsLineChart: vi.fn()
     };
 
     // 1. Test yellow color (80% <= invested < 100% of 9000)

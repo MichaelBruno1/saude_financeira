@@ -242,12 +242,29 @@ Sugira como o usuário deve distribuir os seus próximos aportes financeiros men
     const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
     const combinedTotal = totalInvested + fgtsVal;
 
+    // Calcular Reserva de Emergência Ideal
+    const recurrentExpensesSum = state.despesas.filter(d => d.perfil === activeProfileName && d.recorrente === true).reduce((sum, d) => sum + d.valor, 0);
+    const financingInstallmentsSum = state.financiamentos.filter(f => f.perfil === activeProfileName).reduce((sum, f) => sum + f.valorParcela, 0);
+    const targetReserve = (recurrentExpensesSum + financingInstallmentsSum) * 6;
+
+    // Detalhe dos Investimentos
+    const investGrouped = {};
+    investExpenses.forEach(d => {
+      const sub = d.subcategoria || "Outros";
+      investGrouped[sub] = (investGrouped[sub] || 0) + d.valor;
+    });
+    const detalheInvestimentos = Object.entries(investGrouped)
+      .map(([sub, val]) => `- **${sub}:** R$ ${val.toFixed(2)}`)
+      .join("\n") || "Nenhum investimento cadastrado.";
+
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
       .replace("{{SALARIO}}", profile.salario.toFixed(2))
       .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
       .replace("{{FGTS}}", fgtsVal.toFixed(2))
-      .replace("{{TOTAL_COM_FGTS}}", combinedTotal.toFixed(2));
+      .replace("{{TOTAL_COM_FGTS}}", combinedTotal.toFixed(2))
+      .replace("{{RESERVA_EMERGENCIA}}", targetReserve.toFixed(2))
+      .replace("{{DETALHE_INVESTIMENTOS}}", detalheInvestimentos);
       
     const response = await fetch(`${config.apiUrl}/chat/completions`, {
       method: "POST",
@@ -324,10 +341,47 @@ Com base no potencial de economia gerado, explique como o usuário pode otimizar
     const state = window.App.State.getState();
     const activeProfileName = state.perfilAtivo || "Principal";
     const profile = state.perfis.find(p => p.nome === activeProfileName) || { salario: 0 };
+
+    const plannerMethod = state.metodoPlanejamento || "Equilibrado";
+    const limites = (state.planejamento && state.planejamento[plannerMethod]) || {};
+    
+    const selectedMonth = state.mesAtivo || new Date().getMonth() + 1;
+    const isAnual = selectedMonth === 0;
+    
+    const { gastosPorCategoria } = isAnual 
+      ? window.App.Engine.calculateAnnualSummary(profile, state.despesas, state.financiamentos, state.anoAtivo)
+      : window.App.Engine.calculateMonthlySummary(profile, selectedMonth, state.despesas, state.financiamentos, state.anoAtivo);
+      
+    const investExpenses = state.despesas.filter(d => d.perfil === activeProfileName && d.categoria === "Investimento");
+    const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
+    
+    const recurrentExpensesSum = state.despesas.filter(d => d.perfil === activeProfileName && d.recorrente === true).reduce((sum, d) => sum + d.valor, 0);
+    const financingInstallmentsSum = state.financiamentos.filter(f => f.perfil === activeProfileName).reduce((sum, f) => sum + f.valorParcela, 0);
+    const targetReserve = (recurrentExpensesSum + financingInstallmentsSum) * 6;
+    
+    const investGrouped = {};
+    investExpenses.forEach(d => {
+      const sub = d.subcategoria || "Outros";
+      investGrouped[sub] = (investGrouped[sub] || 0) + d.valor;
+    });
+    const distribuicaoInvestimentos = Object.entries(investGrouped)
+      .map(([sub, val]) => `- **${sub}:** R$ ${val.toFixed(2)}`)
+      .join("\n") || "Nenhum investimento cadastrado.";
+
+    const detalheFinanciamentos = state.financiamentos.filter(f => f.perfil === activeProfileName)
+      .map(f => `- **${f.nome}:** R$ ${f.valorParcela.toFixed(2)}/mês (Total: R$ ${f.valorTotal.toFixed(2)})`)
+      .join("\n") || "Nenhuma dívida ativa.";
     
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
-      .replace("{{SALARIO}}", profile.salario.toFixed(2));
+      .replace("{{SALARIO}}", profile.salario.toFixed(2))
+      .replace("{{METODO_PLANEJADOR}}", plannerMethod)
+      .replace("{{LIMITES_PLANEJADOR}}", JSON.stringify(limites, null, 2))
+      .replace("{{GASTOS_REAIS}}", JSON.stringify(gastosPorCategoria, null, 2))
+      .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
+      .replace("{{RESERVA_EMERGENCIA}}", targetReserve.toFixed(2))
+      .replace("{{DISTRIBUICAO_INVESTIMENTOS}}", distribuicaoInvestimentos)
+      .replace("{{DETALHE_FINANCIAMENTOS}}", detalheFinanciamentos);
       
     const response = await fetch(`${config.apiUrl}/chat/completions`, {
       method: "POST",
