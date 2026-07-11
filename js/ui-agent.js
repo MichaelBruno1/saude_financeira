@@ -126,8 +126,17 @@ window.App.UIAgent = (() => {
         if (pdfImportStatusText) pdfImportStatusText.textContent = `Lendo página ${i} de ${pdfDoc.numPages}...`;
         const page = await pdfDoc.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(" ");
-        const cleanPageText = pageText.replace(/\s+/g, " ").trim();
+        let pageText = "";
+        textContent.items.forEach(item => {
+          pageText += item.str;
+          if (item.hasEol) {
+            pageText += "\n";
+          } else if (item.str && !item.str.endsWith(" ")) {
+            pageText += " ";
+          }
+        });
+        // Comprimir espaços múltiplos mantendo as quebras de linha
+        const cleanPageText = pageText.split("\n").map(line => line.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
         rawText += cleanPageText + "\n";
       }
 
