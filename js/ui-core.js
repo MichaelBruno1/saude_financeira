@@ -267,8 +267,10 @@ window.App.UI = (() => {
       // Mapear elementos locais para os módulos filhos
       s.sidebarFinanciamentoBtn= g(DOM_IDS.SIDEBAR_FINANCIAMENTO_BTN);
       s.sidebarDespesasBtn     = g(DOM_IDS.SIDEBAR_DESPESAS_BTN);
+      s.sidebarRelatoriosBtn   = g(DOM_IDS.SIDEBAR_REPORTS_BTN);
       s.sidebarSettingsBtn     = g(DOM_IDS.SIDEBAR_SETTINGS_BTN);
       s.sidebarInvestimentosBtn= g(DOM_IDS.SIDEBAR_INVESTIMENTOS_BTN);
+      s.addExpenseBtn          = g(DOM_IDS.ADD_EXPENSE_BTN);
       s.backupWarningBanner    = g(DOM_IDS.BACKUP_WARNING_BANNER);
       s.btnCloseBackupBanner   = g(DOM_IDS.BTN_CLOSE_BACKUP_BANNER);
       s.monthlyExpensesContainer = g(DOM_IDS.MONTHLY_EXPENSES_CONTAINER);

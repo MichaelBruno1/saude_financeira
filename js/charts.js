@@ -370,7 +370,6 @@ window.App.Charts = (() => {
           }
         }
       });
-    }
     },
 
     renderInvestmentsScatterChart(canvasId, scatterData) {
