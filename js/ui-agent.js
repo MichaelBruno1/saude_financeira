@@ -232,10 +232,11 @@ Exemplo de formato:
     }
 
     const resData = await response.json();
+    console.log("LLM response data:", resData);
     let choiceText = resData.choices && resData.choices[0] && resData.choices[0].message && resData.choices[0].message.content;
 
     if (!choiceText) {
-      throw new Error("A API da LLM retornou uma resposta vazia.");
+      throw new Error(`A API da LLM retornou uma resposta vazia. (Status: ${response.status}, Resposta: ${JSON.stringify(resData)})`);
     }
 
     choiceText = choiceText.trim();
