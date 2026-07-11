@@ -127,13 +127,21 @@ window.App.UIAgent = (() => {
         const page = await pdfDoc.getPage(i);
         const textContent = await page.getTextContent();
         let pageText = "";
+        let lastY = null;
         textContent.items.forEach(item => {
-          pageText += item.str;
-          if (item.hasEol) {
+          if (!item.transform) {
+            pageText += item.str;
+            return;
+          }
+          const y = item.transform[5];
+          // Se houver deslocamento vertical maior que 5px, quebramos a linha
+          if (lastY !== null && Math.abs(y - lastY) > 5) {
             pageText += "\n";
-          } else if (item.str && !item.str.endsWith(" ")) {
+          } else if (pageText && !pageText.endsWith(" ") && item.str && !item.str.startsWith(" ")) {
             pageText += " ";
           }
+          pageText += item.str;
+          lastY = y;
         });
         // Comprimir espaços múltiplos mantendo as quebras de linha
         const cleanPageText = pageText.split("\n").map(line => line.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
@@ -154,6 +162,7 @@ window.App.UIAgent = (() => {
       });
 
       const compressedText = filteredLines.join("\n");
+      console.log(`PDF text lines filtered. Total lines: ${filteredLines.length}. Length: ${compressedText.length} chars.`);
 
       if (!compressedText.trim()) {
         throw new Error("Não foi possível identificar nenhuma linha com valores monetários ou transações no PDF.");
@@ -179,6 +188,30 @@ window.App.UIAgent = (() => {
       throw new Error("Configuração da LLM incompleta. Certifique-se de preencher URL Base e Modelo nas Configurações.");
     }
 
+    const lines = text.split("\n");
+    const chunkSize = 40; // Tamanho do lote para evitar estouro de tokens com raciocínio longo
+    let allExtractedExpenses = [];
+
+    const totalChunks = Math.ceil(lines.length / chunkSize);
+    for (let i = 0; i < lines.length; i += chunkSize) {
+      const chunkLines = lines.slice(i, i + chunkSize);
+      const chunkText = chunkLines.join("\n");
+      const currentChunk = Math.floor(i / chunkSize) + 1;
+      
+      if (pdfImportStatusText) {
+        pdfImportStatusText.textContent = `Estruturando fatura com IA (Lote ${currentChunk} de ${totalChunks})...`;
+      }
+      console.log(`Enviando lote ${currentChunk} de ${totalChunks} (${chunkLines.length} linhas)...`);
+
+      const chunkExpenses = await sendChunkToLlm(chunkText, apiUrl, apiKey, model);
+      allExtractedExpenses = allExtractedExpenses.concat(chunkExpenses);
+    }
+
+    extractedExpenses = allExtractedExpenses;
+    renderReviewTable();
+  }
+
+  async function sendChunkToLlm(text, apiUrl, apiKey, model) {
     let promptTemplate = "";
     try {
       const response = await fetch("prompts/importacao.md");
@@ -259,7 +292,7 @@ Exemplo de formato:
     }
 
     const resData = await response.json();
-    console.log("LLM response data:", resData);
+    console.log("LLM response data (batch):", resData);
     let choiceText = resData.choices && resData.choices[0] && resData.choices[0].message && resData.choices[0].message.content;
 
     if (!choiceText) {
@@ -274,11 +307,11 @@ Exemplo de formato:
     choiceText = choiceText.trim();
 
     try {
-      extractedExpenses = JSON.parse(choiceText);
-      if (!Array.isArray(extractedExpenses)) {
+      const parsed = JSON.parse(choiceText);
+      if (!Array.isArray(parsed)) {
         throw new Error("O retorno da LLM não é um array válido.");
       }
-      renderReviewTable();
+      return parsed;
     } catch (jsonErr) {
       console.error("Erro ao parsear JSON da LLM:", choiceText, jsonErr);
       throw new Error("A inteligência artificial não retornou um formato JSON válido. Tente novamente.");
