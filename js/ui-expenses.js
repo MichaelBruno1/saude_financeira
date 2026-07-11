@@ -79,11 +79,11 @@ window.App.UIExpenses = (() => {
     const DOM_IDS = window.App.UI_DOM_IDS;
     const s = window.App.UIState;
 
-    closeExpenseModalBtn.addEventListener("click", hideExpenseModal);
-    modalExpenseCancelBtn.addEventListener("click", hideExpenseModal);
+    if (closeExpenseModalBtn) closeExpenseModalBtn.addEventListener("click", hideExpenseModal);
+    if (modalExpenseCancelBtn) modalExpenseCancelBtn.addEventListener("click", hideExpenseModal);
 
     // Controle condicional para Cartão de Crédito e Investimento
-    modalExpenseCat.addEventListener("change", e => {
+    if (modalExpenseCat) modalExpenseCat.addEventListener("change", e => {
       const val = e.target.value;
       if (val === "Cartão de Crédito") {
         modalExpenseInstallmentsContainer.classList.remove("hidden");
@@ -101,7 +101,7 @@ window.App.UIExpenses = (() => {
     });
 
     // Botão Adicionar Gasto / Cadastrar Financiamento (dinâmico por aba)
-    addExpenseBtn.addEventListener("click", () => {
+    if (addExpenseBtn) addExpenseBtn.addEventListener("click", () => {
       const state = window.App.State.getState();
       if (state.mesAtivo === 14) {
         s.editingFinancingId = null;
@@ -132,7 +132,7 @@ window.App.UIExpenses = (() => {
     });
 
     // Submit do formulário de despesas (Add ou Edit)
-    modalExpenseCreateForm.addEventListener("submit", e => {
+    if (modalExpenseCreateForm) modalExpenseCreateForm.addEventListener("submit", e => {
       e.preventDefault();
       const state  = window.App.State.getState();
       const desc   = modalExpenseDesc.value.trim();

@@ -50,7 +50,10 @@ global.document = {
     return {
       tagName: tag,
       className: '',
-      innerHTML: ''
+      innerHTML: '',
+      textContent: '',
+      addEventListener: vi.fn(),
+      appendChild: vi.fn()
     };
   })
 };

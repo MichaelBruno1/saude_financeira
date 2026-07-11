@@ -56,7 +56,10 @@ global.document = {
     return {
       tagName: tag,
       className: '',
-      innerHTML: ''
+      innerHTML: '',
+      textContent: '',
+      addEventListener: vi.fn(),
+      appendChild: vi.fn()
     };
   })
 };
@@ -108,7 +111,8 @@ describe('Investments Feature integration', () => {
     ui.init();
 
     window.App.Charts = {
-      renderInvestmentsChart: vi.fn()
+      renderInvestmentsChart: vi.fn(),
+      renderInvestmentsScatterChart: vi.fn()
     };
 
     const state = window.App.State.getState();
@@ -146,6 +150,11 @@ describe('Investments Feature integration', () => {
 
     const ui = window.App.UI;
     ui.init();
+
+    window.App.Charts = {
+      renderInvestmentsChart: vi.fn(),
+      renderInvestmentsScatterChart: vi.fn()
+    };
 
     // 1. Test yellow color (80% <= invested < 100% of 9000)
     const yellowState = {

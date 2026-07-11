@@ -26,6 +26,16 @@ const domElements = {
 };
 
 global.document = {
+  createElement: vi.fn().mockImplementation((tag) => {
+    return {
+      tagName: tag,
+      className: '',
+      innerHTML: '',
+      textContent: '',
+      addEventListener: vi.fn(),
+      appendChild: vi.fn()
+    };
+  }),
   getElementById: vi.fn().mockImplementation((id) => {
     if (domElements[id]) return domElements[id];
     return {

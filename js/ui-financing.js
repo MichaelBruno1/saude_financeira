@@ -85,7 +85,8 @@ window.App.UIFinancing = (() => {
     if (modalFinancingCancelBtn) modalFinancingCancelBtn.addEventListener("click", hideFinancingModal);
     if (s.btnAddFinanciamento) s.btnAddFinanciamento.addEventListener("click", () => openFinancingModal());
 
-    financingRegisterForm.addEventListener("submit", e => {
+    if (financingRegisterForm) {
+      financingRegisterForm.addEventListener("submit", e => {
       e.preventDefault();
       const count = parseInt(financingInstallmentsCountInput.value);
       const tr    = parseFloat(financingTrRateInput.value) || 0;
@@ -106,8 +107,9 @@ window.App.UIFinancing = (() => {
           showStatus("Financiamento cadastrado!");
         }
         hideFinancingModal();
-      } catch (err) { alert(`Erro: ${err.message}`); }
+      } catch (err) { alert("Erro ao salvar financiamento."); console.error(err); }
     });
+    }
 
     if (simulatorFinancingSelect)    simulatorFinancingSelect.addEventListener("change", runSimulation);
     if (simulatorAmortizationVal)    simulatorAmortizationVal.addEventListener("input", runSimulation);

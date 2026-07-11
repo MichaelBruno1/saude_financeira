@@ -7,7 +7,6 @@ window.App.UIInvestments = (() => {
   let investmentsTableBody;
   let generateInvestmentsAnalysisBtn, investmentsAnalysisLoader;
   let investmentsAnalysisResultCard, investmentsAnalysisTimestamp, investmentsAnalysisTextContent;
-  let investmentsAnalysisResultCard, investmentsAnalysisTimestamp, investmentsAnalysisTextContent;
   
   function mapElements(DOM_IDS) {
     const g = id => document.getElementById(id);
