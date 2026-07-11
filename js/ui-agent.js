@@ -125,6 +125,7 @@ window.App.UIAgent = (() => {
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         if (pdfImportStatusText) pdfImportStatusText.textContent = `Lendo página ${i} de ${pdfDoc.numPages}...`;
         const page = await pdfDoc.getPage(i);
+        const textContent = await page.getTextContent();
         const pageText = textContent.items.map(item => item.str).join(" ");
         const cleanPageText = pageText.replace(/\s+/g, " ").trim();
         rawText += cleanPageText + "\n";
