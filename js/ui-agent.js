@@ -151,7 +151,13 @@ Sua principal função é responder às dúvidas do usuário sobre suas despesas
     const profileFinancing = state.financiamentos.filter(f => f.perfil === activeProfileName);
     const categoriesList = Object.keys(state.categorias || {}).join(", ");
     
-    const formattedHistory = agentChatHistory.map(h => `${h.role === 'user' ? 'Usuário' : 'Agente'}: ${h.content}`).join("\n");
+    // Remover propriedade perfil para economizar tokens e usar JSON minificado
+    const cleanedExpenses = profileExpenses.map(({ perfil, ...rest }) => rest);
+    const cleanedFinancing = profileFinancing.map(({ perfil, ...rest }) => rest);
+    
+    // Limitar o histórico de chat para evitar estouro de contexto
+    const lastHistory = agentChatHistory.slice(-15);
+    const formattedHistory = lastHistory.map(h => `${h.role === 'user' ? 'Usuário' : 'Agente'}: ${h.content}`).join("\n");
 
     const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
     
@@ -160,8 +166,8 @@ Sua principal função é responder às dúvidas do usuário sobre suas despesas
       .replace("{{CATEGORIAS}}", categoriesList)
       .replace("{{MES_ATIVO}}", `${state.mesAtivo} (${MONTHS[state.mesAtivo - 1] || ""})`)
       .replace("{{ANO_ATIVO}}", String(state.anoAtivo))
-      .replace("{{DESPESAS}}", JSON.stringify(profileExpenses, null, 2))
-      .replace("{{FINANCIAMENTOS}}", JSON.stringify(profileFinancing, null, 2))
+      .replace("{{DESPESAS}}", JSON.stringify(cleanedExpenses))
+      .replace("{{FINANCIAMENTOS}}", JSON.stringify(cleanedFinancing))
       .replace("{{HISTORICO_CHAT}}", formattedHistory || "(Sem histórico anterior)")
       .replace("{{PERGUNTA}}", userMessage);
 
