@@ -131,6 +131,14 @@ window.App.UIExpenses = (() => {
       }
     });
 
+    // Filtro de Categoria na tela de despesas
+    if (s.expenseCategoryFilter) {
+      s.expenseCategoryFilter.addEventListener("change", () => {
+        const state = window.App.State.getState();
+        render(state);
+      });
+    }
+
     // Submit do formulário de despesas (Add ou Edit)
     if (modalExpenseCreateForm) modalExpenseCreateForm.addEventListener("submit", e => {
       e.preventDefault();
@@ -165,6 +173,26 @@ window.App.UIExpenses = (() => {
     const s = window.App.UIState;
     const DOM_IDS = window.App.UI_DOM_IDS;
     const { perfis, perfilAtivo, despesas, mesAtivo, anoAtivo, financiamentos } = state;
+
+    // Atualizar as opções do filtro de categoria se o elemento existir na tela
+    if (s.expenseCategoryFilter) {
+      const currentSelected = s.expenseCategoryFilter.value;
+      s.expenseCategoryFilter.innerHTML = '<option value="">Todas as Categorias</option>';
+      const categoriesList = Object.keys(state.categorias || {});
+      categoriesList.forEach(cat => {
+        const opt = document.createElement("option");
+        opt.value = cat;
+        opt.textContent = cat;
+        s.expenseCategoryFilter.appendChild(opt);
+      });
+      // Restaurar o valor selecionado se ele ainda existir nas categorias
+      if (categoriesList.includes(currentSelected)) {
+        s.expenseCategoryFilter.value = currentSelected;
+      } else {
+        s.expenseCategoryFilter.value = "";
+      }
+    }
+
     if (!s.expensesTableBody) return;
     s.expensesTableBody.innerHTML = "";
     const itensDaTabela = [];
@@ -203,14 +231,22 @@ window.App.UIExpenses = (() => {
       }
     });
 
-    if (s.expenseCountBadge) s.expenseCountBadge.textContent = `${itensDaTabela.length} total`;
+    let itensFiltrados = itensDaTabela;
+    if (s.expenseCategoryFilter) {
+      const selectedCategory = s.expenseCategoryFilter.value;
+      if (selectedCategory) {
+        itensFiltrados = itensDaTabela.filter(item => item.categoria === selectedCategory);
+      }
+    }
 
-    if (itensDaTabela.length === 0) {
+    if (s.expenseCountBadge) s.expenseCountBadge.textContent = `${itensFiltrados.length} total`;
+
+    if (itensFiltrados.length === 0) {
       const row = document.createElement("tr");
       row.innerHTML = `<td colspan="5" class="text-center py-8 text-slate-500 text-xs font-medium">Nenhum gasto cadastrado para este mês.</td>`;
       s.expensesTableBody.appendChild(row);
     } else {
-      itensDaTabela.forEach(item => {
+      itensFiltrados.forEach(item => {
         const row = document.createElement("tr");
         row.className = "hover:bg-slate-900/40 transition border-b border-slate-850 text-slate-300";
         const actionCol = item.tipo === "despesa"

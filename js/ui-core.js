@@ -27,6 +27,7 @@ window.App.UI = (() => {
     CSV_FILE_INPUT: "csv-file-input",
     DELETE_PROFILE_BTN: "delete-profile-btn",
     EDIT_SALARY_BTN: "edit-salary-btn",
+    EXPENSE_CATEGORY_FILTER: "expense-category-filter",
     EXPENSE_COUNT_BADGE: "expense-count-badge",
     EXPENSE_MODAL: "expense-modal",
     EXPENSES_TABLE_BODY: "expenses-table-body",
@@ -283,6 +284,7 @@ window.App.UI = (() => {
       s.investmentsContainer   = g(DOM_IDS.INVESTMENTS_CONTAINER);
       s.reportsPizzaMonthSelect= g(DOM_IDS.REPORTS_PIZZA_MONTH_SELECT);
       s.expenseCountBadge      = g(DOM_IDS.EXPENSE_COUNT_BADGE);
+      s.expenseCategoryFilter  = g(DOM_IDS.EXPENSE_CATEGORY_FILTER);
       s.expensesTableBody      = g(DOM_IDS.EXPENSES_TABLE_BODY);
       s.plannerMethodSelect    = g(DOM_IDS.PLANNER_METHOD_SELECT);
       // Controle de edição — mutável pelos sub-módulos
