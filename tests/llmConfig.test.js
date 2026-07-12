@@ -6,9 +6,9 @@ global.window = {
   App: {
     State: {
       getState: () => ({
-        llmConfig: { apiUrl: "http://test", apiKey: "key", model: "m" }
+        llmConfig: { apiUrl: "http://test", apiKey: "key", model: "m", maxContext: 10240 }
       }),
-      atualizarConfiguracaoLLM: vi.fn()
+      atualizarLlmConfig: vi.fn()
     },
     LlmConfig: { apiUrl: "http://static", apiKey: "static-key", model: "static-model" }
   }
@@ -22,6 +22,7 @@ const domElements = {
   'settings-llm-url': { value: 'http://custom-url' },
   'settings-llm-key': { value: 'custom-key' },
   'settings-llm-model': { value: 'custom-model' },
+  'settings-llm-max-context': { value: '10240' },
   'sync-status': { classList: { add: vi.fn(), remove: vi.fn() }, className: '' }
 };
 
@@ -76,10 +77,11 @@ describe('UI Event Handling for LLM Settings', () => {
     submitCallback(mockEvent);
 
     expect(mockEvent.preventDefault).toHaveBeenCalled();
-    expect(window.App.State.atualizarConfiguracaoLLM).toHaveBeenCalledWith(
+    expect(window.App.State.atualizarLlmConfig).toHaveBeenCalledWith(
       'http://custom-url',
       'custom-key',
-      'custom-model'
+      'custom-model',
+      10240
     );
   });
 });

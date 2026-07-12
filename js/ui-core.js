@@ -122,6 +122,7 @@ window.App.UI = (() => {
     SETTINGS_LLM_URL: "settings-llm-url",
     SETTINGS_LLM_KEY: "settings-llm-key",
     SETTINGS_LLM_MODEL: "settings-llm-model",
+    SETTINGS_LLM_MAX_CONTEXT: "settings-llm-max-context",
     BTN_CHAT_AGENT: "btn-chat-agent",
     AGENT_CHAT_MODAL: "agent-chat-modal",
     CLOSE_AGENT_CHAT_MODAL_BTN: "close-agent-chat-modal-btn",
@@ -201,8 +202,9 @@ window.App.UI = (() => {
   }
 
   function parseBRLValue(formattedString) {
+    if (typeof formattedString === "number") return formattedString;
     if (!formattedString) return 0;
-    const clean = formattedString.replace(/\./g, "").replace(",", ".");
+    const clean = String(formattedString).replace(/\./g, "").replace(",", ".");
     return parseFloat(clean) || 0;
   }
 
@@ -213,7 +215,8 @@ window.App.UI = (() => {
     return {
       apiUrl: String(stateConfig.apiUrl || staticConfig.apiUrl || "").trim(),
       apiKey: String(stateConfig.apiKey || staticConfig.apiKey || "").trim(),
-      model: String(stateConfig.model || staticConfig.model || "").trim()
+      model: String(stateConfig.model || staticConfig.model || "").trim(),
+      maxContext: parseInt(stateConfig.maxContext || staticConfig.maxContext || 10240)
     };
   }
 

@@ -4,7 +4,7 @@ window.App = window.App || {};
 window.App.UISettings = (() => {
   let settingsContainer, themeToggleBtn, themeToggleBtnText;
   let categoriesColorsList, addCategoryForm, newCategoryName, newCategoryColor, newCategoryColorHex;
-  let llmSettingsForm, settingsLlmUrl, settingsLlmKey, settingsLlmModel;
+  let llmSettingsForm, settingsLlmUrl, settingsLlmKey, settingsLlmModel, settingsLlmMaxContext;
   let settingsInvestmentCategoriesList;
   let settingsPlannerInputsGrid, settingsPlannerMethodSelect, settingsPlannerTotalSum;
   let settingsPlannerWarning, settingsPlannerInfo, settingsPlannerSobraSpan;
@@ -24,6 +24,7 @@ window.App.UISettings = (() => {
     settingsLlmUrl                   = g(DOM_IDS.SETTINGS_LLM_URL);
     settingsLlmKey                   = g(DOM_IDS.SETTINGS_LLM_KEY);
     settingsLlmModel                 = g(DOM_IDS.SETTINGS_LLM_MODEL);
+    settingsLlmMaxContext            = g(DOM_IDS.SETTINGS_LLM_MAX_CONTEXT);
     settingsInvestmentCategoriesList = g(DOM_IDS.SETTINGS_INVESTMENT_CATEGORIES_LIST);
     settingsPlannerInputsGrid        = g(DOM_IDS.SETTINGS_PLANNER_INPUTS_GRID);
     settingsPlannerMethodSelect      = g(DOM_IDS.SETTINGS_PLANNER_METHOD_SELECT);
@@ -78,8 +79,9 @@ window.App.UISettings = (() => {
         const apiUrl = settingsLlmUrl.value.trim();
         const apiKey = settingsLlmKey.value.trim();
         const model = settingsLlmModel.value.trim();
+        const maxContext = parseInt(settingsLlmMaxContext.value) || 10240;
         try {
-          window.App.State.atualizarConfiguracaoLLM(apiUrl, apiKey, model);
+          window.App.State.atualizarLlmConfig(apiUrl, apiKey, model, maxContext);
           showStatus("Configuração da LLM salva com sucesso!");
         } catch (err) {
           showStatus(err.message, true);
@@ -194,11 +196,12 @@ window.App.UISettings = (() => {
       }
     }
 
-    if (settingsLlmUrl && settingsLlmKey && settingsLlmModel) {
+    if (settingsLlmUrl && settingsLlmKey && settingsLlmModel && settingsLlmMaxContext) {
       const llm = state.llmConfig || {};
       settingsLlmUrl.value = llm.apiUrl || "";
       settingsLlmKey.value = llm.apiKey || "";
       settingsLlmModel.value = llm.model || "";
+      settingsLlmMaxContext.value = llm.maxContext || 10240;
     }
 
     renderPlannerSettingsForm();

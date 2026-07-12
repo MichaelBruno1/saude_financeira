@@ -27,7 +27,7 @@ Analise os dados financeiros do usuário abaixo e elabore um plano de economia e
 ## Estrutura do Relatório (Gere em Markdown):
 
 ### 🎯 Diagnóstico Orçamentário
-Faça um breve resumo (3 a 4 frases) do estado atual do usuário. Aponte se ele está gastando acima da renda, se a proporção de investimentos está saudável e qual o impacto das dívidas no orçamento.
+Faça um breve resumo (3 a 5 frases) do estado atual do usuário. Aponte se ele está gastando acima da renda, se a proporção de investimentos está saudável e qual o impacto das dívidas no orçamento.
 
 ### 🛡️ Onde Cortar Gastos (Plano de Ação)
 Identifique as 3 categorias de gastos mais críticas onde o usuário está extrapolando ou que possuem maior potencial de economia imediata. Dê sugestões de ações práticas para reduzir essas despesas.

@@ -752,7 +752,15 @@
             </div>
 
             <form id="llm-settings-form" class="space-y-4">
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tamanho do Contexto</label>
+                  <input type="number" id="settings-llm-max-context" placeholder="Padrão: 10240" min="1024" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-350 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Nome do Modelo (Model)</label>
+                  <input type="text" id="settings-llm-model" placeholder="Ex: gemini-3.5-flash / llama3" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-350 focus:outline-none focus:border-indigo-500 transition">
+                </div>
                 <div>
                   <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">URL Base do Endpoint</label>
                   <input type="text" id="settings-llm-url" placeholder="Padrão: Gemini / LM Studio" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-350 focus:outline-none focus:border-indigo-500 transition">
@@ -761,15 +769,16 @@
                   <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Chave de API (API Key)</label>
                   <input type="password" id="settings-llm-key" placeholder="Insira a chave secreta" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-350 focus:outline-none focus:border-indigo-500 transition">
                 </div>
-                <div>
-                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Nome do Modelo (Model)</label>
-                  <input type="text" id="settings-llm-model" placeholder="Ex: gemini-3.5-flash / llama3" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-350 focus:outline-none focus:border-indigo-500 transition">
-                </div>
               </div>
-              <div class="flex justify-end">
-                <button type="submit" class="bg-indigo-650 hover:bg-indigo-600 text-white text-xs font-semibold py-2.5 px-6 rounded-xl flex items-center space-x-2 transition shadow-lg shadow-indigo-650/10 cursor-pointer">
-                  <span>Salvar Configuração IA</span>
-                </button>
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
+                <p class="text-[10px] text-amber-500/80 font-medium max-w-xl">
+                  ⚠️ <strong>Atenção:</strong> Limites de contexto inferiores a 8192 podem impedir o funcionamento correto das análises inteligentes e da importação de faturas PDF devido ao tamanho dos prompts enviados.
+                </p>
+                <div class="flex justify-end">
+                  <button type="submit" class="bg-indigo-600 hover:bg-indigo-550 text-white text-xs font-semibold py-2.5 px-6 rounded-xl flex items-center space-x-2 transition shadow-lg shadow-indigo-600/10 cursor-pointer">
+                    <span>Salvar Configuração IA</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -849,7 +858,7 @@
           <input type="text" id="modal-new-profile-name" required placeholder="Ex: Pessoal, Trabalho, Conjunto" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Salário Mensal Inicial (R$)</label>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Salário Líquido Mensal (R$)</label>
           <input type="text" id="modal-new-profile-salary" required placeholder="Ex: 4.000,00" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:border-indigo-500 transition">
         </div>
         <div class="flex space-x-3 pt-2">

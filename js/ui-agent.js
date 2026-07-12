@@ -4,6 +4,7 @@ window.App = window.App || {};
 window.App.UIAgent = (() => {
   let agentChatHistory = [];
   let extractedExpenses = [];
+  let detectedInvoiceTotal = null;
   
   let btnChatAgent, agentChatModal, closeAgentChatModalBtn;
   let agentChatMessages, agentChatLoader, agentChatForm, agentChatInput;
@@ -45,8 +46,52 @@ window.App.UIAgent = (() => {
     return {
       apiUrl: String(stateConfig.apiUrl || staticConfig.apiUrl || "").trim(),
       apiKey: String(stateConfig.apiKey || staticConfig.apiKey || "").trim(),
-      model: String(stateConfig.model || staticConfig.model || "").trim()
+      model: String(stateConfig.model || staticConfig.model || "").trim(),
+      maxContext: parseInt(stateConfig.maxContext || staticConfig.maxContext || 10240)
     };
+  }
+
+  function prepareLlmRequest(promptText, config, extraParams = {}) {
+    const maxContext = config.maxContext || 10240;
+    const estimatedTokens = Math.ceil(promptText.length / 4);
+    if (estimatedTokens > maxContext) {
+      throw new Error(`O prompt enviado excede o limite de tokens de contexto configurado (${estimatedTokens} estimados > ${maxContext} limite). Reduza os dados ou aumente o limite nas Configurações.`);
+    }
+
+    // Garantir que a soma de prompt + max_tokens nunca exceda o limite máximo de contexto configurado
+    const maxOutputTokens = Math.max(1024, maxContext - estimatedTokens);
+    let finalMaxTokens = maxOutputTokens;
+    if (extraParams.max_tokens) {
+      finalMaxTokens = Math.min(extraParams.max_tokens, maxOutputTokens);
+    } else {
+      finalMaxTokens = Math.min(4096, maxOutputTokens);
+    }
+
+    const requestBody = {
+      model: config.model,
+      messages: [{ role: "user", content: promptText }],
+      temperature: 0.1,
+      ...extraParams,
+      max_tokens: finalMaxTokens
+    };
+
+    // Enviar options.num_ctx apenas para endpoints locais ou de ferramentas locais conhecidas (Ollama, LM Studio)
+    const isLocalOrOllama = 
+      config.apiUrl.startsWith("http://") || 
+      config.apiUrl.includes("localhost") || 
+      config.apiUrl.includes("127.0.0.1") || 
+      config.apiUrl.includes("0.0.0.0") || 
+      config.apiUrl.includes("192.168.") || 
+      config.apiUrl.includes("10.") ||
+      config.apiUrl.toLowerCase().includes("ollama") ||
+      config.apiUrl.toLowerCase().includes("lmstudio") ||
+      config.apiUrl.toLowerCase().includes("lm-studio");
+
+    if (isLocalOrOllama) {
+      requestBody.options = { num_ctx: maxContext };
+    }
+
+    return requestBody;
   }
 
   function appendChatMessage(role, content) {
@@ -101,6 +146,33 @@ window.App.UIAgent = (() => {
       pdfImportConfirmBtn.textContent = "Confirmar Lançamento";
     }
     extractedExpenses = [];
+    detectedInvoiceTotal = null;
+    const summaryDiv = document.getElementById("pdf-import-validation-summary");
+    if (summaryDiv) summaryDiv.remove();
+  }
+
+  function detectInvoiceTotal(text) {
+    const regexes = [
+      /total\s+da\s+fatura\s*(?:r\$\s*)?([\d.,]+)/i,
+      /valor\s+total\s*(?:r\$\s*)?([\d.,]+)/i,
+      /total\s+a\s+pagar\s*(?:r\$\s*)?([\d.,]+)/i,
+      /total\s+desta\s+fatura\s*(?:r\$\s*)?([\d.,]+)/i,
+      /fatura\s+total\s*(?:r\$\s*)?([\d.,]+)/i,
+      /total\s+devido\s*(?:r\$\s*)?([\d.,]+)/i,
+      /pagamento\s+m[íi]nimo\s*(?:r\$\s*)?[\d.,]+\s+total\s*(?:r\$\s*)?([\d.,]+)/i
+    ];
+    
+    for (const regex of regexes) {
+      const match = text.match(regex);
+      if (match) {
+        const cleaned = match[1].replace(/\./g, "").replace(",", ".");
+        const parsed = parseFloat(cleaned);
+        if (!isNaN(parsed) && parsed > 0) {
+          return parsed;
+        }
+      }
+    }
+    return null;
   }
 
   async function processPdfFile(file) {
@@ -114,62 +186,76 @@ window.App.UIAgent = (() => {
       const arrayBuffer = await file.arrayBuffer();
       // Configure worker (disable on file:// to run on main thread)
       if (window.location.protocol === "file:") {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "";
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "";
       } else {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "public/pdf.worker.min.js";
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "public/pdf.worker.min.js";
       }
       
-      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdfDoc = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let rawText = "";
 
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         if (pdfImportStatusText) pdfImportStatusText.textContent = `Lendo página ${i} de ${pdfDoc.numPages}...`;
         const page = await pdfDoc.getPage(i);
         const textContent = await page.getTextContent();
-        let pageText = "";
-        let lastY = null;
+        
+        // Agrupar elementos por coordenada Y com tolerância de 6px
+        const yLines = [];
         textContent.items.forEach(item => {
-          if (!item.transform) {
-            pageText += item.str;
-            return;
+          if (!item.str || !item.str.trim()) return;
+          const x = item.transform ? item.transform[4] : 0;
+          const y = item.transform ? item.transform[5] : 0;
+          
+          let line = yLines.find(l => Math.abs(l.y - y) < 6);
+          if (!line) {
+            line = { y, items: [] };
+            yLines.push(line);
           }
-          const y = item.transform[5];
-          // Se houver deslocamento vertical maior que 5px, quebramos a linha
-          if (lastY !== null && Math.abs(y - lastY) > 5) {
-            pageText += "\n";
-          } else if (pageText && !pageText.endsWith(" ") && item.str && !item.str.startsWith(" ")) {
-            pageText += " ";
-          }
-          pageText += item.str;
-          lastY = y;
+          line.items.push({ x, str: item.str });
         });
-        // Comprimir espaços múltiplos mantendo as quebras de linha
-        const cleanPageText = pageText.split("\n").map(line => line.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
-        rawText += cleanPageText + "\n";
+
+        // Ordenar linhas de cima para baixo (Y descendente)
+        yLines.sort((a, b) => b.y - a.y);
+
+        // Processar cada linha ordenando da esquerda para a direita (X crescente)
+        const pageLines = [];
+        yLines.forEach(line => {
+          line.items.sort((a, b) => a.x - b.x);
+          const lineText = line.items.map(it => it.str).join(" ").replace(/\s+/g, " ").trim();
+          if (lineText) {
+            pageLines.push(lineText);
+          }
+        });
+
+        rawText += pageLines.join("\n") + "\n";
       }
 
       if (!rawText.trim()) {
-        throw new Error("Não foi possível extrair nenhum texto legível deste PDF.");
+        throw new Error("O PDF selecionado parece não conter texto legível. PDFs digitalizados ou escaneados (imagens) não são suportados. Certifique-se de usar a fatura digital original em formato PDF fornecida pelo seu banco.");
       }
 
-      // Filtrar linhas para enviar apenas transações financeiras e poupar contexto/tokens
+      // Detectar o total da fatura para validação cruzada posterior
+      detectedInvoiceTotal = detectInvoiceTotal(rawText);
+      console.log("Detected invoice total:", detectedInvoiceTotal);
+
+      // Limpeza segura: remove linhas que não contêm uma data e um valor ou informação de parcelamento concomitantes (transações de cartão sempre trazem data e valor/parcela)
+      const dateRegex = /\b\d{2}\/\d{2}\b|\b\d{2}\s+(?:JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\b/i;
+      const valueRegex = /\d+[\s.,]+\d{2}\b/i;
+      const parcelRegex = /parcela|\b\d+\/\d+\b/i;
+
       const lines = rawText.split("\n");
-      const filteredLines = lines.filter(line => {
-        const clean = line.trim();
-        if (!clean) return false;
-        // Detecta R$, valor com vírgula (xx,xx) ou ponto (xx.xx)
-        return /R\$\s*-?\d+|\d+,\d{2}|\d+\.\d{2}/i.test(clean);
+      const cleanLines = lines.filter(line => {
+        const trimmed = line.trim();
+        const hasDate = dateRegex.test(trimmed);
+        const hasValue = valueRegex.test(trimmed);
+        const hasParcel = parcelRegex.test(trimmed);
+        return trimmed && hasDate && (hasValue || hasParcel);
       });
-
-      const compressedText = filteredLines.join("\n");
-      console.log(`PDF text lines filtered. Total lines: ${filteredLines.length}. Length: ${compressedText.length} chars.`);
-
-      if (!compressedText.trim()) {
-        throw new Error("Não foi possível identificar nenhuma linha com valores monetários ou transações no PDF.");
-      }
+      const cleanedText = cleanLines.join("\n");
+      console.log("Linhas filtradas para a LLM:", cleanLines.length, "de", lines.length, "Caracteres:", cleanedText.length);
 
       if (pdfImportStatusText) pdfImportStatusText.textContent = "Estruturando fatura com Inteligência Artificial...";
-      await sendTextToLlm(compressedText);
+      await sendTextToLlm(cleanedText);
 
     } catch (err) {
       console.error("Erro no processamento do PDF:", err);
@@ -188,30 +274,17 @@ window.App.UIAgent = (() => {
       throw new Error("Configuração da LLM incompleta. Certifique-se de preencher URL Base e Modelo nas Configurações.");
     }
 
-    const lines = text.split("\n");
-    const chunkSize = 40; // Tamanho do lote para evitar estouro de tokens com raciocínio longo
-    let allExtractedExpenses = [];
-
-    const totalChunks = Math.ceil(lines.length / chunkSize);
-    for (let i = 0; i < lines.length; i += chunkSize) {
-      const chunkLines = lines.slice(i, i + chunkSize);
-      const chunkText = chunkLines.join("\n");
-      const currentChunk = Math.floor(i / chunkSize) + 1;
-      
-      if (pdfImportStatusText) {
-        pdfImportStatusText.textContent = `Estruturando fatura com IA (Lote ${currentChunk} de ${totalChunks})...`;
-      }
-      console.log(`Enviando lote ${currentChunk} de ${totalChunks} (${chunkLines.length} linhas)...`);
-
-      const chunkExpenses = await sendChunkToLlm(chunkText, apiUrl, apiKey, model);
-      allExtractedExpenses = allExtractedExpenses.concat(chunkExpenses);
+    if (pdfImportStatusText) {
+      pdfImportStatusText.textContent = "Estruturando fatura com Inteligência Artificial...";
     }
+    console.log("Enviando texto completo da fatura para a LLM...");
 
-    extractedExpenses = allExtractedExpenses;
+    const parsedExpenses = await sendInvoiceTextToLlm(text, apiUrl, apiKey, model);
+    extractedExpenses = parsedExpenses;
     renderReviewTable();
   }
 
-  async function sendChunkToLlm(text, apiUrl, apiKey, model) {
+  async function sendInvoiceTextToLlm(text, apiUrl, apiKey, model) {
     let promptTemplate = "";
     try {
       const response = await fetch("prompts/importacao.md");
@@ -269,13 +342,8 @@ Exemplo de formato:
 
     const promptText = promptTemplate.replace("{{TEXTO_FATURA}}", text);
 
-    const requestBody = {
-      model: model,
-      messages: [
-        { role: "user", content: promptText }
-      ],
-      temperature: 0.1
-    };
+    const config = getLlmConfig();
+    const requestBody = prepareLlmRequest(promptText, config);
 
     const response = await fetch(`${apiUrl}/chat/completions`, {
       method: "POST",
@@ -292,7 +360,7 @@ Exemplo de formato:
     }
 
     const resData = await response.json();
-    console.log("LLM response data (batch):", resData);
+    console.log("LLM response data:", resData);
     let choiceText = resData.choices && resData.choices[0] && resData.choices[0].message && resData.choices[0].message.content;
 
     if (!choiceText) {
@@ -306,6 +374,15 @@ Exemplo de formato:
     }
     choiceText = choiceText.trim();
 
+    // Sanitizar números com padrão brasileiro (ex: 4.362,68) no JSON retornado pela LLM sem engolir vírgulas estruturais
+    choiceText = choiceText.replace(/"value"\s*:\s*"?([0-9]+(?:\.[0-9]+)*(?:,[0-9]+)?)"?/g, (match, numStr) => {
+      if (numStr.includes(",")) {
+        const cleaned = numStr.replace(/\./g, "").replace(",", ".");
+        return `"value": ${cleaned}`;
+      }
+      return `"value": ${numStr}`;
+    });
+
     try {
       const parsed = JSON.parse(choiceText);
       if (!Array.isArray(parsed)) {
@@ -316,6 +393,39 @@ Exemplo de formato:
       console.error("Erro ao parsear JSON da LLM:", choiceText, jsonErr);
       throw new Error("A inteligência artificial não retornou um formato JSON válido. Tente novamente.");
     }
+  }
+
+  function updateValidationSummary() {
+    if (!pdfImportReviewContainer) return;
+    
+    let summaryDiv = document.getElementById("pdf-import-validation-summary");
+    if (!summaryDiv) {
+      summaryDiv = document.createElement("div");
+      summaryDiv.id = "pdf-import-validation-summary";
+      summaryDiv.className = "mt-4 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs";
+      pdfImportReviewContainer.appendChild(summaryDiv);
+    }
+    
+    let totalSelectedExpenses = 0;
+    if (pdfImportTableBody) {
+      const rows = pdfImportTableBody.querySelectorAll("tr");
+      rows.forEach(row => {
+        const cb = row.querySelector('input[type="checkbox"][data-idx]:not([data-field="is_inst"])');
+        const valInput = row.querySelector('input[data-field="value"]');
+        if (cb && cb.checked && valInput) {
+          totalSelectedExpenses += parseFloat(valInput.value) || 0;
+        }
+      });
+    }
+    
+    const totalExpensesFormatted = totalSelectedExpenses.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    
+    summaryDiv.innerHTML = `
+      <div class="flex items-center justify-between text-slate-300 font-semibold">
+        <span>Soma das Despesas Selecionadas:</span>
+        <span class="text-indigo-400 font-bold text-sm">${totalExpensesFormatted}</span>
+      </div>
+    `;
   }
 
   function renderReviewTable() {
@@ -418,6 +528,7 @@ Exemplo de formato:
             extractedExpenses[idx].currentInstallment = 1;
             extractedExpenses[idx].totalInstallments = 1;
           }
+          updateValidationSummary();
         });
       } else {
         cb.addEventListener("change", () => {
@@ -446,6 +557,7 @@ Exemplo de formato:
         } else if (field === "total") {
           extractedExpenses[idx].totalInstallments = Math.max(1, parseInt(val) || 1);
         }
+        updateValidationSummary();
       });
     });
   }
@@ -457,6 +569,7 @@ Exemplo de formato:
       pdfImportConfirmBtn.disabled = checkedBoxes.length === 0;
       pdfImportConfirmBtn.textContent = `Confirmar Lançamento (${checkedBoxes.length})`;
     }
+    updateValidationSummary();
   }
 
   async function askFinancialAgent(userMessage) {
@@ -555,10 +668,12 @@ Sua principal função é responder às dúvidas do usuário sobre suas despesas
       .replace("{{HISTORICO_CHAT}}", formattedHistory || "(Sem histórico anterior)")
       .replace("{{PERGUNTA}}", userMessage);
 
+    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.1 });
+
     const response = await fetch(`${config.apiUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
-      body: JSON.stringify({ model: config.model, messages: [{ role: "user", content: promptText }], temperature: 0.1 })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
@@ -659,10 +774,12 @@ Com base nos aportes recorrentes e o total já investido (levando em conta a mé
       .replace("{{RESERVA_EMERGENCIA}}", targetReserve.toFixed(2))
       .replace("{{DETALHE_INVESTIMENTOS}}", detalheInvestimentos);
       
+    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.3 });
+
     const response = await fetch(`${config.apiUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
-      body: JSON.stringify({ model: config.model, messages: [{ role: "user", content: promptText }], temperature: 0.3 })
+      body: JSON.stringify(requestBody)
     });
     
     if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
@@ -776,10 +893,12 @@ Com base no potencial de economia gerado, explique como o usuário pode otimizar
       .replace("{{DISTRIBUICAO_INVESTIMENTOS}}", distribuicaoInvestimentos)
       .replace("{{DETALHE_FINANCIAMENTOS}}", detalheFinanciamentos);
       
+    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.3 });
+
     const response = await fetch(`${config.apiUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
-      body: JSON.stringify({ model: config.model, messages: [{ role: "user", content: promptText }], temperature: 0.3 })
+      body: JSON.stringify(requestBody)
     });
     
     if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
@@ -911,10 +1030,12 @@ Informe:
       .replace("{{DETALHE_DESPESAS}}", JSON.stringify(state.despesas.filter(d => d.perfil === activeProfileName)))
       .replace("{{DETALHE_FINANCIAMENTOS}}", JSON.stringify(state.financiamentos));
       
+    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.3 });
+
     const response = await fetch(`${config.apiUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
-      body: JSON.stringify({ model: config.model, messages: [{ role: "user", content: promptText }], temperature: 0.3 })
+      body: JSON.stringify(requestBody)
     });
     
     if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
@@ -1079,10 +1200,10 @@ Informe:
           const exp = extractedExpenses[idx];
 
           const desc = String(exp.description).trim() || "Compra Cartão";
-          const instVal = parseFloat(exp.value) || 0;
-          const isInst = !!exp.isInstallment;
-          const current = Math.max(1, parseInt(exp.currentInstallment) || 1);
+          const instVal = window.App.UIUtils.parseBRLValue(exp.value);
           const total = Math.max(1, parseInt(exp.totalInstallments) || 1);
+          const isInst = !!exp.isInstallment || total > 1;
+          const current = Math.max(1, parseInt(exp.currentInstallment) || 1);
 
           if (isInst && total > 1) {
             // Calcular retroatividade

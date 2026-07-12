@@ -28,7 +28,8 @@ window.App.State = (() => {
     llmConfig: {         // Configurações personalizadas da LLM
       apiUrl: "",
       apiKey: "",
-      model: ""
+      model: "",
+      maxContext: 10240
     },
     planejamento: {
       "Conservador": {
@@ -659,11 +660,12 @@ window.App.State = (() => {
     },
 
     // Atualizar configurações da LLM
-    atualizarLlmConfig(apiUrl, apiKey, model) {
+    atualizarLlmConfig(apiUrl, apiKey, model, maxContext) {
       _state.llmConfig = {
         apiUrl: String(apiUrl || "").trim(),
         apiKey: String(apiKey || "").trim(),
-        model: String(model || "").trim()
+        model: String(model || "").trim(),
+        maxContext: parseInt(maxContext) || 10240
       };
       console.log("State: Configuração da LLM atualizada no estado central:", _state.llmConfig);
       notify("llmConfig");
