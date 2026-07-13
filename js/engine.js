@@ -254,10 +254,17 @@ window.App.Engine = (() => {
     /**
      * Simula a quitação de financiamento comparando os juros e prazos com e sem amortização extra.
      */
-    simulateAmortization(V, P, N, TR, extraVal, extraFrequency) {
-      const rImplicit = this.solveImplicitInterestRate(V, P, N);
+    simulateAmortization(V, P, N, TR, extraVal, extraFrequency, system = "price", taxaJurosAnual = 0) {
+      let rContract;
+      if (taxaJurosAnual && !isNaN(taxaJurosAnual) && parseFloat(taxaJurosAnual) > 0) {
+        rContract = (parseFloat(taxaJurosAnual) / 12) / 100;
+      } else {
+        rContract = this.solveImplicitInterestRate(V, P, N);
+      }
       const trRate = (parseFloat(TR) || 0) / 100;
-      const rate = rImplicit + trRate;
+      const rate = rContract + trRate;
+      const systemName = String(system || "price").toLowerCase();
+      const constantAmortization = V / N;
 
       // 1. Cenário Normal (sem amortizações extras adicionais)
       let S_normal = V;
@@ -269,7 +276,7 @@ window.App.Engine = (() => {
         monthsNormal++;
         
         let J_t = S_normal * rate;
-        let A_t = P - J_t;
+        let A_t = systemName === "sac" ? constantAmortization : (P - J_t);
         
         if (A_t <= 0) {
           A_t = 0.01; // salvaguarda contra amortizações nulas/negativas
@@ -295,7 +302,7 @@ window.App.Engine = (() => {
         monthsAmort++;
 
         let J_t = S_amort * rate;
-        let A_t = P - J_t;
+        let A_t = systemName === "sac" ? constantAmortization : (P - J_t);
         
         if (A_t <= 0) {
           A_t = 0.01;

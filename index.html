@@ -119,7 +119,7 @@
         <div id="sync-status" class="text-[10px] text-center font-medium mt-1.5 hidden transition"></div>
       </div>
       <div class="text-center pt-2">
-        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.3.9 • Controle Financeiro</p>
+        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.3.14 • Controle Financeiro</p>
       </div>
     </div>
   </aside>
@@ -374,13 +374,13 @@
               <svg class="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span>Gerar análise inteligente</span>
+              <span>Gerar Análise Inteligente</span>
             </button>
 
             <!-- Loader (initially hidden) -->
             <div id="ai-analysis-loader" class="hidden flex flex-col items-center space-y-3 py-6">
               <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-              <p class="text-xs text-slate-400 font-medium">Consultando inteligência artificial...</p>
+              <p class="text-xs text-slate-400 font-medium">Gerando Análise Inteligente...</p>
             </div>
 
             <!-- Result Container (initially hidden) -->
@@ -408,8 +408,8 @@
             </div>
             
             <button id="generate-savings-plan-btn" class="bg-emerald-600 hover:bg-emerald-550 text-white text-xs font-semibold py-2.5 px-6 rounded-xl transition shadow-lg shadow-emerald-600/10 focus:outline-none flex items-center space-x-2 cursor-pointer">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+              <svg class="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <span>Gerar Plano de Economia</span>
             </button>
@@ -456,7 +456,7 @@
                   <th class="py-3 px-4">Descrição</th>
                   <th class="py-3 px-4">Progresso Parcelas</th>
                   <th class="py-3 px-4">Valor Total</th>
-                  <th class="py-3 px-4">T.R.</th>
+                  <th class="py-3 px-4">Taxas</th>
                   <th class="py-3 px-4">Previsão de Fim</th>
                   <th class="py-3 px-4 text-right">Ações</th>
                 </tr>
@@ -468,10 +468,43 @@
           </div>
         </div>
 
-        <!-- Simulator Container (Centralizado) -->
-        <div class="flex justify-center w-full">
-          <!-- Card 2: Simulador de Amortização -->
-          <div class="bg-slate-950/20 border border-slate-800 p-6 rounded-2xl flex flex-col space-y-6 w-full max-w-2xl">
+        <!-- Simulator & Generator Layout Container (Lado a Lado) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start w-full">
+          
+          <!-- Card 1: Gerador de Plano de Amortização (Esquerda) -->
+          <div class="bg-slate-950/20 border border-slate-800 p-6 rounded-2xl flex flex-col space-y-6">
+            <div>
+              <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                <span>Plano de Amortização Inteligente</span>
+              </h3>
+              <p class="text-xs text-slate-400">Gere um plano estratégico personalizado com Inteligência Artificial para quitar o financiamento escolhido.</p>
+            </div>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Escolha o Financiamento para o Plano</label>
+                <select id="plan-financing-select" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:border-indigo-500 transition cursor-pointer">
+                  <!-- Dynamically populated -->
+                </select>
+              </div>
+
+              <button id="btn-generate-amortization-plan" type="button" class="w-full bg-indigo-600 hover:bg-indigo-550 text-white text-xs font-semibold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition shadow-lg shadow-indigo-600/10 focus:outline-none cursor-pointer">
+                <svg class="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span id="btn-generate-amortization-plan-text">Gerar Plano Inteligente</span>
+              </button>
+              
+              <!-- Container de Exibição do Plano Gerado -->
+              <div id="amortization-plan-result" class="hidden bg-slate-900 border border-slate-800 p-5 rounded-xl text-slate-350 text-xs overflow-y-auto max-h-[500px] space-y-4 leading-relaxed prose prose-invert prose-xs">
+                <!-- O relatório em markdown será injetado aqui -->
+              </div>
+            </div>
+          </div>
+          
+          <!-- Card 2: Simulador de Amortização (Direita) -->
+          <div class="bg-slate-950/20 border border-slate-800 p-6 rounded-2xl flex flex-col space-y-6">
             <div>
               <h3 class="text-lg font-bold text-white">Simulador de Amortização</h3>
               <p class="text-xs text-slate-400">Simule a amortização extraordinária para redução de prazo do contrato.</p>
@@ -1011,6 +1044,19 @@
           <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Ano Início</label>
             <input type="number" min="1900" max="2100" id="financing-start-year" required placeholder="Ex: 2026" class="w-full bg-slate-955 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:border-indigo-500 transition">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Taxa Juros Anual (% a.a.)</label>
+            <input type="number" step="0.01" min="0" max="100" id="financing-annual-interest-rate" required placeholder="Ex: 9.5" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:border-indigo-500 transition">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Sistema de Amortização</label>
+            <select id="financing-system" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:border-indigo-500 transition cursor-pointer">
+              <option value="price">PRICE</option>
+              <option value="sac">SAC</option>
+            </select>
           </div>
         </div>
         <div class="flex space-x-3 pt-2">

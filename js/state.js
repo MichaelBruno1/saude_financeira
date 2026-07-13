@@ -154,7 +154,9 @@ window.App.State = (() => {
         parcelasTotais: parseInt(f.parcelasTotais) || 1,
         taxaTR: parseFloat(f.taxaTR) || 0,
         mes_inicio: parseInt(f.mes_inicio) || 1,
-        ano_inicio: parseInt(f.ano_inicio) || new Date().getFullYear()
+        ano_inicio: parseInt(f.ano_inicio) || new Date().getFullYear(),
+        sistema: String(f.sistema || "price").toLowerCase() === "sac" ? "sac" : "price",
+        taxaJurosAnual: parseFloat(f.taxaJurosAnual) || 0
       })) : [];
 
       _state.categorias = newState.categorias || {
@@ -492,7 +494,7 @@ window.App.State = (() => {
      },
 
     // Adicionar financiamento
-    adicionarFinanciamento(nome, valorTotal, valorParcela, parcelasTotais, taxaTR, mesInicio, anoInicio) {
+    adicionarFinanciamento(nome, valorTotal, valorParcela, parcelasTotais, taxaTR, mesInicio, anoInicio, sistema = "price", taxaJurosAnual = 0) {
       if (!_state.perfilAtivo) {
         throw new Error("Crie um perfil antes de adicionar financiamentos.");
       }
@@ -512,9 +514,13 @@ window.App.State = (() => {
       if (isNaN(taxaTR) || taxaTR < 0) {
         throw new Error("A taxa T.R. não pode ser negativa.");
       }
+      if (isNaN(taxaJurosAnual) || taxaJurosAnual < 0) {
+        throw new Error("A taxa de juros anual não pode ser negativa.");
+      }
 
       const mesInicioVal = Math.min(12, Math.max(1, parseInt(mesInicio) || 1));
       const anoInicioVal = parseInt(anoInicio) || new Date().getFullYear();
+      const sistemaVal = String(sistema || "price").toLowerCase() === "sac" ? "sac" : "price";
 
       const novo = {
         id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
@@ -525,7 +531,9 @@ window.App.State = (() => {
         parcelasTotais: parseInt(parcelasTotais),
         taxaTR: parseFloat(taxaTR),
         mes_inicio: mesInicioVal,
-        ano_inicio: anoInicioVal
+        ano_inicio: anoInicioVal,
+        sistema: sistemaVal,
+        taxaJurosAnual: parseFloat(taxaJurosAnual) || 0
       };
 
       _state.financiamentos.push(novo);
@@ -533,8 +541,8 @@ window.App.State = (() => {
       return novo;
     },
 
-    // Atualizar parcelasTotais e taxaTR do financiamento
-    atualizarFinanciamento(id, parcelasTotais, taxaTR) {
+    // Atualizar parcelasTotais, taxaTR, sistema e taxaJurosAnual do financiamento
+    atualizarFinanciamento(id, parcelasTotais, taxaTR, sistema = "price", taxaJurosAnual = 0) {
       const f = _state.financiamentos.find(item => item.id === id);
       if (!f) {
         throw new Error("Financiamento não encontrado.");
@@ -545,9 +553,14 @@ window.App.State = (() => {
       if (isNaN(taxaTR) || taxaTR < 0) {
         throw new Error("A taxa T.R. não pode ser negativa.");
       }
+      if (isNaN(taxaJurosAnual) || taxaJurosAnual < 0) {
+        throw new Error("A taxa de juros anual não pode ser negativa.");
+      }
 
       f.parcelasTotais = parseInt(parcelasTotais);
       f.taxaTR = parseFloat(taxaTR);
+      f.sistema = String(sistema || "price").toLowerCase() === "sac" ? "sac" : "price";
+      f.taxaJurosAnual = parseFloat(taxaJurosAnual) || 0;
 
       notify("financiamentos");
       return f;

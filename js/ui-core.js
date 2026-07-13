@@ -18,6 +18,10 @@ window.App.UI = (() => {
     BACKUP_WARNING_BANNER: "backup-warning-banner",
     BTN_CLOSE_BACKUP_BANNER: "btn-close-backup-banner",
     BTN_OPEN_PDF_IMPORT: "btn-open-pdf-import",
+    BTN_GENERATE_AMORTIZATION_PLAN: "btn-generate-amortization-plan",
+    AMORTIZATION_PLAN_SPINNER: "amortization-plan-spinner",
+    AMORTIZATION_PLAN_RESULT: "amortization-plan-result",
+    PLAN_FINANCING_SELECT: "plan-financing-select",
     CANCEL_SALARY_BTN: "cancel-salary-btn",
     CATEGORIES_COLORS_LIST: "categories-colors-list",
     CLOSE_EXPENSE_MODAL_BTN: "close-expense-modal-btn",
@@ -41,6 +45,8 @@ window.App.UI = (() => {
     FINANCING_START_MONTH: "financing-start-month",
     FINANCING_START_YEAR: "financing-start-year",
     FINANCING_TABLE_BODY: "financing-table-body",
+    FINANCING_SYSTEM: "financing-system",
+    FINANCING_ANNUAL_INTEREST_RATE: "financing-annual-interest-rate",
     FINANCING_TOTAL_VAL: "financing-total-val",
     FINANCING_TR_RATE: "financing-tr-rate",
     GENERATE_AI_ANALYSIS_BTN: "generate-ai-analysis-btn",
@@ -267,6 +273,10 @@ window.App.UI = (() => {
       s.yearTabsContainer      = g(DOM_IDS.YEAR_TABS_CONTAINER);
       s.btnOpenPdfImport       = g(DOM_IDS.BTN_OPEN_PDF_IMPORT);
       s.btnAddFinanciamento    = g("btn-add-financiamento");
+      s.btnGenerateAmortizationPlan = g(DOM_IDS.BTN_GENERATE_AMORTIZATION_PLAN);
+      s.amortizationPlanSpinner = g(DOM_IDS.AMORTIZATION_PLAN_SPINNER);
+      s.amortizationPlanResult = g(DOM_IDS.AMORTIZATION_PLAN_RESULT);
+      s.planFinancingSelect    = g(DOM_IDS.PLAN_FINANCING_SELECT);
       
       // Mapear elementos locais para os módulos filhos
       s.sidebarFinanciamentoBtn= g(DOM_IDS.SIDEBAR_FINANCIAMENTO_BTN);

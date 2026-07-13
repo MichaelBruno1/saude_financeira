@@ -5,13 +5,14 @@ window.App = window.App || {};
 window.App.UIFinancing = (() => {
   let financingModal, closeFinancingModalBtn, modalFinancingCancelBtn;
   let financingTableBody, financingRegisterForm;
-  let financingNameInput, financingTotalValInput, financingInstallmentValInput;
-  let financingInstallmentsCountInput, financingTrRateInput;
+  let financingNameInput, financingTotalValInput, financingInstallmentValInput, financingSystemSelect;
+  let financingInstallmentsCountInput, financingTrRateInput, financingAnnualInterestRateInput;
   let simulatorFinancingSelect, simulatorAmortizationVal, simulatorAmortizationFrequency;
   let simulationResultsContainer;
   let simKpiJurosSaved, simKpiMonthsSaved;
   let simTableNormalMonths, simTableNormalJuros, simTableNormalTotal;
   let simTableAmortMonths, simTableAmortJuros, simTableAmortTotal;
+  let btnGenerateAmortizationPlan, amortizationPlanSpinner, amortizationPlanResult, planFinancingSelect;
 
   function mapElements(DOM_IDS) {
     const g = id => document.getElementById(id);
@@ -24,8 +25,10 @@ window.App.UIFinancing = (() => {
     financingNameInput          = g(DOM_IDS.FINANCING_NAME);
     financingTotalValInput      = g(DOM_IDS.FINANCING_TOTAL_VAL);
     financingInstallmentValInput= g(DOM_IDS.FINANCING_INSTALLMENT_VAL);
+    financingSystemSelect       = g(DOM_IDS.FINANCING_SYSTEM);
     financingInstallmentsCountInput = g(DOM_IDS.FINANCING_INSTALLMENTS_COUNT);
     financingTrRateInput        = g(DOM_IDS.FINANCING_TR_RATE);
+    financingAnnualInterestRateInput = g(DOM_IDS.FINANCING_ANNUAL_INTEREST_RATE);
     simulatorFinancingSelect    = g(DOM_IDS.SIMULATOR_FINANCING_SELECT);
     simulatorAmortizationVal    = g(DOM_IDS.SIMULATOR_AMORTIZATION_VAL);
     simulatorAmortizationFrequency = g(DOM_IDS.SIMULATOR_AMORTIZATION_FREQUENCY);
@@ -46,12 +49,49 @@ window.App.UIFinancing = (() => {
     s.financingRegisterForm     = financingRegisterForm;
     s.financingInstallmentsCountInput = financingInstallmentsCountInput;
     s.financingTrRateInput      = financingTrRateInput;
+    s.financingSystemSelect     = financingSystemSelect;
+    s.financingAnnualInterestRateInput = financingAnnualInterestRateInput;
+    btnGenerateAmortizationPlan = s.btnGenerateAmortizationPlan;
+    amortizationPlanSpinner     = s.amortizationPlanSpinner;
+    amortizationPlanResult      = s.amortizationPlanResult;
+    planFinancingSelect         = s.planFinancingSelect;
   }
 
   function hideFinancingModal() {
     financingModal.classList.add("hidden");
     financingRegisterForm.reset();
     window.App.UIState.editingFinancingId = null;
+  }
+
+  function openFinancingModal() {
+    const DOM_IDS = window.App.UI_DOM_IDS;
+    const s = window.App.UIState;
+    s.editingFinancingId = null;
+
+    if (financingNameInput) financingNameInput.disabled = false;
+    if (financingTotalValInput) financingTotalValInput.disabled = false;
+    if (financingInstallmentValInput) financingInstallmentValInput.disabled = false;
+    if (financingSystemSelect) financingSystemSelect.disabled = false;
+    if (financingAnnualInterestRateInput) financingAnnualInterestRateInput.disabled = false;
+
+    const startMonth = document.getElementById(DOM_IDS.FINANCING_START_MONTH);
+    const startYear = document.getElementById(DOM_IDS.FINANCING_START_YEAR);
+    if (startMonth) startMonth.disabled = false;
+    if (startYear) startYear.disabled = false;
+
+    if (financingRegisterForm) financingRegisterForm.reset();
+
+    const modalTitle = financingModal ? financingModal.querySelector("h3") : null;
+    const submitBtn = financingRegisterForm ? financingRegisterForm.querySelector('button[type="submit"]') : null;
+    if (modalTitle) modalTitle.textContent = "Cadastrar Financiamento";
+    if (submitBtn) submitBtn.textContent = "Salvar";
+
+    if (financingModal) {
+      financingModal.classList.remove("hidden");
+    }
+    if (financingNameInput) {
+      financingNameInput.focus();
+    }
   }
 
   function runSimulation() {
@@ -64,7 +104,7 @@ window.App.UIFinancing = (() => {
     const state = window.App.State.getState();
     const f = state.financiamentos.find(item => item.id === selectedId);
     if (!f) { simulationResultsContainer.classList.add("hidden"); return; }
-    const res = window.App.Engine.simulateAmortization(f.valorTotal, f.valorParcela, f.parcelasTotais, f.taxaTR, extraVal, freq);
+    const res = window.App.Engine.simulateAmortization(f.valorTotal, f.valorParcela, f.parcelasTotais, f.taxaTR, extraVal, freq, f.sistema, f.taxaJurosAnual);
     simulationResultsContainer.classList.remove("hidden");
     simKpiJurosSaved.textContent  = formatCurrency(res.jurosEconomizados);
     simKpiMonthsSaved.textContent = `${res.mesesEconomizados} meses`;
@@ -92,8 +132,10 @@ window.App.UIFinancing = (() => {
       const tr    = parseFloat(financingTrRateInput.value) || 0;
       if (isNaN(count) || count <= 0) { alert("Por favor, digite uma quantidade válida de parcelas."); return; }
       try {
+        const sistema = financingSystemSelect ? financingSystemSelect.value : "price";
+        const annualInterestRate = financingAnnualInterestRateInput ? parseFloat(financingAnnualInterestRateInput.value) || 0 : 0;
         if (s.editingFinancingId) {
-          window.App.State.atualizarFinanciamento(s.editingFinancingId, count, tr);
+          window.App.State.atualizarFinanciamento(s.editingFinancingId, count, tr, sistema, annualInterestRate);
           showStatus("Financiamento atualizado!");
         } else {
           const nome    = financingNameInput.value.trim();
@@ -103,7 +145,7 @@ window.App.UIFinancing = (() => {
           const anoInicio = parseInt(document.getElementById(DOM_IDS.FINANCING_START_YEAR).value) || new Date().getFullYear();
           if (!nome) { alert("Nome do financiamento inválido."); return; }
           if (isNaN(total) || total <= 0 || isNaN(parcVal) || parcVal <= 0) { alert("Por favor, digite valores válidos superiores a zero."); return; }
-          window.App.State.adicionarFinanciamento(nome, total, parcVal, count, tr, mesInicio, anoInicio);
+          window.App.State.adicionarFinanciamento(nome, total, parcVal, count, tr, mesInicio, anoInicio, sistema, annualInterestRate);
           showStatus("Financiamento cadastrado!");
         }
         hideFinancingModal();
@@ -114,6 +156,40 @@ window.App.UIFinancing = (() => {
     if (simulatorFinancingSelect)    simulatorFinancingSelect.addEventListener("change", runSimulation);
     if (simulatorAmortizationVal)    simulatorAmortizationVal.addEventListener("input", runSimulation);
     if (simulatorAmortizationFrequency) simulatorAmortizationFrequency.addEventListener("change", runSimulation);
+
+    // Gerador de Plano de Amortização Inteligente
+    if (btnGenerateAmortizationPlan) {
+      btnGenerateAmortizationPlan.addEventListener("click", async () => {
+        const { parseMarkdownToHTML } = window.App.UIUtils;
+        const selectedFinancingId = planFinancingSelect ? planFinancingSelect.value : "";
+        if (!selectedFinancingId) {
+          alert("Selecione um financiamento no seletor acima antes de gerar o plano.");
+          return;
+        }
+
+        try {
+          if (amortizationPlanSpinner) amortizationPlanSpinner.classList.remove("hidden");
+          btnGenerateAmortizationPlan.disabled = true;
+          const textSpan = document.getElementById("btn-generate-amortization-plan-text");
+          if (textSpan) textSpan.textContent = "Gerando Plano Inteligente...";
+
+          const planMarkdown = await window.App.UIAgent.askAmortizationPlan(selectedFinancingId);
+
+          if (amortizationPlanResult) {
+            amortizationPlanResult.innerHTML = parseMarkdownToHTML(planMarkdown);
+            amortizationPlanResult.classList.remove("hidden");
+          }
+        } catch (err) {
+          alert(`Erro ao gerar plano de amortização: ${err.message}`);
+          console.error(err);
+        } finally {
+          if (amortizationPlanSpinner) amortizationPlanSpinner.classList.add("hidden");
+          btnGenerateAmortizationPlan.disabled = false;
+          const textSpan = document.getElementById("btn-generate-amortization-plan-text");
+          if (textSpan) textSpan.textContent = "Gerar Plano IA";
+        }
+      });
+    }
   }
 
   function render(state) {
@@ -122,6 +198,14 @@ window.App.UIFinancing = (() => {
     const DOM_IDS = window.App.UI_DOM_IDS;
     const MONTHS = window.App.UI_MONTHS;
     const { perfilAtivo, financiamentos } = state;
+
+    if (s.lastRenderedProfile !== state.perfilAtivo) {
+      s.lastRenderedProfile = state.perfilAtivo;
+      if (amortizationPlanResult) {
+        amortizationPlanResult.classList.add("hidden");
+        amortizationPlanResult.innerHTML = "";
+      }
+    }
 
     // A. Tabela de financiamentos
     if (financingTableBody) {
@@ -152,7 +236,7 @@ window.App.UIFinancing = (() => {
             <td class="py-3 px-4 font-medium text-slate-200">${f.nome}</td>
             <td class="py-3 px-4 font-mono">${progressoTexto}</td>
             <td class="py-3 px-4 font-mono text-indigo-300">${formatCurrency(f.valorTotal)}</td>
-            <td class="py-3 px-4 font-mono">${f.taxaTR}%</td>
+            <td class="py-3 px-4 font-mono text-xxs">${f.taxaTR}% T.R. <br> ${(f.taxaJurosAnual || 0)}% a.a.</td>
             <td class="py-3 px-4">${previsaoFim}</td>
             <td class="py-3 px-4 text-right">
               <button class="edit-financing-btn bg-slate-800 hover:bg-slate-750 text-indigo-300 hover:text-indigo-200 border border-slate-700 hover:border-slate-650 px-2.5 py-1 rounded-lg transition text-xs mr-1.5 focus:outline-none" data-id="${f.id}">Editar</button>
@@ -183,6 +267,12 @@ window.App.UIFinancing = (() => {
             financingNameInput.value = found.nome;
             financingTotalValInput.value = formatBRLInput(found.valorTotal.toFixed(2));
             financingInstallmentValInput.value = formatBRLInput(found.valorParcela.toFixed(2));
+            if (financingSystemSelect) {
+              financingSystemSelect.value = found.sistema || "price";
+            }
+            if (financingAnnualInterestRateInput) {
+              financingAnnualInterestRateInput.value = found.taxaJurosAnual || 0;
+            }
             financingInstallmentsCountInput.value = found.parcelasTotais;
             financingTrRateInput.value = found.taxaTR;
             document.getElementById(DOM_IDS.FINANCING_START_MONTH).value = found.mes_inicio;
@@ -218,6 +308,22 @@ window.App.UIFinancing = (() => {
         simulatorFinancingSelect.appendChild(opt);
       });
       runSimulation();
+    }
+
+    // C. Dropdown do gerador de plano IA
+    if (planFinancingSelect) {
+      const previousSelectVal = planFinancingSelect.value;
+      planFinancingSelect.innerHTML = "";
+      const defaultOpt = document.createElement("option");
+      defaultOpt.value = ""; defaultOpt.textContent = "-- Escolha um Financiamento --";
+      planFinancingSelect.appendChild(defaultOpt);
+      const fAtivos = financiamentos.filter(f => f.perfil === perfilAtivo);
+      fAtivos.forEach(f => {
+        const opt = document.createElement("option");
+        opt.value = f.id; opt.textContent = `${f.nome} (${formatCurrency(f.valorTotal)})`;
+        if (f.id === previousSelectVal) opt.selected = true;
+        planFinancingSelect.appendChild(opt);
+      });
     }
   }
 

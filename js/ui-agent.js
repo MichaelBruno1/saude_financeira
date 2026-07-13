@@ -1061,6 +1061,101 @@ Informe:
     return resultText;
   }
 
+  async function askAmortizationPlan(financingId) {
+    const config = getLlmConfig();
+    if (!config.apiUrl || !config.model) throw new Error("Configuração da LLM incompleta.");
+    
+    let promptTemplate = "";
+    try {
+      const response = await fetch("prompts/plano_amortizacao.md");
+      if (response.ok) promptTemplate = await response.text();
+      else throw new Error("Erro HTTP");
+    } catch (err) {
+      // Fallback
+      promptTemplate = `Você é um consultor financeiro especialista em financiamentos e amortizações.
+Sua missão é elaborar um plano de amortização baseado na vida financeira do perfil ativo, focado no financiamento escolhido:
+Nome: {{NOME_FINANCIAMENTO}}
+Valor: R$ {{VALOR_TOTAL}}
+Parcela: R$ {{VALOR_PARCELA}}
+Prazo: {{PARCELAS_TOTAIS}} parcelas
+Taxa TR: {{TAXA_TR}}% a.m.
+Sistema: {{SISTEMA_AMORTIZACAO}}
+
+Dados do Perfil:
+Salário: R$ {{SALARIO}}
+Investido: R$ {{TOTAL_INVESTIDO}}
+Reserva Ideal: R$ {{RESERVA_EMERGENCIA}}
+FGTS: R$ {{FGTS}}
+Sobra Mensal Real: R$ {{SOBRA_MENSAL}}
+
+Gere um relatório Markdown bem detalhado com Diagnóstico, Estratégia de FGTS, Plano de Aportes Extraordinários, Projeção de Economia de Tempo e Juros, e Dicas de Ouro.`;
+    }
+
+    const state = window.App.State.getState();
+    const activeProfileName = state.perfilAtivo || "Principal";
+    const profile = state.perfis.find(p => p.nome === activeProfileName) || { salario: 0, fgts: 0 };
+    
+    const f = state.financiamentos.find(item => item.id === financingId);
+    if (!f) throw new Error("Financiamento não encontrado.");
+
+    const fgtsVal = profile.fgts || 0;
+    const investExpenses = state.despesas.filter(d => d.perfil === activeProfileName && d.categoria === "Investimento");
+    const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
+
+    const recurrentExpensesSum = state.despesas.filter(d => d.perfil === activeProfileName && d.recorrente === true).reduce((sum, d) => sum + d.valor, 0);
+    const financingInstallmentsSum = state.financiamentos.filter(f => f.perfil === activeProfileName).reduce((sum, f) => sum + f.valorParcela, 0);
+    const targetReserve = (recurrentExpensesSum + financingInstallmentsSum) * 6;
+
+    const selectedMonth = state.mesAtivo || new Date().getMonth() + 1;
+    const isAnual = selectedMonth === 0;
+    const { totalGeral } = isAnual 
+      ? window.App.Engine.calculateAnnualSummary(profile, state.despesas, state.financiamentos, state.anoAtivo)
+      : window.App.Engine.calculateMonthlySummary(profile, selectedMonth, state.despesas, state.financiamentos, state.anoAtivo);
+      
+    const sobraMensal = profile.salario - totalGeral;
+
+    const investGrouped = {};
+    investExpenses.forEach(d => {
+      const sub = d.subcategoria || "Outros";
+      investGrouped[sub] = (investGrouped[sub] || 0) + d.valor;
+    });
+    const detalheInvestimentos = Object.entries(investGrouped)
+      .map(([sub, val]) => `- **${sub}:** R$ ${val.toFixed(2)}`)
+      .join("\n") || "Nenhum investimento cadastrado.";
+
+    const systemText = String(f.sistema || "price").toUpperCase() === "SAC" ? "SAC (Amortizações Constantes)" : "PRICE (Prestações Constantes)";
+
+    let promptText = promptTemplate
+      .replace("{{NOME_FINANCIAMENTO}}", f.nome)
+      .replace("{{VALOR_TOTAL}}", f.valorTotal.toFixed(2))
+      .replace("{{VALOR_PARCELA}}", f.valorParcela.toFixed(2))
+      .replace("{{PARCELAS_TOTAIS}}", String(f.parcelasTotais))
+      .replace("{{TAXA_TR}}", f.taxaTR.toFixed(3))
+      .replace("{{TAXA_JUROS_ANUAL}}", (f.taxaJurosAnual || 0).toFixed(2))
+      .replace("{{SISTEMA_AMORTIZACAO}}", systemText)
+      .replace("{{PERFIL}}", activeProfileName)
+      .replace("{{SALARIO}}", profile.salario.toFixed(2))
+      .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
+      .replace("{{DETALHE_INVESTIMENTOS}}", detalheInvestimentos)
+      .replace("{{FGTS}}", fgtsVal.toFixed(2))
+      .replace("{{RESERVA_EMERGENCIA}}", targetReserve.toFixed(2))
+      .replace("{{SOBRA_MENSAL}}", sobraMensal.toFixed(2));
+
+    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.3 });
+
+    const response = await fetch(`${config.apiUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
+    const resData = await response.json();
+    const resultText = resData.choices?.[0]?.message?.content;
+    if (!resultText) throw new Error("Retorno vazio.");
+    return resultText;
+  }
+
   function init() {
     if (btnChatAgent) {
       btnChatAgent.addEventListener("click", () => {
@@ -1274,5 +1369,5 @@ Informe:
     }
   }
 
-  return { mapElements, init, askInvestmentsAnalysis, askSavingsPlan, askFinancialAnalysis };
+  return { mapElements, init, askInvestmentsAnalysis, askSavingsPlan, askFinancialAnalysis, askAmortizationPlan };
 })();
