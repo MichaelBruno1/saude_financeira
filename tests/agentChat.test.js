@@ -21,7 +21,8 @@ global.window = {
       }),
       subscribe: vi.fn(),
       adicionarDespesa: vi.fn(),
-      atualizarDespesa: vi.fn()
+      atualizarDespesa: vi.fn(),
+      removerDespesa: vi.fn()
     },
     LlmConfig: { apiUrl: "http://localhost:11434", apiKey: "test-key", model: "llama3" }
   }
@@ -263,4 +264,56 @@ describe('Financial Agent Chat Integration', () => {
     const systemSuccess = appends.some(call => call[0].innerHTML.includes("atualizada com sucesso"));
     expect(systemSuccess).toBe(true);
   });
+
+  it('should process removerDespesa action successfully', async () => {
+    const files = ['ui-core.js', 'ui-expenses.js', 'ui-financing.js', 'ui-reports.js', 'ui-investments.js', 'ui-settings.js', 'ui-agent.js'];
+    files.forEach(f => eval(fs.readFileSync('js/' + f, 'utf8')));
+
+    const ui = window.App.UI;
+    ui.init();
+
+    const submitCallback = domElements['agent-chat-form'].addEventListener.mock.calls.find(call => call[0] === 'submit')[1];
+
+    // Mock agent response to remove existing "exp-1" (Almoço)
+    const mockAgentResponse = {
+      message: "Removi a despesa de Almoço para você.",
+      action: {
+        type: "removerDespesa",
+        params: {
+          id: "exp-1",
+          descricao: "Almoço"
+        }
+      }
+    };
+
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url === "prompts/agente.md") {
+        return Promise.resolve({
+          ok: true,
+          text: async () => "Mocked Prompt Template {{PERGUNTA}}"
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          choices: [
+            { message: { content: JSON.stringify(mockAgentResponse) } }
+          ]
+        })
+      });
+    });
+
+    domElements['agent-chat-input'].value = "apague a despesa Almoço";
+    const mockEvent = { preventDefault: vi.fn() };
+    
+    await submitCallback(mockEvent);
+
+    // Verify state mutation was called with the ID to remove
+    expect(window.App.State.removerDespesa).toHaveBeenCalledWith("exp-1");
+
+    const appends = domElements['agent-chat-messages'].appendChild.mock.calls;
+    const systemSuccess = appends.some(call => call[0].innerHTML.includes("removida com sucesso"));
+    expect(systemSuccess).toBe(true);
+  });
 });
+
