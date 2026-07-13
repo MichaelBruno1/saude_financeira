@@ -1,6 +1,6 @@
 {
   "name": "saude-financeira",
-  "version": "1.3.18",
+  "version": "1.3.20",
   "description": "Aplicação de Saúde Financeira Pessoal Estritamente Local",
   "main": "js/app.js",
   "scripts": {

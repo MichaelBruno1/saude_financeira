@@ -4,6 +4,7 @@ Analise a carteira de investimentos do usuário abaixo e retorne um diagnóstico
 ## Dados Financeiros do Usuário
 **Perfil:** {{PERFIL}}
 **Renda/Salário Declarado:** R$ {{SALARIO}}
+**Mês de Referência Atual:** {{NOME_MES}} de {{ANO_ATUAL}} (Restam {{MESES_RESTANTES}} meses para o fim do ano)
 
 **Total Investido (Excluindo FGTS):** R$ {{TOTAL_INVESTIDO}}
 **Saldo no FGTS:** R$ {{FGTS}}
@@ -27,7 +28,7 @@ Faça uma crítica construtiva. Se houver poupança, explique com bom humor por 
 Sugira como o usuário deve distribuir os seus próximos aportes financeiros mensais para equilibrar a carteira.
 
 ### 🔮 Previsão de Fechamento Anual
-Com base nos aportes recorrentes e o total já investido (levando em conta a média ou os aportes declarados), faça uma projeção do valor total que o usuário deverá ter investido até o fim do ano. Brinque com essa previsão (ex: se o usuário vai poder viajar para as Maldivas ou apenas para a praia mais próxima).
+Com base nos aportes recorrentes, no total já investido e considerando que restam exatamente {{MESES_RESTANTES}} meses para o fim do ano, faça uma projeção do valor total que o usuário deverá ter investido ao fechar o ano. Brinque com essa previsão (ex: se o usuário vai poder viajar para as Maldivas ou apenas para a praia mais próxima).
 
 ---
 

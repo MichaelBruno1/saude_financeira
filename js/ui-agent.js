@@ -723,6 +723,7 @@ Analise a carteira de investimentos do usuário abaixo e retorne um diagnóstico
 ## Dados Financeiros do Usuário
 **Perfil:** {{PERFIL}}
 **Renda/Salário Declarado:** R$ {{SALARIO}}
+**Mês de Referência Atual:** {{NOME_MES}} de {{ANO_ATUAL}} (Restam {{MESES_RESTANTES}} meses para o fim do ano)
 
 **Total Investido (Excluindo FGTS):** R$ {{TOTAL_INVESTIDO}}
 **Saldo no FGTS:** R$ {{FGTS}}
@@ -746,7 +747,7 @@ Faça uma crítica construtiva. Se houver poupança, explique com bom humor por 
 Sugira como o usuário deve distribuir os seus próximos aportes financeiros mensais para equilibrar a carteira.
 
 ### 🔮 Previsão de Fechamento Anual
-Com base nos aportes recorrentes e o total já investido (levando em conta a média ou os aportes declarados), faça uma projeção do valor total que o usuário deverá ter investido até o fim do ano. Brinque com essa previsão (ex: se o usuário vai poder viajar para as Maldivas ou apenas para a praia mais próxima).
+Com base nos aportes recorrentes, no total já investido e considerando que restam exatamente {{MESES_RESTANTES}} meses para o fim do ano, faça uma projeção do valor total que o usuário deverá ter investido ao fechar o ano. Brinque com essa previsão (ex: se o usuário vai poder viajar para as Maldivas ou apenas para a praia mais próxima).
 
 ---
 
@@ -781,9 +782,18 @@ Com base nos aportes recorrentes e o total já investido (levando em conta a mé
       .map(([sub, val]) => `- **${sub}:** R$ ${val.toFixed(2)}`)
       .join("\n") || "Nenhum investimento cadastrado.";
 
+    const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const currentMonthNum = state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1);
+    const nomeMes = monthNames[currentMonthNum - 1];
+    const anoAtual = state.anoAtivo || new Date().getFullYear();
+    const mesesRestantes = 12 - currentMonthNum;
+
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
       .replace("{{SALARIO}}", profile.salario.toFixed(2))
+      .replace("{{NOME_MES}}", nomeMes)
+      .replace("{{ANO_ATUAL}}", String(anoAtual))
+      .replace(/\{\{MESES_RESTANTES\}\}/g, String(mesesRestantes))
       .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
       .replace("{{FGTS}}", fgtsVal.toFixed(2))
       .replace("{{TOTAL_COM_FGTS}}", combinedTotal.toFixed(2))

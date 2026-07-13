@@ -115,18 +115,10 @@ window.App.Engine = (() => {
       if (Array.isArray(financiamentos)) {
         financiamentos.forEach(f => {
           if (f.perfil !== nomePerfil) return;
-
-          const S_month = parseInt(f.mes_inicio) || 1;
-          const S_year = parseInt(f.ano_inicio) || targetYear;
-          const P = parseInt(f.parcelasTotais) || 1;
-
-          const startAbs = S_year * 12 + S_month - 1;
-          const viewAbs = targetYear * 12 + mes - 1;
-          const index = viewAbs - startAbs + 1;
-
-          if (index >= 1 && index <= P) {
-            gastosPorCategoria["Financiamento"] += f.valorParcela;
-            totalGastos += f.valorParcela;
+          const details = this.getFinancingDetailsForMonth(f, mes, targetYear);
+          if (details.active) {
+            gastosPorCategoria["Financiamento"] += details.valorParcela;
+            totalGastos += details.valorParcela;
           }
         });
       }
@@ -346,6 +338,94 @@ window.App.Engine = (() => {
         amortTotal: amortTotal,
         jurosEconomizados: Math.max(0, jurosEconomizados),
         mesesEconomizados: Math.max(0, mesesEconomizados)
+      };
+    },
+
+    getFinancingDetailsForMonth(f, mes, ano) {
+      const V = parseFloat(f.valorTotal) || 0;
+      const P = parseFloat(f.valorParcela) || 0;
+      const N = parseInt(f.parcelasTotais) || 1;
+      const TR = parseFloat(f.taxaTR) || 0;
+      const system = String(f.sistema || "price").toLowerCase();
+      const taxaJurosAnual = parseFloat(f.taxaJurosAnual) || 0;
+
+      let rContract;
+      if (taxaJurosAnual > 0) {
+        rContract = (taxaJurosAnual / 12) / 100;
+      } else {
+        rContract = this.solveImplicitInterestRate(V, P, N);
+      }
+      const trRate = TR / 100;
+      const rate = rContract + trRate;
+      const constantAmortization = V / N;
+
+      const S_month = parseInt(f.mes_inicio) || 1;
+      const S_year = parseInt(f.ano_inicio) || new Date().getFullYear();
+
+      const startAbs = S_year * 12 + S_month - 1;
+      const targetAbs = ano * 12 + mes - 1;
+      const index = targetAbs - startAbs + 1;
+
+      if (index <= 0) {
+        return {
+          active: false,
+          index: 0,
+          saldoDevedorAntes: V,
+          saldoDevedorDepois: V,
+          valorParcela: P,
+          amortizacao: 0,
+          juros: 0
+        };
+      }
+
+      if (index > N) {
+        return {
+          active: false,
+          index: index,
+          saldoDevedorAntes: 0,
+          saldoDevedorDepois: 0,
+          valorParcela: 0,
+          amortizacao: 0,
+          juros: 0
+        };
+      }
+
+      let S = V;
+      let currentJuros = 0;
+      let currentAmortizacao = 0;
+      let currentParcela = P;
+
+      for (let m = 1; m <= index; m++) {
+        let J_t = S * rate;
+        let A_t = system === "sac" ? constantAmortization : (P - J_t);
+        if (A_t <= 0) A_t = 0.01;
+
+        if (m === index) {
+          currentJuros = J_t;
+          currentAmortizacao = Math.min(S, A_t);
+          currentParcela = system === "sac" ? (currentAmortizacao + J_t) : P;
+          break;
+        }
+
+        if (S < A_t) {
+          S = 0;
+          break;
+        } else {
+          S -= A_t;
+        }
+      }
+
+      const saldoDevedorAntes = S;
+      const saldoDevedorDepois = Math.max(0, S - currentAmortizacao);
+
+      return {
+        active: true,
+        index: index,
+        saldoDevedorAntes: parseFloat(saldoDevedorAntes.toFixed(2)),
+        saldoDevedorDepois: parseFloat(saldoDevedorDepois.toFixed(2)),
+        valorParcela: parseFloat(currentParcela.toFixed(2)),
+        amortizacao: parseFloat(currentAmortizacao.toFixed(2)),
+        juros: parseFloat(currentJuros.toFixed(2))
       };
     }
   };

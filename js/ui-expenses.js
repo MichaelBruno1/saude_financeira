@@ -215,18 +215,13 @@ window.App.UIExpenses = (() => {
     // 2. Financiamentos ativos como linhas informativas
     const fAtivos = financiamentos.filter(f => f.perfil === perfilAtivo);
     fAtivos.forEach(f => {
-      const S_month = parseInt(f.mes_inicio) || 1;
-      const S_year  = parseInt(f.ano_inicio) || anoAtivo;
-      const P       = parseInt(f.parcelasTotais) || 1;
-      const startAbs = S_year * 12 + S_month - 1;
-      const viewAbs  = anoAtivo * 12 + mesAtivo - 1;
-      const index    = viewAbs - startAbs + 1;
-      if (index >= 1 && index <= P) {
+      const details = window.App.Engine.getFinancingDetailsForMonth(f, mesAtivo, anoAtivo);
+      if (details.active) {
         itensDaTabela.push({
           tipo: "financiamento", id: f.id,
           descricao: `Financiamento: ${f.nome}`, categoria: "Financiamento",
-          valorParcela: f.valorParcela,
-          parcelasTexto: `Parcela ${index} de ${f.parcelasTotais}`
+          valorParcela: details.valorParcela,
+          parcelasTexto: `Parcela ${details.index} de ${f.parcelasTotais}`
         });
       }
     });

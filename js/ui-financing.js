@@ -230,13 +230,24 @@ window.App.UIFinancing = (() => {
           const endMonth = (endAbs % 12) + 1;
           const endYear  = Math.floor(endAbs / 12);
           const previsaoFim = `${MONTHS[endMonth - 1]} de ${endYear}`;
+
+          // Calcular Saldo Devedor dinâmico no mês de referência
+          const refMonth = state.mesAtivo <= 12 ? state.mesAtivo : currentMonth;
+          const refYear  = state.anoAtivo || currentYear;
+          const details = window.App.Engine.getFinancingDetailsForMonth(f, refMonth, refYear);
+          const saldoDevedor = details.saldoDevedorAntes;
+
           const row = document.createElement("tr");
           row.className = "hover:bg-slate-900/40 transition border-b border-slate-850 text-slate-350";
           row.innerHTML = `
             <td class="py-3 px-4 font-medium text-slate-200">${f.nome}</td>
             <td class="py-3 px-4 font-mono">${progressoTexto}</td>
-            <td class="py-3 px-4 font-mono text-indigo-300">${formatCurrency(f.valorTotal)}</td>
-            <td class="py-3 px-4 font-mono text-xxs">${f.taxaTR}% T.R. <br> ${(f.taxaJurosAnual || 0)}% a.a.</td>
+            <td class="py-3 px-4 font-mono">
+              <span class="text-emerald-400 font-bold">${formatCurrency(saldoDevedor)}</span>
+              <br>
+              <span class="text-slate-500 text-[10px]">de ${formatCurrency(f.valorTotal)}</span>
+            </td>
+            <td class="py-3 px-4 font-mono text-xxs">${f.taxaTR}% T.R. <br> ${(f.taxaJurosAnual || 0)}% a.a. <br> <span class="text-slate-500">Sistema ${String(f.sistema || 'price').toUpperCase()}</span></td>
             <td class="py-3 px-4">${previsaoFim}</td>
             <td class="py-3 px-4 text-right">
               <button class="edit-financing-btn bg-slate-800 hover:bg-slate-750 text-indigo-300 hover:text-indigo-200 border border-slate-700 hover:border-slate-650 px-2.5 py-1 rounded-lg transition text-xs mr-1.5 focus:outline-none" data-id="${f.id}">Editar</button>
