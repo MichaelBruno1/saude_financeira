@@ -1156,6 +1156,112 @@ Gere um relatório Markdown bem detalhado com Diagnóstico, Estratégia de FGTS,
     return resultText;
   }
 
+  async function askCustomMethod() {
+    const config = getLlmConfig();
+    if (!config.apiUrl || !config.model) throw new Error("Configuração da LLM incompleta.");
+
+    let promptTemplate = "";
+    try {
+      const response = await fetch("prompts/metodo_personalizado.md");
+      if (response.ok) promptTemplate = await response.text();
+      else throw new Error("Erro HTTP");
+    } catch (err) {
+      // Fallback
+      promptTemplate = `Você é um IA especialista em organização financeira.
+Crie um método "Personalizado" com soma total exatamente 100.
+Categorias: {{CATEGORIAS_EXISTENTES}}
+Perfil: {{PERFIL}}
+Salário: R$ {{SALARIO}}
+Gastos Reais:
+{{DETALHE_GASTOS}}
+Retorne apenas JSON cru mapeando categorias para porcentagem. Sem markdown.`;
+    }
+
+    const state = window.App.State.getState();
+    const activeProfileName = state.perfilAtivo || "Principal";
+    const profile = state.perfis.find(p => p.nome === activeProfileName) || { salario: 0 };
+
+    const categoriasList = Object.keys(state.categorias);
+    const categoriasExistentesText = categoriasList.map(cat => `- ${cat}`).join("\n");
+
+    const gastosAcumulados = {};
+    categoriasList.forEach(cat => {
+      gastosAcumulados[cat] = 0;
+    });
+    
+    const despesasPerfil = state.despesas.filter(d => d.perfil === activeProfileName);
+    despesasPerfil.forEach(d => {
+      if (gastosAcumulados[d.categoria] !== undefined) {
+        gastosAcumulados[d.categoria] += d.valor;
+      }
+    });
+
+    const detalheGastosText = Object.entries(gastosAcumulados)
+      .map(([cat, val]) => `- **${cat}:** R$ ${val.toFixed(2)}`)
+      .join("\n");
+
+    let promptText = promptTemplate
+      .replace("{{CATEGORIAS_EXISTENTES}}", categoriasExistentesText)
+      .replace("{{PERFIL}}", activeProfileName)
+      .replace("{{SALARIO}}", profile.salario.toFixed(2))
+      .replace("{{DETALHE_GASTOS}}", detalheGastosText);
+
+    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.1 });
+
+    const response = await fetch(`${config.apiUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
+    const resData = await response.json();
+    let resultText = resData.choices?.[0]?.message?.content;
+    if (!resultText) throw new Error("Retorno vazio.");
+
+    resultText = resultText.trim();
+    if (resultText.startsWith("```")) {
+      resultText = resultText.replace(/^```[a-zA-Z0-9]*\n/, "").replace(/\n```$/, "").trim();
+    }
+
+    try {
+      const parsed = JSON.parse(resultText);
+      const resultObj = {};
+      let sum = 0;
+      categoriasList.forEach(cat => {
+        let val = parseFloat(parsed[cat]) || 0;
+        if (val < 0) val = 0;
+        resultObj[cat] = val;
+        sum += val;
+      });
+
+      if (sum !== 100 && sum > 0) {
+        let currentSum = 0;
+        categoriasList.forEach(cat => {
+          resultObj[cat] = Math.round((resultObj[cat] / sum) * 100);
+          currentSum += resultObj[cat];
+        });
+        
+        let diff = 100 - currentSum;
+        if (diff !== 0) {
+          const maxCat = categoriasList.reduce((max, cat) => resultObj[cat] > resultObj[max] ? cat : max, categoriasList[0]);
+          resultObj[maxCat] += diff;
+        }
+      } else if (sum === 0) {
+        const share = Math.floor(100 / categoriasList.length);
+        categoriasList.forEach(cat => {
+          resultObj[cat] = share;
+        });
+        const diff = 100 - (share * categoriasList.length);
+        resultObj[categoriasList[0]] += diff;
+      }
+
+      return resultObj;
+    } catch (err) {
+      throw new Error(`Retorno da LLM não é um JSON válido: ${resultText}`);
+    }
+  }
+
   function init() {
     if (btnChatAgent) {
       btnChatAgent.addEventListener("click", () => {
@@ -1369,5 +1475,5 @@ Gere um relatório Markdown bem detalhado com Diagnóstico, Estratégia de FGTS,
     }
   }
 
-  return { mapElements, init, askInvestmentsAnalysis, askSavingsPlan, askFinancialAnalysis, askAmortizationPlan };
+  return { mapElements, init, askInvestmentsAnalysis, askSavingsPlan, askFinancialAnalysis, askAmortizationPlan, askCustomMethod };
 })();

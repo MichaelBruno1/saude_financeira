@@ -8,6 +8,7 @@ window.App.UISettings = (() => {
   let settingsInvestmentCategoriesList;
   let settingsPlannerInputsGrid, settingsPlannerMethodSelect, settingsPlannerTotalSum;
   let settingsPlannerWarning, settingsPlannerInfo, settingsPlannerSobraSpan;
+  let btnGenerateCustomMethod, generateCustomMethodSpinner, optMethodPersonalizado;
 
   function mapElements(DOM_IDS) {
     const g = id => document.getElementById(id);
@@ -32,6 +33,9 @@ window.App.UISettings = (() => {
     settingsPlannerWarning           = g(DOM_IDS.SETTINGS_PLANNER_WARNING);
     settingsPlannerInfo              = g(DOM_IDS.SETTINGS_PLANNER_INFO);
     settingsPlannerSobraSpan         = g(DOM_IDS.SETTINGS_PLANNER_SOBRA_SPAN);
+    btnGenerateCustomMethod          = g(DOM_IDS.BTN_GENERATE_CUSTOM_METHOD);
+    generateCustomMethodSpinner      = g(DOM_IDS.GENERATE_CUSTOM_METHOD_SPINNER);
+    optMethodPersonalizado           = g(DOM_IDS.OPT_METHOD_PERSONALIZADO);
 
     // Compartilha referencias
     s.settingsContainer = settingsContainer;
@@ -85,6 +89,74 @@ window.App.UISettings = (() => {
           showStatus("Configuração da LLM salva com sucesso!");
         } catch (err) {
           showStatus(err.message, true);
+        }
+      });
+    }
+
+    // Alterar método no planejador
+    if (settingsPlannerMethodSelect) {
+      settingsPlannerMethodSelect.addEventListener("change", () => {
+        renderPlannerSettingsForm();
+      });
+    }
+
+    // Salvar limites do planejador
+    const plannerLimitsForm = document.getElementById("settings-planner-limits-form");
+    if (plannerLimitsForm) {
+      plannerLimitsForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const metodo = settingsPlannerMethodSelect.value;
+        const inputs = settingsPlannerInputsGrid.querySelectorAll(".planner-percentage-input");
+        const limites = {};
+        inputs.forEach(inp => {
+          const cat = inp.getAttribute("data-category");
+          limites[cat] = parseFloat(inp.value) || 0;
+        });
+
+        try {
+          window.App.State.atualizarPlanejamento(metodo, limites);
+          showStatus(`Limites do método "${metodo}" salvos com sucesso!`);
+        } catch (err) {
+          alert(`Erro: ${err.message}`);
+        }
+      });
+    }
+
+    // Gerar Método Personalizado por IA
+    if (btnGenerateCustomMethod) {
+      btnGenerateCustomMethod.addEventListener("click", async () => {
+        const state = window.App.State.getState();
+        const llm = state.llmConfig || {};
+        if (!llm.apiUrl || !llm.model) {
+          alert("Por favor, configure as chaves da LLM nas Configurações antes de gerar o método personalizado.");
+          return;
+        }
+
+        const textCustomMethod = document.getElementById("btn-generate-custom-method-text");
+
+        try {
+          btnGenerateCustomMethod.disabled = true;
+          if (generateCustomMethodSpinner) generateCustomMethodSpinner.classList.remove("hidden");
+          if (textCustomMethod) textCustomMethod.textContent = "Gerando...";
+
+          const result = await window.App.UIAgent.askCustomMethod();
+          
+          window.App.State.atualizarPlanejamento("Personalizado", result);
+          
+          if (optMethodPersonalizado) optMethodPersonalizado.classList.remove("hidden");
+          if (settingsPlannerMethodSelect) {
+            settingsPlannerMethodSelect.value = "Personalizado";
+          }
+          
+          renderPlannerSettingsForm();
+          showStatus("Método Personalizado gerado com sucesso pela IA!");
+        } catch (err) {
+          console.error(err);
+          alert(`Erro ao gerar método personalizado: ${err.message}`);
+        } finally {
+          btnGenerateCustomMethod.disabled = false;
+          if (generateCustomMethodSpinner) generateCustomMethodSpinner.classList.add("hidden");
+          if (textCustomMethod) textCustomMethod.textContent = "Gerar Método Personalizado";
         }
       });
     }
@@ -161,6 +233,14 @@ window.App.UISettings = (() => {
   function render(state) {
     const { showStatus } = window.App.UIUtils;
     
+    if (optMethodPersonalizado) {
+      if (state.planejamento && state.planejamento["Personalizado"]) {
+        optMethodPersonalizado.classList.remove("hidden");
+      } else {
+        optMethodPersonalizado.classList.add("hidden");
+      }
+    }
+
     if (themeToggleBtnText) {
       themeToggleBtnText.textContent = state.theme === "light" ? "Mudar para Modo Escuro" : "Mudar para Modo Claro";
     }

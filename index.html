@@ -119,7 +119,7 @@
         <div id="sync-status" class="text-[10px] text-center font-medium mt-1.5 hidden transition"></div>
       </div>
       <div class="text-center pt-2">
-        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.3.14 • Controle Financeiro</p>
+        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.3.17 • Controle Financeiro</p>
       </div>
     </div>
   </aside>
@@ -325,6 +325,7 @@
                 <option value="Conservador">Conservador</option>
                 <option value="Equilibrado" selected>Equilibrado</option>
                 <option value="Agressivo">Agressivo</option>
+                <option value="Personalizado" class="hidden" id="opt-report-method-personalizado">Personalizado (IA)</option>
               </select>
             </div>
           </div>
@@ -845,13 +846,23 @@
                 <span>Observação: Gastos com financiamento são considerados moradia.</span>
               </p>
             </div>
-            <div class="flex items-center space-x-2 self-start">
-              <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Método:</label>
-              <select id="settings-planner-method-select" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-indigo-500 transition cursor-pointer">
-                <option value="Conservador">Conservador</option>
-                <option value="Equilibrado" selected>Equilibrado</option>
-                <option value="Agressivo">Agressivo</option>
-              </select>
+            <div class="flex items-center space-x-6">
+              <div class="flex items-center space-x-2">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Método:</label>
+                <select id="settings-planner-method-select" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-indigo-500 transition cursor-pointer">
+                  <option value="Conservador">Conservador</option>
+                  <option value="Equilibrado" selected>Equilibrado</option>
+                  <option value="Agressivo">Agressivo</option>
+                  <option value="Personalizado" class="hidden" id="opt-method-personalizado">Personalizado (IA)</option>
+                </select>
+              </div>
+              <button type="button" id="btn-generate-custom-method" class="bg-indigo-600 hover:bg-indigo-550 text-white text-xs font-semibold py-1.5 px-4 rounded-xl flex items-center justify-center space-x-2 transition shadow-lg shadow-indigo-600/10 focus:outline-none cursor-pointer">
+                <svg class="w-3.5 h-3.5 animate-spin hidden" id="generate-custom-method-spinner" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="btn-generate-custom-method-text">Gerar Método Personalizado</span>
+              </button>
             </div>
           </div>
 

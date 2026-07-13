@@ -3,7 +3,7 @@ window.App = window.App || {};
 
 window.App.UIReports = (() => {
   let reportsContainer, reportsPizzaMonthSelect, reportsBudgetProgressContainer;
-  let plannerMethodSelect, plannerComparisonTableBody;
+  let plannerMethodSelect, plannerComparisonTableBody, optReportMethodPersonalizado;
   let generateAiAnalysisBtn, aiAnalysisLoader, aiAnalysisResultCard, aiAnalysisTimestamp, aiAnalysisTextContent;
   let generateSavingsPlanBtn, savingsPlanLoader, savingsPlanResultCard, savingsPlanTimestamp, savingsPlanTextContent;
   
@@ -15,6 +15,7 @@ window.App.UIReports = (() => {
     reportsBudgetProgressContainer  = g(DOM_IDS.REPORTS_BUDGET_PROGRESS_CONTAINER);
     plannerMethodSelect             = g(DOM_IDS.PLANNER_METHOD_SELECT);
     plannerComparisonTableBody      = g(DOM_IDS.PLANNER_COMPARISON_TABLE_BODY);
+    optReportMethodPersonalizado    = g(DOM_IDS.OPT_REPORT_METHOD_PERSONALIZADO);
     
     generateAiAnalysisBtn           = g(DOM_IDS.GENERATE_AI_ANALYSIS_BTN);
     aiAnalysisLoader                = g("ai-analysis-loader");
@@ -37,8 +38,9 @@ window.App.UIReports = (() => {
 
   function init() {
     if (plannerMethodSelect) {
-      plannerMethodSelect.addEventListener("change", (e) => {
-        window.App.State.selecionarMetodoPlanejamento(e.target.value);
+      plannerMethodSelect.addEventListener("change", () => {
+        const state = window.App.State.getState();
+        window.App.UIReports.render(state);
       });
     }
 
@@ -137,6 +139,14 @@ window.App.UIReports = (() => {
             </div>
           `;
           reportsBudgetProgressContainer.appendChild(barDiv);
+        }
+      }
+
+      if (optReportMethodPersonalizado) {
+        if (state.planejamento && state.planejamento["Personalizado"]) {
+          optReportMethodPersonalizado.classList.remove("hidden");
+        } else {
+          optReportMethodPersonalizado.classList.add("hidden");
         }
       }
 

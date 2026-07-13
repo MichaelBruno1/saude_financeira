@@ -22,6 +22,10 @@ window.App.UI = (() => {
     AMORTIZATION_PLAN_SPINNER: "amortization-plan-spinner",
     AMORTIZATION_PLAN_RESULT: "amortization-plan-result",
     PLAN_FINANCING_SELECT: "plan-financing-select",
+    BTN_GENERATE_CUSTOM_METHOD: "btn-generate-custom-method",
+    GENERATE_CUSTOM_METHOD_SPINNER: "generate-custom-method-spinner",
+    OPT_METHOD_PERSONALIZADO: "opt-method-personalizado",
+    OPT_REPORT_METHOD_PERSONALIZADO: "opt-report-method-personalizado",
     CANCEL_SALARY_BTN: "cancel-salary-btn",
     CATEGORIES_COLORS_LIST: "categories-colors-list",
     CLOSE_EXPENSE_MODAL_BTN: "close-expense-modal-btn",
@@ -277,6 +281,9 @@ window.App.UI = (() => {
       s.amortizationPlanSpinner = g(DOM_IDS.AMORTIZATION_PLAN_SPINNER);
       s.amortizationPlanResult = g(DOM_IDS.AMORTIZATION_PLAN_RESULT);
       s.planFinancingSelect    = g(DOM_IDS.PLAN_FINANCING_SELECT);
+      s.btnGenerateCustomMethod = g(DOM_IDS.BTN_GENERATE_CUSTOM_METHOD);
+      s.generateCustomMethodSpinner = g(DOM_IDS.GENERATE_CUSTOM_METHOD_SPINNER);
+      s.optMethodPersonalizado = g(DOM_IDS.OPT_METHOD_PERSONALIZADO);
       
       // Mapear elementos locais para os módulos filhos
       s.sidebarFinanciamentoBtn= g(DOM_IDS.SIDEBAR_FINANCIAMENTO_BTN);

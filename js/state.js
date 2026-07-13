@@ -214,9 +214,10 @@ window.App.State = (() => {
         }
       };
 
-      const metodos = ["Conservador", "Equilibrado", "Agressivo"];
+      const metodos = ["Conservador", "Equilibrado", "Agressivo", "Personalizado"];
       metodos.forEach(metodo => {
         if (!_state.planejamento[metodo]) {
+          if (metodo === "Personalizado") return;
           _state.planejamento[metodo] = {};
         }
         for (const cat in _state.categorias) {
@@ -629,7 +630,7 @@ window.App.State = (() => {
 
     // Atualizar limites percentuais do planejador financeiro
     atualizarPlanejamento(metodo, limites) {
-      const metodos = ["Conservador", "Equilibrado", "Agressivo"];
+      const metodos = ["Conservador", "Equilibrado", "Agressivo", "Personalizado"];
       if (!metodos.includes(metodo)) {
         throw new Error("Método de planejamento inválido.");
       }
