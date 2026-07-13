@@ -341,7 +341,7 @@ window.App.Engine = (() => {
       };
     },
 
-    getFinancingDetailsForMonth(f, mes, ano) {
+    getFinancingTimeline(f, despesas) {
       const V = parseFloat(f.valorTotal) || 0;
       const P = parseFloat(f.valorParcela) || 0;
       const N = parseInt(f.parcelasTotais) || 1;
@@ -361,7 +361,68 @@ window.App.Engine = (() => {
 
       const S_month = parseInt(f.mes_inicio) || 1;
       const S_year = parseInt(f.ano_inicio) || new Date().getFullYear();
+      const startAbs = S_year * 12 + S_month - 1;
 
+      // Filter amortizations for this financing
+      const amortExpenses = Array.isArray(despesas)
+        ? despesas.filter(d => d.categoria === "Amortização" && d.financiamentoId === f.id)
+        : [];
+
+      let S = V;
+      const timeline = [];
+      let actualMonths = 0;
+
+      for (let m = 1; m <= N; m++) {
+        if (S <= 0) break;
+        actualMonths++;
+
+        const stepAbs = startAbs + m - 1;
+        const stepMonth = (stepAbs % 12) + 1;
+        const stepYear = Math.floor(stepAbs / 12);
+
+        // Find extra amortizations in this month/year
+        const extraAmort = amortExpenses
+          .filter(d => d.mes_inicio === stepMonth && (d.ano_inicio || S_year) === stepYear)
+          .reduce((sum, d) => sum + d.valor, 0);
+
+        let J_t = S * rate;
+        let A_t = system === "sac" ? constantAmortization : (P - J_t);
+        if (A_t <= 0) A_t = 0.01;
+
+        const totalA = A_t + extraAmort;
+        const regularInstallment = system === "sac" ? (A_t + J_t) : P;
+        const totalPaidThisMonth = regularInstallment + extraAmort;
+
+        timeline.push({
+          monthIndex: m,
+          mes: stepMonth,
+          ano: stepYear,
+          saldoDevedorAntes: parseFloat(S.toFixed(2)),
+          juros: parseFloat(J_t.toFixed(2)),
+          amortizacaoRegular: parseFloat(A_t.toFixed(2)),
+          amortizacaoExtra: parseFloat(extraAmort.toFixed(2)),
+          valorParcela: parseFloat(regularInstallment.toFixed(2)),
+          totalPago: parseFloat(totalPaidThisMonth.toFixed(2))
+        });
+
+        if (S < totalA) {
+          S = 0;
+        } else {
+          S -= totalA;
+        }
+      }
+
+      return {
+        actualMonths,
+        timeline,
+        saldoDevedorFinal: parseFloat(S.toFixed(2))
+      };
+    },
+
+    getFinancingDetailsForMonth(f, mes, ano, despesas) {
+      const timelineInfo = this.getFinancingTimeline(f, despesas);
+      const S_month = parseInt(f.mes_inicio) || 1;
+      const S_year = parseInt(f.ano_inicio) || new Date().getFullYear();
       const startAbs = S_year * 12 + S_month - 1;
       const targetAbs = ano * 12 + mes - 1;
       const index = targetAbs - startAbs + 1;
@@ -370,15 +431,17 @@ window.App.Engine = (() => {
         return {
           active: false,
           index: 0,
-          saldoDevedorAntes: V,
-          saldoDevedorDepois: V,
-          valorParcela: P,
+          saldoDevedorAntes: parseFloat((f.valorTotal || 0).toFixed(2)),
+          saldoDevedorDepois: parseFloat((f.valorTotal || 0).toFixed(2)),
+          valorParcela: parseFloat((f.valorParcela || 0).toFixed(2)),
           amortizacao: 0,
-          juros: 0
+          juros: 0,
+          actualMonths: timelineInfo.actualMonths
         };
       }
 
-      if (index > N) {
+      const step = timelineInfo.timeline.find(t => t.monthIndex === index);
+      if (!step) {
         return {
           active: false,
           index: index,
@@ -386,46 +449,22 @@ window.App.Engine = (() => {
           saldoDevedorDepois: 0,
           valorParcela: 0,
           amortizacao: 0,
-          juros: 0
+          juros: 0,
+          actualMonths: timelineInfo.actualMonths
         };
       }
 
-      let S = V;
-      let currentJuros = 0;
-      let currentAmortizacao = 0;
-      let currentParcela = P;
-
-      for (let m = 1; m <= index; m++) {
-        let J_t = S * rate;
-        let A_t = system === "sac" ? constantAmortization : (P - J_t);
-        if (A_t <= 0) A_t = 0.01;
-
-        if (m === index) {
-          currentJuros = J_t;
-          currentAmortizacao = Math.min(S, A_t);
-          currentParcela = system === "sac" ? (currentAmortizacao + J_t) : P;
-          break;
-        }
-
-        if (S < A_t) {
-          S = 0;
-          break;
-        } else {
-          S -= A_t;
-        }
-      }
-
-      const saldoDevedorAntes = S;
-      const saldoDevedorDepois = Math.max(0, S - currentAmortizacao);
+      const saldoDevedorDepois = Math.max(0, step.saldoDevedorAntes - step.amortizacaoRegular - step.amortizacaoExtra);
 
       return {
         active: true,
         index: index,
-        saldoDevedorAntes: parseFloat(saldoDevedorAntes.toFixed(2)),
+        saldoDevedorAntes: step.saldoDevedorAntes,
         saldoDevedorDepois: parseFloat(saldoDevedorDepois.toFixed(2)),
-        valorParcela: parseFloat(currentParcela.toFixed(2)),
-        amortizacao: parseFloat(currentAmortizacao.toFixed(2)),
-        juros: parseFloat(currentJuros.toFixed(2))
+        valorParcela: step.valorParcela,
+        amortizacao: step.amortizacaoRegular + step.amortizacaoExtra,
+        juros: step.juros,
+        actualMonths: timelineInfo.actualMonths
       };
     }
   };

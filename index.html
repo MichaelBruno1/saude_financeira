@@ -119,7 +119,7 @@
         <div id="sync-status" class="text-[10px] text-center font-medium mt-1.5 hidden transition"></div>
       </div>
       <div class="text-center pt-2">
-        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.3.20 • Controle Financeiro</p>
+        <p class="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">v1.3.22 • Controle Financeiro</p>
       </div>
     </div>
   </aside>
@@ -977,6 +977,7 @@
             <option value="Serviços por Assinatura">Serviços por Assinatura</option>
             <option value="Serviços">Serviços</option>
             <option value="Financiamento">Financiamento</option>
+            <option value="Amortização">Amortização</option>
             <option value="Outros">Outros</option>
           </select>
         </div>
@@ -989,6 +990,13 @@
         <div id="modal-expense-investment-container" class="hidden transition-all duration-200">
           <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Subcategoria do Investimento</label>
           <select id="modal-expense-investment-cat" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:border-indigo-500 transition cursor-pointer">
+            <!-- Dynamically populated from JS -->
+          </select>
+        </div>
+        <!-- Conditional amortization target financing field container -->
+        <div id="modal-expense-amortization-container" class="hidden transition-all duration-200">
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Financiamento Alvo</label>
+          <select id="modal-expense-amortization-target" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:border-indigo-500 transition cursor-pointer">
             <!-- Dynamically populated from JS -->
           </select>
         </div>

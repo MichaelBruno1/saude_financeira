@@ -222,20 +222,21 @@ window.App.UIFinancing = (() => {
           const startAbs = S_year * 12 + S_month - 1;
           const nowAbs   = currentYear * 12 + currentMonth - 1;
           const index    = nowAbs - startAbs + 1;
-          let progressoTexto;
-          if (index < 1)              progressoTexto = `0 de ${f.parcelasTotais} (Não Iniciado)`;
-          else if (index > f.parcelasTotais) progressoTexto = `${f.parcelasTotais} de ${f.parcelasTotais} (Quitado)`;
-          else                        progressoTexto = `${index} de ${f.parcelasTotais}`;
-          const endAbs   = startAbs + f.parcelasTotais - 1;
-          const endMonth = (endAbs % 12) + 1;
-          const endYear  = Math.floor(endAbs / 12);
-          const previsaoFim = `${MONTHS[endMonth - 1]} de ${endYear}`;
-
           // Calcular Saldo Devedor dinâmico no mês de referência
           const refMonth = state.mesAtivo <= 12 ? state.mesAtivo : currentMonth;
           const refYear  = state.anoAtivo || currentYear;
-          const details = window.App.Engine.getFinancingDetailsForMonth(f, refMonth, refYear);
+          const details = window.App.Engine.getFinancingDetailsForMonth(f, refMonth, refYear, state.despesas);
           const saldoDevedor = details.saldoDevedorAntes;
+          const actualN = details.actualMonths;
+
+          let progressoTexto;
+          if (index < 1)              progressoTexto = `0 de ${actualN} (Não Iniciado)`;
+          else if (index > actualN)   progressoTexto = `${actualN} de ${actualN} (Quitado)`;
+          else                        progressoTexto = `${index} de ${actualN}`;
+          const endAbs   = startAbs + actualN - 1;
+          const endMonth = (endAbs % 12) + 1;
+          const endYear  = Math.floor(endAbs / 12);
+          const previsaoFim = `${MONTHS[endMonth - 1]} de ${endYear}`;
 
           const row = document.createElement("tr");
           row.className = "hover:bg-slate-900/40 transition border-b border-slate-850 text-slate-350";

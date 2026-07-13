@@ -70,6 +70,8 @@ window.App.UI = (() => {
     MODAL_EXPENSE_RECURRENT: "modal-expense-recurrent",
     MODAL_EXPENSE_VAL: "modal-expense-val",
     MODAL_EXPENSE_YEAR: "modal-expense-year",
+    MODAL_EXPENSE_AMORTIZATION_CONTAINER: "modal-expense-amortization-container",
+    MODAL_EXPENSE_AMORTIZATION_TARGET: "modal-expense-amortization-target",
     MODAL_FINANCING_CANCEL_BTN: "modal-financing-cancel-btn",
     MODAL_NEW_PROFILE_NAME: "modal-new-profile-name",
     MODAL_NEW_PROFILE_SALARY: "modal-new-profile-salary",

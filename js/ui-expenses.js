@@ -9,6 +9,7 @@ window.App.UIExpenses = (() => {
   let modalExpenseMonth, modalExpenseYear, modalExpenseCat;
   let modalExpenseInstallmentsContainer, modalExpenseInstallments;
   let modalExpenseInvestmentContainer, modalExpenseInvestmentCat;
+  let modalExpenseAmortizationContainer, modalExpenseAmortizationTarget;
   let addExpenseBtn, financingModal, financingNameInput;
   let financingTotalValInput, financingInstallmentValInput;
   let financingRegisterForm;
@@ -29,6 +30,8 @@ window.App.UIExpenses = (() => {
     modalExpenseInstallments        = g(DOM_IDS.MODAL_EXPENSE_INSTALLMENTS);
     modalExpenseInvestmentContainer = g(DOM_IDS.MODAL_EXPENSE_INVESTMENT_CONTAINER);
     modalExpenseInvestmentCat       = g(DOM_IDS.MODAL_EXPENSE_INVESTMENT_CAT);
+    modalExpenseAmortizationContainer = g(DOM_IDS.MODAL_EXPENSE_AMORTIZATION_CONTAINER);
+    modalExpenseAmortizationTarget    = g(DOM_IDS.MODAL_EXPENSE_AMORTIZATION_TARGET);
     addExpenseBtn                   = s.addExpenseBtn;
     financingModal                  = g(DOM_IDS.FINANCING_MODAL);
     financingNameInput              = g(DOM_IDS.FINANCING_NAME);
@@ -48,6 +51,8 @@ window.App.UIExpenses = (() => {
     s.modalExpenseInstallmentsContainer = modalExpenseInstallmentsContainer;
     s.modalExpenseInvestmentContainer = modalExpenseInvestmentContainer;
     s.modalExpenseInvestmentCat       = modalExpenseInvestmentCat;
+    s.modalExpenseAmortizationContainer = modalExpenseAmortizationContainer;
+    s.modalExpenseAmortizationTarget    = modalExpenseAmortizationTarget;
   }
 
   function renderInvestmentCategoriesDropdown() {
@@ -62,12 +67,36 @@ window.App.UIExpenses = (() => {
     });
   }
 
+  function renderAmortizationFinancingsDropdown() {
+    if (!modalExpenseAmortizationTarget) return;
+    modalExpenseAmortizationTarget.innerHTML = "";
+    const state = window.App.State.getState();
+    const activeProfileName = state.perfilAtivo || "Principal";
+    const fAtivos = state.financiamentos.filter(f => f.perfil === activeProfileName);
+    
+    if (fAtivos.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Nenhum financiamento ativo cadastrado";
+      modalExpenseAmortizationTarget.appendChild(opt);
+    } else {
+      fAtivos.forEach(f => {
+        const opt = document.createElement("option");
+        opt.value = f.id;
+        opt.textContent = f.nome;
+        modalExpenseAmortizationTarget.appendChild(opt);
+      });
+    }
+  }
+
   function hideExpenseModal() {
     const s = window.App.UIState;
     const DOM_IDS = window.App.UI_DOM_IDS;
     expenseModal.classList.add("hidden");
     modalExpenseCreateForm.reset();
     modalExpenseInstallmentsContainer.classList.add("hidden");
+    if (modalExpenseInvestmentContainer) modalExpenseInvestmentContainer.classList.add("hidden");
+    if (modalExpenseAmortizationContainer) modalExpenseAmortizationContainer.classList.add("hidden");
     modalExpenseInstallments.value = "1";
     const recurrentInput = document.getElementById(DOM_IDS.MODAL_EXPENSE_RECURRENT);
     if (recurrentInput) recurrentInput.value = "nao";
@@ -97,6 +126,16 @@ window.App.UIExpenses = (() => {
         renderInvestmentCategoriesDropdown();
       } else {
         modalExpenseInvestmentContainer.classList.add("hidden");
+      }
+      if (val === "Amortização") {
+        if (modalExpenseAmortizationContainer) {
+          modalExpenseAmortizationContainer.classList.remove("hidden");
+          renderAmortizationFinancingsDropdown();
+        }
+      } else {
+        if (modalExpenseAmortizationContainer) {
+          modalExpenseAmortizationContainer.classList.add("hidden");
+        }
       }
     });
 
@@ -154,13 +193,21 @@ window.App.UIExpenses = (() => {
       if (!desc)                          { alert("Por favor, digite uma descrição."); return; }
       if (isNaN(valor) || valor === 0)    { alert("O valor do lançamento não pode ser zero."); return; }
       if (isNaN(parc) || parc < 1)        { alert("O número de parcelas deve ser igual ou maior que 1."); return; }
+      
       const subcat = cat === "Investimento" && modalExpenseInvestmentCat ? modalExpenseInvestmentCat.value : "";
+      const financingId = cat === "Amortização" && modalExpenseAmortizationTarget ? modalExpenseAmortizationTarget.value : "";
+      
+      if (cat === "Amortização" && !financingId) {
+        alert("Por favor, selecione o financiamento que será amortizado.");
+        return;
+      }
+
       try {
         if (s.editingExpenseId) {
-          window.App.State.atualizarDespesa(s.editingExpenseId, desc, valor, cat, mes, parc, recorrente, ano, subcat);
+          window.App.State.atualizarDespesa(s.editingExpenseId, desc, valor, cat, mes, parc, recorrente, ano, subcat, financingId);
           showStatus("Gasto atualizado com sucesso!");
         } else {
-          window.App.State.adicionarDespesa(desc, valor, cat, mes, parc, recorrente, ano, subcat);
+          window.App.State.adicionarDespesa(desc, valor, cat, mes, parc, recorrente, ano, subcat, financingId);
           showStatus("Gasto lançado com sucesso!");
         }
         hideExpenseModal();
@@ -215,13 +262,13 @@ window.App.UIExpenses = (() => {
     // 2. Financiamentos ativos como linhas informativas
     const fAtivos = financiamentos.filter(f => f.perfil === perfilAtivo);
     fAtivos.forEach(f => {
-      const details = window.App.Engine.getFinancingDetailsForMonth(f, mesAtivo, anoAtivo);
+      const details = window.App.Engine.getFinancingDetailsForMonth(f, mesAtivo, anoAtivo, despesas);
       if (details.active) {
         itensDaTabela.push({
           tipo: "financiamento", id: f.id,
           descricao: `Financiamento: ${f.nome}`, categoria: "Financiamento",
           valorParcela: details.valorParcela,
-          parcelasTexto: `Parcela ${details.index} de ${f.parcelasTotais}`
+          parcelasTexto: `Parcela ${details.index} de ${details.actualMonths}`
         });
       }
     });
@@ -304,6 +351,13 @@ window.App.UIExpenses = (() => {
             if (modalExpenseInvestmentCat) modalExpenseInvestmentCat.value = found.subcategoria || "";
           } else if (modalExpenseInvestmentContainer) {
             modalExpenseInvestmentContainer.classList.add("hidden");
+          }
+          if (found.categoria === "Amortização" && modalExpenseAmortizationContainer) {
+            modalExpenseAmortizationContainer.classList.remove("hidden");
+            renderAmortizationFinancingsDropdown();
+            if (modalExpenseAmortizationTarget) modalExpenseAmortizationTarget.value = found.financiamentoId || "";
+          } else if (modalExpenseAmortizationContainer) {
+            modalExpenseAmortizationContainer.classList.add("hidden");
           }
           expenseModal.classList.remove("hidden");
           modalExpenseDesc.focus();

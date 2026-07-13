@@ -20,6 +20,7 @@ window.App.State = (() => {
       "Serviços por Assinatura": "#8b5cf6",
       "Serviços": "#14b8a6",
       "Financiamento": "#d946ef",
+      "Amortização": "#06b6d4",
       "Outros": "#64748b",
       "Investimento": "#eab308"
     },
@@ -127,6 +128,7 @@ window.App.State = (() => {
         valor: parseFloat(d.valor) || 0,
         categoria: String(d.categoria).trim(),
         subcategoria: d.subcategoria ? String(d.subcategoria).trim() : "",
+        financiamentoId: d.financiamentoId ? String(d.financiamentoId).trim() : "",
         mes_inicio: parseInt(d.mes_inicio) || 1,
         ano_inicio: parseInt(d.ano_inicio) || new Date().getFullYear(),
         parcelas: parseInt(d.parcelas) || 1,
@@ -168,12 +170,17 @@ window.App.State = (() => {
         "Serviços por Assinatura": "#8b5cf6",
         "Serviços": "#14b8a6",
         "Financiamento": "#d946ef",
+        "Amortização": "#06b6d4",
         "Outros": "#64748b",
         "Investimento": "#eab308"
       };
 
       if (!_state.categorias["Investimento"]) {
         _state.categorias["Investimento"] = "#eab308";
+      }
+
+      if (!_state.categorias["Amortização"]) {
+        _state.categorias["Amortização"] = "#06b6d4";
       }
 
       _state.theme = newState.theme || "dark";
@@ -422,8 +429,7 @@ window.App.State = (() => {
       return true;
     },
 
-     // Adicionar gasto à base
-     adicionarDespesa(descricao, valor, categoria, mes_inicio, parcelas, recorrente, ano_inicio, subcategoria) {
+     adicionarDespesa(descricao, valor, categoria, mes_inicio, parcelas, recorrente, ano_inicio, subcategoria, financingId) {
        if (!_state.perfilAtivo) {
          throw new Error("Não há perfil ativo para lançar a despesa.");
        }
@@ -443,6 +449,7 @@ window.App.State = (() => {
          valor: valorFloat,
          categoria: catClean,
          subcategoria: subcategoria ? String(subcategoria).trim() : "",
+         financiamentoId: financingId ? String(financingId).trim() : "",
          mes_inicio: Math.min(12, Math.max(1, parseInt(mes_inicio) || 1)),
          ano_inicio: parseInt(ano_inicio) || _state.anoAtivo || new Date().getFullYear(),
          parcelas: Math.max(1, parseInt(parcelas) || 1),
@@ -467,7 +474,7 @@ window.App.State = (() => {
      },
  
      // Atualizar despesa por ID
-     atualizarDespesa(id, descricao, valor, categoria, mes_inicio, parcelas, recorrente, ano_inicio, subcategoria) {
+     atualizarDespesa(id, descricao, valor, categoria, mes_inicio, parcelas, recorrente, ano_inicio, subcategoria, financingId) {
        const d = _state.despesas.find(item => item.id === id);
        if (!d) {
          throw new Error("Despesa não encontrada.");
@@ -485,6 +492,7 @@ window.App.State = (() => {
        d.valor = valorFloat;
        d.categoria = catClean;
        d.subcategoria = subcategoria ? String(subcategoria).trim() : "";
+       d.financiamentoId = financingId ? String(financingId).trim() : "";
        d.mes_inicio = Math.min(12, Math.max(1, parseInt(mes_inicio) || 1));
        d.ano_inicio = parseInt(ano_inicio) || d.ano_inicio || new Date().getFullYear();
        d.parcelas = Math.max(1, parseInt(parcelas) || 1);
