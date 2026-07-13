@@ -146,8 +146,8 @@ window.App.UIExpenses = (() => {
       const desc   = modalExpenseDesc.value.trim();
       const valor  = parseBRLValue(modalExpenseVal.value);
       const cat    = modalExpenseCat.value;
-      const mes    = state.mesAtivo > 12 ? 1 : state.mesAtivo;
-      const ano    = state.anoAtivo;
+      const mes    = parseInt(modalExpenseMonth.value) || (state.mesAtivo > 12 ? 1 : state.mesAtivo);
+      const ano    = parseInt(modalExpenseYear.value) || state.anoAtivo;
       const parc   = parseInt(modalExpenseInstallments.value);
       const recurrentInput = document.getElementById(DOM_IDS.MODAL_EXPENSE_RECURRENT);
       const recorrente = recurrentInput ? recurrentInput.value === "sim" : false;
