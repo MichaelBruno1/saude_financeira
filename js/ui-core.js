@@ -272,6 +272,9 @@ window.App.UI = (() => {
       s.kpiSalario             = g(DOM_IDS.KPI_SALARIO);
       s.kpiDespesas            = g(DOM_IDS.KPI_DESPESAS);
       s.kpiSaldo               = g(DOM_IDS.KPI_SALDO);
+      s.kpiScore               = g("kpi-score");
+      s.scoreGeneralStatus     = g("score-general-status");
+      s.scoreDetailsList       = g("score-details-list");
       s.salaryViewMode         = g(DOM_IDS.SALARY_VIEW_MODE);
       s.salaryEditMode         = g(DOM_IDS.SALARY_EDIT_MODE);
       s.editSalaryBtn          = g(DOM_IDS.EDIT_SALARY_BTN);
@@ -657,6 +660,69 @@ window.App.UI = (() => {
       if (s.kpiSaldo) {
         s.kpiSaldo.textContent = formatCurrency(summary.saldoRestante);
         s.kpiSaldo.className = summary.saldoRestante >= 0 ? "text-lg font-bold text-emerald-400" : "text-lg font-bold text-rose-400";
+      }
+
+      // Score financeiro
+      if (s.kpiScore) {
+        const scoreResult = window.App.Engine.calculateFinancialScore(ativo, despesas, financiamentos, state.metas || [], anoAtivo, activeHeaderMonth);
+        s.kpiScore.textContent = scoreResult.score;
+
+        // Formatação de cor
+        let colorClass = "text-rose-455";
+        let statusText = "Crítico";
+        let statusBgClass = "bg-rose-950/40 text-rose-400 border border-rose-900/40";
+        if (scoreResult.score >= 800) {
+          colorClass = "text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.2)]";
+          statusText = "Excelente";
+          statusBgClass = "bg-emerald-950/60 text-emerald-450 border border-emerald-900/40 animate-pulse";
+        } else if (scoreResult.score >= 600) {
+          colorClass = "text-indigo-400 font-bold";
+          statusText = "Bom";
+          statusBgClass = "bg-indigo-950/40 text-indigo-400 border border-indigo-900/40";
+        } else if (scoreResult.score >= 400) {
+          colorClass = "text-amber-450 font-bold";
+          statusText = "Razoável";
+          statusBgClass = "bg-amber-950/40 text-amber-450 border border-amber-900/40";
+        }
+        s.kpiScore.className = `text-lg font-bold ${colorClass}`;
+
+        if (s.scoreGeneralStatus) {
+          s.scoreGeneralStatus.textContent = statusText;
+          s.scoreGeneralStatus.className = `text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded ${statusBgClass}`;
+        }
+
+        if (s.scoreDetailsList) {
+          s.scoreDetailsList.innerHTML = "";
+          const criteria = [
+            { label: "Disciplina nos aportes", points: scoreResult.details.aportes, max: 200 },
+            { label: "Crescimento patrimonial", points: scoreResult.details.patrimonio, max: 200 },
+            { label: "Liquidez (Reserva)", points: scoreResult.details.liquidez, max: 150 },
+            { label: "Diversificação", points: scoreResult.details.concentracao, max: 100 },
+            { label: "Gastos essenciais (≤50%)", points: scoreResult.details.essenciais, max: 150 },
+            { label: "Taxa de poupança (≥20%)", points: scoreResult.details.poupanca, max: 100 },
+            { label: "Amortização de dívidas", points: scoreResult.details.dividas, max: 100 }
+          ];
+
+          criteria.forEach(c => {
+            const li = document.createElement("li");
+            li.className = "flex items-center justify-between text-[10px] text-slate-400 py-0.5 border-b border-slate-900/20";
+            
+            let bulletColor = "bg-rose-500";
+            const ratio = c.points / c.max;
+            if (ratio >= 0.8) bulletColor = "bg-emerald-500";
+            else if (ratio >= 0.5) bulletColor = "bg-indigo-500";
+            else if (ratio >= 0.3) bulletColor = "bg-amber-500";
+
+            li.innerHTML = `
+              <div class="flex items-center space-x-1.5 min-w-0">
+                <span class="w-1.5 h-1.5 rounded-full ${bulletColor}"></span>
+                <span class="truncate text-[10px] text-slate-400">${c.label}</span>
+              </div>
+              <span class="font-mono text-slate-300 font-bold">${c.points}/${c.max}</span>
+            `;
+            s.scoreDetailsList.appendChild(li);
+          });
+        }
       }
 
       // Dispatcher de telas

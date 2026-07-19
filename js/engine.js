@@ -466,6 +466,105 @@ window.App.Engine = (() => {
         juros: step.juros,
         actualMonths: timelineInfo.actualMonths
       };
+    },
+
+    calculateFinancialScore(perfil, despesas, financiamentos, metas, anoAtivo, mesAtivo) {
+      if (!perfil) return { score: 0, details: {} };
+      // 1. Disciplina nos aportes (Até 200 pontos)
+      let monthsWithInvest = 0;
+      for (let m = 1; m <= 12; m++) {
+        const hasInvest = despesas.some(d => {
+          if (d.perfil !== perfil.nome || d.categoria !== "Investimento") return false;
+          const info = this.getInstallmentInfo(d, m, anoAtivo);
+          return info && info.active && info.valorParcela > 0;
+        });
+        if (hasInvest) monthsWithInvest++;
+      }
+      const pointsAportes = (monthsWithInvest / 12) * 200;
+
+      // 2. Crescimento patrimonial (Até 200 pontos)
+      const investExpenses = despesas.filter(d => d.perfil === perfil.nome && d.categoria === "Investimento");
+      const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
+      const pointsPatrimonio = Math.min(200, (totalInvested / 50000) * 200);
+
+      // Obter sumário mensal para usar em despesas do mês e poupança
+      const summary = this.calculateMonthlySummary(perfil, mesAtivo, despesas, financiamentos, anoAtivo);
+
+      // 3. Liquidez (Até 150 pontos)
+      const currentExpenses = summary.totalGastos - (summary.gastosPorCategoria["Investimento"] || 0);
+      const reserveMeta = Math.max(1000, currentExpenses * 6);
+      const pointsLiquidez = Math.min(150, (totalInvested / reserveMeta) * 150);
+
+      // 4. Concentração de investimentos (Até 100 pontos)
+      const activeSubs = new Set();
+      investExpenses.forEach(d => {
+        if (d.subcategoria) activeSubs.add(d.subcategoria);
+      });
+      const pointsConcentracao = Math.min(100, activeSubs.size * 25);
+
+      // 5. Percentual de gastos essenciais (Até 150 pontos)
+      const essentialGastos = 
+        (summary.gastosPorCategoria["Moradia"] || 0) + 
+        (summary.gastosPorCategoria["Saúde"] || 0) + 
+        (summary.gastosPorCategoria["Alimentação"] || 0) + 
+        (summary.gastosPorCategoria["Financiamento"] || 0);
+      const salary = perfil.salario || 0;
+      let pointsEssenciais = 0;
+      if (salary > 0) {
+        const ratio = essentialGastos / salary;
+        if (ratio <= 0.5) pointsEssenciais = 150;
+        else pointsEssenciais = Math.max(0, (1 - (ratio - 0.5) * 2) * 150);
+      }
+
+      // 6. Evolução da taxa de poupança (Até 100 pontos)
+      const monthInvest = summary.gastosPorCategoria["Investimento"] || 0;
+      let pointsPoupanca = 0;
+      if (salary > 0) {
+        const rate = monthInvest / salary;
+        pointsPoupanca = Math.min(100, (rate / 0.20) * 100);
+      }
+
+      // 7. Diminuição de dívidas (Até 100 pontos)
+      const profileFin = (financiamentos || []).filter(f => f.perfil === perfil.nome);
+      let pointsDividas = 100;
+      if (profileFin.length > 0) {
+        let totalAmortized = 0;
+        let totalValue = 0;
+        profileFin.forEach(f => {
+          const details = this.getFinancingDetailsForMonth(f, mesAtivo, anoAtivo);
+          const paidMonths = details.parcelaAtual || 0;
+          const totalMonths = f.parcelasTotais || 1;
+          const ratio = paidMonths / totalMonths;
+          totalAmortized += ratio * f.valorTotal;
+          totalValue += f.valorTotal;
+        });
+        if (totalValue > 0) {
+          pointsDividas = (totalAmortized / totalValue) * 100;
+        }
+      }
+
+      const finalScore = Math.round(
+        pointsAportes + 
+        pointsPatrimonio + 
+        pointsLiquidez + 
+        pointsConcentracao + 
+        pointsEssenciais + 
+        pointsPoupanca + 
+        pointsDividas
+      );
+
+      return {
+        score: finalScore,
+        details: {
+          aportes: Math.round(pointsAportes),
+          patrimonio: Math.round(pointsPatrimonio),
+          liquidez: Math.round(pointsLiquidez),
+          concentracao: Math.round(pointsConcentracao),
+          essenciais: Math.round(pointsEssenciais),
+          poupanca: Math.round(pointsPoupanca),
+          dividas: Math.round(pointsDividas)
+        }
+      };
     }
   };
 })();
