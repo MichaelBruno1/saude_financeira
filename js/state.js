@@ -7,8 +7,9 @@ window.App.State = (() => {
     perfis: [],       // Array de { nome, salario }
     perfilAtivo: null, // String contendo o nome do perfil selecionado
     despesas: [],      // Array de { id, perfil, descricao, valor, categoria, mes_inicio, parcelas }
+    metas: [],         // Array de { id, perfil, nome, valor, foto, comprado, prioridade, valorTarget }
     categoriasInvestimento: ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "FGTS", "Outros"],
-    mesAtivo: 1,       // Mês ativo selecionado (1 a 16)
+    mesAtivo: 1,       // Mês ativo selecionado (1 a 17)
     anoAtivo: new Date().getFullYear(), // Ano ativo selecionado
     financiamentos: [], // Array de { id, perfil, nome, valorTotal, valorParcela, parcelasTotais, taxaTR }
     categorias: {       // Objeto de nome -> cor hex
@@ -75,6 +76,38 @@ window.App.State = (() => {
   // Array de callbacks inscritos
   const _listeners = [];
 
+  function _calcularTotalInvestido(perfil) {
+    const investExpenses = _state.despesas.filter(d => d.perfil === perfil && d.categoria === "Investimento");
+    return investExpenses.reduce((sum, d) => sum + d.valor, 0);
+  }
+
+  function _recalcularMetasTargets(perfil) {
+    const activeProfile = _state.perfis.find(p => p.nome === perfil);
+    if (!activeProfile) return;
+
+    const totalInvested = _calcularTotalInvestido(perfil);
+    const activeMetas = _state.metas
+      .filter(m => m.perfil === perfil && !m.comprado)
+      .sort((a, b) => a.prioridade - b.prioridade);
+
+    if (activeMetas.length === 0) {
+      activeProfile.metaBaseline = null;
+      return;
+    }
+
+    if (activeProfile.metaBaseline === undefined || activeProfile.metaBaseline === null) {
+      activeProfile.metaBaseline = totalInvested;
+    }
+
+    let currentBaseline = activeProfile.metaBaseline;
+    let accumulatedValue = 0;
+
+    activeMetas.forEach(meta => {
+      accumulatedValue += meta.valor;
+      meta.valorTarget = currentBaseline + accumulatedValue;
+    });
+  }
+
   // Notificar todos os inscritos sobre a mudança de estado
   function notify(changedKey = "all") {
     // Passar uma cópia profunda para garantir imutabilidade fora do estado central
@@ -116,7 +149,8 @@ window.App.State = (() => {
       _state.perfis = Array.isArray(newState.perfis) ? newState.perfis.map(p => ({
         nome: String(p.nome).trim(),
         salario: parseFloat(p.salario) || 0,
-        fgts: parseFloat(p.fgts) || 0
+        fgts: parseFloat(p.fgts) || 0,
+        metaBaseline: p.metaBaseline !== undefined && p.metaBaseline !== null ? parseFloat(p.metaBaseline) : null
       })) : [];
       
       _state.perfilAtivo = newState.perfilAtivo ? String(newState.perfilAtivo).trim() : null;
@@ -135,6 +169,17 @@ window.App.State = (() => {
         recorrente: !!d.recorrente
       })) : [];
 
+      _state.metas = Array.isArray(newState.metas) ? newState.metas.map(m => ({
+        id: m.id || (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)),
+        perfil: String(m.perfil).trim(),
+        nome: String(m.nome).trim(),
+        valor: parseFloat(m.valor) || 0,
+        foto: String(m.foto || "").trim(),
+        comprado: !!m.comprado,
+        prioridade: parseInt(m.prioridade) || 0,
+        valorTarget: parseFloat(m.valorTarget) || 0
+      })) : [];
+
       _state.categoriasInvestimento = Array.isArray(newState.categoriasInvestimento)
         ? newState.categoriasInvestimento.map(c => String(c).trim())
         : ["CDB", "Previdência", "Fundos", "Ações", "Poupança", "FGTS", "Outros"];
@@ -142,7 +187,7 @@ window.App.State = (() => {
         _state.categoriasInvestimento.push("FGTS");
       }
 
-      let loadedMes = newState.mesAtivo ? Math.min(16, Math.max(1, parseInt(newState.mesAtivo) || 1)) : 1;
+      let loadedMes = newState.mesAtivo ? Math.min(17, Math.max(1, parseInt(newState.mesAtivo) || 1)) : 1;
       if (loadedMes <= 12) { loadedMes = new Date().getMonth() + 1; }
       _state.mesAtivo = loadedMes;
       _state.anoAtivo = newState.anoAtivo ? parseInt(newState.anoAtivo) || new Date().getFullYear() : new Date().getFullYear();
@@ -301,11 +346,10 @@ window.App.State = (() => {
       notify();
     },
 
-    // Selecionar o mês ativo
     selecionarMes(mes) {
       const mesInt = parseInt(mes);
-      if (isNaN(mesInt) || mesInt < 1 || mesInt > 16) {
-        throw new Error("Mês inválido. Deve ser entre 1 e 16.");
+      if (isNaN(mesInt) || mesInt < 1 || mesInt > 17) {
+        throw new Error("Mês inválido. Deve ser entre 1 e 17.");
       }
       if (_state.mesAtivo !== mesInt) {
         _state.mesAtivo = mesInt;
@@ -371,7 +415,8 @@ window.App.State = (() => {
       const novoPerfil = {
         nome: nomeFormatado,
         salario: Math.max(0, parseFloat(salario) || 0),
-        fgts: 0
+        fgts: 0,
+        metaBaseline: null
       };
 
       _state.perfis.push(novoPerfil);
@@ -678,6 +723,122 @@ window.App.State = (() => {
     atualizarUltimoBackup() {
       _state.ultimoBackup = Date.now();
       notify("ultimoBackup");
+      return true;
+    },
+    // Ações para Metas de Investimento
+    adicionarMeta(nome, valor, foto) {
+      if (!_state.perfilAtivo) {
+        throw new Error("Não há perfil ativo para adicionar a meta.");
+      }
+      const nomeClean = String(nome).trim();
+      if (!nomeClean) {
+        throw new Error("O nome da meta não pode ser vazio.");
+      }
+      const valorFloat = parseFloat(valor) || 0;
+      if (valorFloat <= 0) {
+        throw new Error("O valor da meta deve ser maior que zero.");
+      }
+
+      // Determinar a prioridade: maior prioridade das metas ativas + 1
+      const activeMetas = _state.metas.filter(m => m.perfil === _state.perfilAtivo && !m.comprado);
+      const maxPrioridade = activeMetas.reduce((max, m) => Math.max(max, m.prioridade), -1);
+      const novaPrioridade = maxPrioridade + 1;
+
+      const novaMeta = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        perfil: _state.perfilAtivo,
+        nome: nomeClean,
+        valor: valorFloat,
+        foto: String(foto || "").trim(),
+        comprado: false,
+        prioridade: novaPrioridade,
+        valorTarget: 0
+      };
+
+      _state.metas.push(novaMeta);
+
+      // Recalcular limites das metas
+      _recalcularMetasTargets(_state.perfilAtivo);
+
+      notify("metas");
+      return novaMeta;
+    },
+
+    removerMeta(id) {
+      const index = _state.metas.findIndex(m => m.id === id);
+      if (index === -1) {
+        throw new Error("Meta não encontrada.");
+      }
+      const perfil = _state.metas[index].perfil;
+      _state.metas.splice(index, 1);
+
+      // Ajustar prioridades contíguas
+      const activeMetas = _state.metas
+        .filter(m => m.perfil === perfil && !m.comprado)
+        .sort((a, b) => a.prioridade - b.prioridade);
+      activeMetas.forEach((m, idx) => {
+        m.prioridade = idx;
+      });
+
+      // Recalcular limites
+      _recalcularMetasTargets(perfil);
+
+      notify("metas");
+      return true;
+    },
+
+    reordenarMetas(idsOrdenados) {
+      if (!Array.isArray(idsOrdenados)) return false;
+      
+      idsOrdenados.forEach((id, index) => {
+        const meta = _state.metas.find(m => m.id === id);
+        if (meta && meta.perfil === _state.perfilAtivo && !meta.comprado) {
+          meta.prioridade = index;
+        }
+      });
+
+      // Recalcular limites
+      _recalcularMetasTargets(_state.perfilAtivo);
+
+      notify("metas");
+      return true;
+    },
+
+    comprarMeta(id) {
+      const meta = _state.metas.find(m => m.id === id);
+      if (!meta) {
+        throw new Error("Meta não encontrada.");
+      }
+      if (meta.comprado) return true;
+
+      meta.comprado = true;
+      
+      const perfil = meta.perfil;
+      const activeProfile = _state.perfis.find(p => p.nome === perfil);
+      if (activeProfile) {
+        const totalInvested = _calcularTotalInvestido(perfil);
+        if (activeProfile.metaBaseline === undefined || activeProfile.metaBaseline === null) {
+          activeProfile.metaBaseline = totalInvested;
+        }
+        activeProfile.metaBaseline += meta.valor;
+      }
+
+      // Recalcular limites
+      _recalcularMetasTargets(perfil);
+
+      notify("metas");
+      return true;
+    },
+
+    atualizarMetasTargetsLlm(reajustes) {
+      if (!Array.isArray(reajustes)) return false;
+      reajustes.forEach(r => {
+        const meta = _state.metas.find(m => m.id === r.id);
+        if (meta) {
+          meta.valorTarget = parseFloat(r.valorTarget) || 0;
+        }
+      });
+      notify("metas");
       return true;
     },
 

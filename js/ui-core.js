@@ -168,7 +168,10 @@ window.App.UI = (() => {
     SAVINGS_PLAN_LOADER: "savings-plan-loader",
     SAVINGS_PLAN_RESULT_CARD: "savings-plan-result-card",
     SAVINGS_PLAN_TIMESTAMP: "savings-plan-timestamp",
-    SAVINGS_PLAN_TEXT_CONTENT: "savings-plan-text-content"
+    SAVINGS_PLAN_TEXT_CONTENT: "savings-plan-text-content",
+    // Metas
+    SIDEBAR_METAS_BTN: "sidebar-metas-btn",
+    METAS_CONTAINER: "metas-container"
   };
 
   // Expõe DOM_IDS para que os sub-módulos possam consultar sem duplicar
@@ -293,6 +296,7 @@ window.App.UI = (() => {
       s.sidebarRelatoriosBtn   = g(DOM_IDS.SIDEBAR_RELATORIOS_BTN);
       s.sidebarSettingsBtn     = g(DOM_IDS.SIDEBAR_SETTINGS_BTN);
       s.sidebarInvestimentosBtn= g(DOM_IDS.SIDEBAR_INVESTIMENTOS_BTN);
+      s.sidebarMetasBtn        = g(DOM_IDS.SIDEBAR_METAS_BTN);
       s.addExpenseBtn          = g(DOM_IDS.ADD_EXPENSE_BTN);
       s.backupWarningBanner    = g(DOM_IDS.BACKUP_WARNING_BANNER);
       s.btnCloseBackupBanner   = g(DOM_IDS.BTN_CLOSE_BACKUP_BANNER);
@@ -301,6 +305,7 @@ window.App.UI = (() => {
       s.financingContainer     = g(DOM_IDS.FINANCING_CONTAINER);
       s.settingsContainer      = g(DOM_IDS.SETTINGS_CONTAINER);
       s.investmentsContainer   = g(DOM_IDS.INVESTMENTS_CONTAINER);
+      s.metasContainer         = g(DOM_IDS.METAS_CONTAINER);
       s.reportsPizzaMonthSelect= g(DOM_IDS.REPORTS_PIZZA_MONTH_SELECT);
       s.expenseCountBadge      = g(DOM_IDS.EXPENSE_COUNT_BADGE);
       s.expenseCategoryFilter  = g(DOM_IDS.EXPENSE_CATEGORY_FILTER);
@@ -321,6 +326,7 @@ window.App.UI = (() => {
       if (window.App.UIInvestments) window.App.UIInvestments.mapElements(DOM_IDS);
       if (window.App.UISettings)    window.App.UISettings.mapElements(DOM_IDS);
       if (window.App.UIAgent)       window.App.UIAgent.mapElements(DOM_IDS);
+      if (window.App.UIMetas)       window.App.UIMetas.mapElements(DOM_IDS);
 
       // ── Mascaramento monetário ───────────────────────────────────────────────
       const monetaryFieldIds = [
@@ -353,6 +359,7 @@ window.App.UI = (() => {
       if (s.sidebarFinanciamentoBtn) s.sidebarFinanciamentoBtn.addEventListener("click", () => window.App.State.selecionarMes(14));
       if (s.sidebarSettingsBtn)      s.sidebarSettingsBtn.addEventListener("click",      () => window.App.State.selecionarMes(15));
       if (s.sidebarInvestimentosBtn) s.sidebarInvestimentosBtn.addEventListener("click", () => window.App.State.selecionarMes(16));
+      if (s.sidebarMetasBtn)         s.sidebarMetasBtn.addEventListener("click",         () => window.App.State.selecionarMes(17));
 
       // ── Perfis ───────────────────────────────────────────────────────────────
       s.sidebarProfileSelect.addEventListener("change", e => {
@@ -471,6 +478,7 @@ window.App.UI = (() => {
       if (window.App.UIInvestments) window.App.UIInvestments.init();
       if (window.App.UISettings)    window.App.UISettings.init();
       if (window.App.UIAgent)       window.App.UIAgent.init();
+      if (window.App.UIMetas)       window.App.UIMetas.init();
     },
 
     // ── Renderização de abas de anos ─────────────────────────────────────────
@@ -606,7 +614,7 @@ window.App.UI = (() => {
       this.renderCategoriasDropdowns(state);
 
       // Destaque no menu lateral
-      const navMap = { sidebarDespesasBtn: m => m <= 12, sidebarRelatoriosBtn: m => m === 13, sidebarFinanciamentoBtn: m => m === 14, sidebarSettingsBtn: m => m === 15, sidebarInvestimentosBtn: m => m === 16 };
+      const navMap = { sidebarDespesasBtn: m => m <= 12, sidebarRelatoriosBtn: m => m === 13, sidebarFinanciamentoBtn: m => m === 14, sidebarSettingsBtn: m => m === 15, sidebarInvestimentosBtn: m => m === 16, sidebarMetasBtn: m => m === 17 };
       for (const [key, fn] of Object.entries(navMap)) {
         if (s[key]) {
           if (fn(mesAtivo)) s[key].classList.add("sidebar-nav-active");
@@ -615,7 +623,7 @@ window.App.UI = (() => {
       }
 
       // Controle de visibilidade do botão de adicionar e das abas de mês/ano
-      if (mesAtivo === 14 || mesAtivo === 15 || mesAtivo === 16) {
+      if (mesAtivo === 14 || mesAtivo === 15 || mesAtivo === 16 || mesAtivo === 17) {
         if (s.monthTabsContainer) s.monthTabsContainer.classList.add("hidden");
         if (s.yearTabsContainer)  s.yearTabsContainer.classList.add("hidden");
         
@@ -657,6 +665,7 @@ window.App.UI = (() => {
         if (s.financingContainer)       s.financingContainer.classList.add("hidden");
         if (s.settingsContainer)        s.settingsContainer.classList.add("hidden");
         if (s.investmentsContainer)     s.investmentsContainer.classList.add("hidden");
+        if (s.metasContainer)           s.metasContainer.classList.add("hidden");
         if (s.reportsContainer)         s.reportsContainer.classList.remove("hidden");
         if (window.App.UIReports) window.App.UIReports.render(state);
       } else if (mesAtivo === 14) {
@@ -664,6 +673,7 @@ window.App.UI = (() => {
         if (s.reportsContainer)         s.reportsContainer.classList.add("hidden");
         if (s.settingsContainer)        s.settingsContainer.classList.add("hidden");
         if (s.investmentsContainer)     s.investmentsContainer.classList.add("hidden");
+        if (s.metasContainer)           s.metasContainer.classList.add("hidden");
         if (s.financingContainer)       s.financingContainer.classList.remove("hidden");
         if (window.App.UIFinancing) window.App.UIFinancing.render(state);
       } else if (mesAtivo === 15) {
@@ -671,6 +681,7 @@ window.App.UI = (() => {
         if (s.financingContainer)       s.financingContainer.classList.add("hidden");
         if (s.monthlyExpensesContainer) s.monthlyExpensesContainer.classList.add("hidden");
         if (s.investmentsContainer)     s.investmentsContainer.classList.add("hidden");
+        if (s.metasContainer)           s.metasContainer.classList.add("hidden");
         if (s.settingsContainer)        s.settingsContainer.classList.remove("hidden");
         if (window.App.UISettings) window.App.UISettings.render(state);
       } else if (mesAtivo === 16) {
@@ -678,13 +689,23 @@ window.App.UI = (() => {
         if (s.financingContainer)       s.financingContainer.classList.add("hidden");
         if (s.monthlyExpensesContainer) s.monthlyExpensesContainer.classList.add("hidden");
         if (s.settingsContainer)        s.settingsContainer.classList.add("hidden");
+        if (s.metasContainer)           s.metasContainer.classList.add("hidden");
         if (s.investmentsContainer)     s.investmentsContainer.classList.remove("hidden");
         if (window.App.UIInvestments) window.App.UIInvestments.render(state);
+      } else if (mesAtivo === 17) {
+        if (s.reportsContainer)         s.reportsContainer.classList.add("hidden");
+        if (s.financingContainer)       s.financingContainer.classList.add("hidden");
+        if (s.monthlyExpensesContainer) s.monthlyExpensesContainer.classList.add("hidden");
+        if (s.settingsContainer)        s.settingsContainer.classList.add("hidden");
+        if (s.investmentsContainer)     s.investmentsContainer.classList.add("hidden");
+        if (s.metasContainer)           s.metasContainer.classList.remove("hidden");
+        if (window.App.UIMetas) window.App.UIMetas.render(state);
       } else {
         if (s.reportsContainer)         s.reportsContainer.classList.add("hidden");
         if (s.financingContainer)       s.financingContainer.classList.add("hidden");
         if (s.settingsContainer)        s.settingsContainer.classList.add("hidden");
         if (s.investmentsContainer)     s.investmentsContainer.classList.add("hidden");
+        if (s.metasContainer)           s.metasContainer.classList.add("hidden");
         if (s.monthlyExpensesContainer) s.monthlyExpensesContainer.classList.remove("hidden");
         if (window.App.UIExpenses) window.App.UIExpenses.render(state);
       }
