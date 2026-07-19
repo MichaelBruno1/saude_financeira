@@ -7,6 +7,8 @@ window.App.UIReports = (() => {
   let generateAiAnalysisBtn, aiAnalysisLoader, aiAnalysisResultCard, aiAnalysisTimestamp, aiAnalysisTextContent;
   let generateSavingsPlanBtn, savingsPlanLoader, savingsPlanResultCard, savingsPlanTimestamp, savingsPlanTextContent;
   
+  let reportsComparisonCard, reportsComparisonSubtitle, reportsComparisonContainer;
+
   function mapElements(DOM_IDS) {
     const g = id => document.getElementById(id);
     const s = window.App.UIState;
@@ -29,6 +31,10 @@ window.App.UIReports = (() => {
     savingsPlanTimestamp            = g(DOM_IDS.SAVINGS_PLAN_TIMESTAMP);
     savingsPlanTextContent          = g(DOM_IDS.SAVINGS_PLAN_TEXT_CONTENT);
     
+    reportsComparisonCard           = g("reports-comparison-card");
+    reportsComparisonSubtitle       = g("reports-comparison-subtitle");
+    reportsComparisonContainer      = g("reports-comparison-container");
+
     // Compartilha referencias usadas pelo ui-core e outros
     s.reportsContainer = reportsContainer;
     s.reportsPizzaMonthSelect = reportsPizzaMonthSelect;
@@ -93,6 +99,136 @@ window.App.UIReports = (() => {
     }
   }
 
+  function renderMonthlyComparison(state, selectedMonth, currentSummary) {
+    const { formatCurrency } = window.App.UIUtils;
+    if (!reportsComparisonCard) return;
+
+    if (selectedMonth === 0) {
+      reportsComparisonCard.classList.add("hidden");
+      return;
+    }
+    reportsComparisonCard.classList.remove("hidden");
+
+    let prevMonth = selectedMonth - 1;
+    let prevYear = state.anoAtivo || new Date().getFullYear();
+    if (prevMonth === 0) {
+      prevMonth = 12;
+      prevYear = prevYear - 1;
+    }
+
+    const { perfis, perfilAtivo, despesas, financiamentos } = state;
+    const ativo = perfis.find(p => p.nome === perfilAtivo);
+    const prevSummary = window.App.Engine.calculateMonthlySummary(ativo, prevMonth, despesas, financiamentos, prevYear);
+
+    const meses = [
+      "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ];
+    const currentMonthLabel = meses[selectedMonth];
+    const prevMonthLabel = meses[prevMonth];
+    
+    if (reportsComparisonSubtitle) {
+      reportsComparisonSubtitle.textContent = `Comparando ${currentMonthLabel} de ${state.anoAtivo} com ${prevMonthLabel} de ${prevYear}`;
+    }
+
+    if (!reportsComparisonContainer) return;
+    reportsComparisonContainer.innerHTML = "";
+
+    const userColors = state.categorias || {};
+    const DEFAULT_COLORS = {
+      "Saúde": "#10b981", "Alimentação": "#0ea5e9", "Moradia": "#6366f1",
+      "Cartão de Crédito": "#f59e0b", "Lazer": "#f43f5e", "Serviços por Assinatura": "#8b5cf6",
+      "Serviços": "#14b8a6", "Financiamento": "#d946ef", "Investimento": "#eab308", "Outros": "#64748b"
+    };
+
+    const categoriesSet = new Set([
+      ...Object.keys(currentSummary.gastosPorCategoria),
+      ...Object.keys(prevSummary.gastosPorCategoria)
+    ]);
+
+    let hasInsights = false;
+
+    categoriesSet.forEach(cat => {
+      const currentVal = currentSummary.gastosPorCategoria[cat] || 0;
+      const prevVal = prevSummary.gastosPorCategoria[cat] || 0;
+
+      if (currentVal === 0 && prevVal === 0) return;
+
+      hasInsights = true;
+
+      let pctChange = 0;
+      let text = "";
+      let isGood = false;
+      let statusIcon = "";
+      let changeColorClass = "";
+
+      if (prevVal > 0 && currentVal > 0) {
+        pctChange = ((currentVal - prevVal) / prevVal) * 100;
+        const absPct = Math.abs(pctChange).toFixed(0);
+        if (pctChange > 0) {
+          text = `Seu gasto com ${cat} aumentou ${absPct}%`;
+          isGood = (cat === "Investimento");
+        } else if (pctChange < 0) {
+          text = `Seu gasto com ${cat} diminuiu ${absPct}%`;
+          isGood = (cat !== "Investimento");
+        } else {
+          text = `Seu gasto com ${cat} manteve-se estável`;
+          isGood = true;
+        }
+      } else if (prevVal === 0 && currentVal > 0) {
+        text = `Novo gasto em ${cat}: +${formatCurrency(currentVal)}`;
+        isGood = (cat === "Investimento");
+        pctChange = 100;
+      } else if (prevVal > 0 && currentVal === 0) {
+        text = `Seu gasto com ${cat} diminuiu 100% (economia de ${formatCurrency(prevVal)})`;
+        isGood = (cat !== "Investimento");
+        pctChange = -100;
+      }
+
+      if (pctChange === 0) {
+        statusIcon = `<svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>`;
+        changeColorClass = "text-slate-400";
+      } else if (isGood) {
+        // Redução de gastos ou Aumento de investimentos
+        statusIcon = `<svg class="w-4 h-4 shrink-0 text-emerald-450" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>`;
+        changeColorClass = "text-emerald-400 font-bold";
+      } else {
+        // Aumento de gastos ou Redução de investimentos
+        statusIcon = `<svg class="w-4 h-4 shrink-0 text-rose-455" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
+        changeColorClass = "text-rose-400 font-bold";
+      }
+
+      const cardColorBorder = isGood 
+        ? "border-emerald-950/40 bg-emerald-950/5 hover:border-emerald-900/60" 
+        : "border-rose-950/40 bg-rose-950/5 hover:border-rose-900/60";
+
+      const itemCard = document.createElement("div");
+      itemCard.className = `p-4 border rounded-xl flex flex-col justify-between gap-2.5 transition duration-200 ${cardColorBorder}`;
+      
+      const catColor = userColors[cat] || DEFAULT_COLORS[cat] || "#64748b";
+
+      itemCard.innerHTML = `
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border" style="color: ${catColor}; border-color: ${catColor}40; background-color: ${catColor}10">${cat}</span>
+          ${statusIcon}
+        </div>
+        <p class="text-xs font-semibold text-slate-200 leading-snug">${text}</p>
+        <div class="flex items-baseline justify-between text-[10px] text-slate-500 font-mono mt-1 pt-1.5 border-t border-slate-900/40">
+          <span>Anterior: <strong class="text-slate-400 font-semibold">${formatCurrency(prevVal)}</strong></span>
+          <span>Atual: <strong class="${changeColorClass}">${formatCurrency(currentVal)}</strong></span>
+        </div>
+      `;
+      reportsComparisonContainer.appendChild(itemCard);
+    });
+
+    if (!hasInsights) {
+      reportsComparisonContainer.innerHTML = `
+        <div class="col-span-full text-center py-6 text-slate-500 text-xs font-medium">
+          Nenhuma alteração registrada em relação ao mês anterior.
+        </div>`;
+    }
+  }
+
   function render(state) {
     const { formatCurrency } = window.App.UIUtils;
     const { perfis, perfilAtivo, despesas, anoAtivo, financiamentos } = state;
@@ -106,6 +242,9 @@ window.App.UIReports = (() => {
       } else {
         pizzaSummary = window.App.Engine.calculateMonthlySummary(ativo, selectedMonth, despesas, financiamentos, anoAtivo);
       }
+
+      // Render comparative card
+      renderMonthlyComparison(state, selectedMonth, pizzaSummary);
 
       // Desenhar gráficos principais
       if (window.App.Charts) {
