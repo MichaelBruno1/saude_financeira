@@ -130,6 +130,7 @@ window.App.UI = (() => {
     SYNC_STATUS: "sync-status",
     THEME_TOGGLE_BTN: "theme-toggle-btn",
     THEME_TOGGLE_BTN_TEXT: "theme-toggle-btn-text",
+    LOCALSTORAGE_USAGE_BADGE: "localstorage-usage-badge",
     YEAR_TABS_CONTAINER: "year-tabs-container",
     LLM_SETTINGS_FORM: "llm-settings-form",
     SETTINGS_LLM_URL: "settings-llm-url",

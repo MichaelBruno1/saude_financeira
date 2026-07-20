@@ -677,7 +677,7 @@ Você deve responder ESTRITAMENTE em formato JSON respeitando a seguinte estrutu
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
       .replace("{{CATEGORIAS}}", categoriesList)
-      .replace("{{MES_ATIVO}}", `${state.mesAtivo} (${MONTHS[state.mesAtivo - 1] || ""})`)
+      .replace("{{MES_ATIVO}}", `${state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1)} (${MONTHS[(state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1)) - 1] || ""})`)
       .replace("{{ANO_ATIVO}}", String(state.anoAtivo))
       .replace("{{DESPESAS}}", JSON.stringify(cleanedExpenses))
       .replace("{{FINANCIAMENTOS}}", JSON.stringify(cleanedFinancing))
@@ -878,10 +878,12 @@ Com base no potencial de economia gerado, explique como o usuário pode otimizar
     const activeProfileName = state.perfilAtivo || "Principal";
     const profile = state.perfis.find(p => p.nome === activeProfileName) || { salario: 0 };
 
-    const plannerMethod = state.metodoPlanejamento || "Equilibrado";
+    const plannerMethodSelect = document.getElementById("planner-method-select");
+    const plannerMethod = plannerMethodSelect ? (plannerMethodSelect.value || "Equilibrado") : "Equilibrado";
     const limites = (state.planejamento && state.planejamento[plannerMethod]) || {};
     
-    const selectedMonth = state.mesAtivo || new Date().getMonth() + 1;
+    const monthSelect = document.getElementById("reports-pizza-month-select");
+    const selectedMonth = monthSelect ? parseInt(monthSelect.value) : (state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1));
     const isAnual = selectedMonth === 0;
     
     const { gastosPorCategoria } = isAnual 
@@ -904,16 +906,39 @@ Com base no potencial de economia gerado, explique como o usuário pode otimizar
       .map(([sub, val]) => `- **${sub}:** R$ ${val.toFixed(2)}`)
       .join("\n") || "Nenhum investimento cadastrado.";
 
-    const detalheFinanciamentos = state.financiamentos.filter(f => f.perfil === activeProfileName)
-      .map(f => `- **${f.nome}:** R$ ${f.valorParcela.toFixed(2)}/mês (Total: R$ ${f.valorTotal.toFixed(2)})`)
+    const activeFin = state.financiamentos.filter(f => {
+      if (f.perfil !== activeProfileName) return false;
+      if (isAnual) {
+        for (let m = 1; m <= 12; m++) {
+          const details = window.App.Engine.getFinancingDetailsForMonth(f, m, state.anoAtivo);
+          if (details.active) return true;
+        }
+        return false;
+      } else {
+        const details = window.App.Engine.getFinancingDetailsForMonth(f, selectedMonth, state.anoAtivo);
+        return details.active;
+      }
+    });
+
+    const detalheFinanciamentos = activeFin
+      .map(f => {
+        const details = isAnual ? null : window.App.Engine.getFinancingDetailsForMonth(f, selectedMonth, state.anoAtivo);
+        const installmentText = isAnual ? "" : (details ? ` (Parcela ${details.index} de ${f.parcelasTotais})` : "");
+        return `- **${f.nome}:** R$ ${f.valorParcela.toFixed(2)}/mês${installmentText} (Total: R$ ${f.valorTotal.toFixed(2)})`;
+      })
       .join("\n") || "Nenhuma dívida ativa.";
     
+    const consolidatedGastos = { ...gastosPorCategoria };
+    const finVal = consolidatedGastos["Financiamento"] || 0;
+    consolidatedGastos["Moradia"] = (consolidatedGastos["Moradia"] || 0) + finVal;
+    consolidatedGastos["Financiamento"] = 0;
+
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
       .replace("{{SALARIO}}", profile.salario.toFixed(2))
       .replace("{{METODO_PLANEJADOR}}", plannerMethod)
       .replace("{{LIMITES_PLANEJADOR}}", JSON.stringify(limites, null, 2))
-      .replace("{{GASTOS_REAIS}}", JSON.stringify(gastosPorCategoria, null, 2))
+      .replace("{{GASTOS_REAIS}}", JSON.stringify(consolidatedGastos, null, 2))
       .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
       .replace("{{RESERVA_EMERGENCIA}}", targetReserve.toFixed(2))
       .replace("{{DISTRIBUICAO_INVESTIMENTOS}}", distribuicaoInvestimentos)
@@ -1037,24 +1062,78 @@ Informe:
     const activeProfileName = state.perfilAtivo || "Principal";
     const profile = state.perfis.find(p => p.nome === activeProfileName) || { salario: 0 };
     
-    const selectedMonth = state.mesAtivo || new Date().getMonth() + 1;
+    const monthSelect = document.getElementById("reports-pizza-month-select");
+    const selectedMonth = monthSelect ? parseInt(monthSelect.value) : (state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1));
     const isAnual = selectedMonth === 0;
     
     const { gastosPorCategoria } = isAnual 
       ? window.App.Engine.calculateAnnualSummary(profile, state.despesas, state.financiamentos, state.anoAtivo)
       : window.App.Engine.calculateMonthlySummary(profile, selectedMonth, state.despesas, state.financiamentos, state.anoAtivo);
       
-    const plannerMethod = state.metodoPlanejamento || "Equilibrado";
+    const plannerMethodSelect = document.getElementById("planner-method-select");
+    const plannerMethod = plannerMethodSelect ? (plannerMethodSelect.value || "Equilibrado") : "Equilibrado";
     const limites = (state.planejamento && state.planejamento[plannerMethod]) || {};
     
+    const activeDespesas = state.despesas.filter(d => {
+      if (d.perfil !== activeProfileName) return false;
+      if (isAnual) {
+        for (let m = 1; m <= 12; m++) {
+          const info = window.App.Engine.getInstallmentInfo(d, m, state.anoAtivo);
+          if (info && info.active) return true;
+        }
+        return false;
+      } else {
+        const info = window.App.Engine.getInstallmentInfo(d, selectedMonth, state.anoAtivo);
+        return info && info.active;
+      }
+    }).map(d => {
+      const info = isAnual ? null : window.App.Engine.getInstallmentInfo(d, selectedMonth, state.anoAtivo);
+      return {
+        descricao: d.descricao,
+        categoria: d.categoria,
+        subcategoria: d.subcategoria || "",
+        valor: isAnual ? d.valor : (info ? info.valorParcela : d.valor),
+        parcelas: d.recorrente ? "Recorrente" : (isAnual ? d.parcelas : (info ? `${info.index}/${info.total}` : "1/1")),
+        recorrente: d.recorrente
+      };
+    });
+
+    const activeFinanciamentos = state.financiamentos.filter(f => {
+      if (f.perfil !== activeProfileName) return false;
+      if (isAnual) {
+        for (let m = 1; m <= 12; m++) {
+          const details = window.App.Engine.getFinancingDetailsForMonth(f, m, state.anoAtivo);
+          if (details.active) return true;
+        }
+        return false;
+      } else {
+        const details = window.App.Engine.getFinancingDetailsForMonth(f, selectedMonth, state.anoAtivo);
+        return details.active;
+      }
+    }).map(f => {
+      const details = isAnual ? null : window.App.Engine.getFinancingDetailsForMonth(f, selectedMonth, state.anoAtivo);
+      return {
+        nome: f.nome,
+        valorTotal: f.valorTotal,
+        valorParcela: f.valorParcela,
+        parcelaAtual: isAnual ? "" : (details ? `${details.index}/${f.parcelasTotais}` : ""),
+        parcelasTotais: f.parcelasTotais
+      };
+    });
+
+    const consolidatedGastos = { ...gastosPorCategoria };
+    const finVal = consolidatedGastos["Financiamento"] || 0;
+    consolidatedGastos["Moradia"] = (consolidatedGastos["Moradia"] || 0) + finVal;
+    consolidatedGastos["Financiamento"] = 0;
+
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
       .replace("{{SALARIO}}", profile.salario.toFixed(2))
       .replace("{{METODO_PLANEJADOR}}", plannerMethod)
       .replace("{{LIMITES_PLANEJADOR}}", JSON.stringify(limites))
-      .replace("{{GASTOS_REAIS}}", JSON.stringify(gastosPorCategoria))
-      .replace("{{DETALHE_DESPESAS}}", JSON.stringify(state.despesas.filter(d => d.perfil === activeProfileName)))
-      .replace("{{DETALHE_FINANCIAMENTOS}}", JSON.stringify(state.financiamentos));
+      .replace("{{GASTOS_REAIS}}", JSON.stringify(consolidatedGastos))
+      .replace("{{DETALHE_DESPESAS}}", JSON.stringify(activeDespesas))
+      .replace("{{DETALHE_FINANCIAMENTOS}}", JSON.stringify(activeFinanciamentos));
       
     const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.3 });
 
@@ -1116,7 +1195,8 @@ Gere um relatório Markdown bem detalhado com Diagnóstico, Estratégia de FGTS,
     const financingInstallmentsSum = state.financiamentos.filter(f => f.perfil === activeProfileName).reduce((sum, f) => sum + f.valorParcela, 0);
     const targetReserve = (recurrentExpensesSum + financingInstallmentsSum) * 6;
 
-    const selectedMonth = state.mesAtivo || new Date().getMonth() + 1;
+    const monthSelect = document.getElementById("reports-pizza-month-select");
+    const selectedMonth = monthSelect ? parseInt(monthSelect.value) : (state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1));
     const isAnual = selectedMonth === 0;
     const { totalGeral } = isAnual 
       ? window.App.Engine.calculateAnnualSummary(profile, state.despesas, state.financiamentos, state.anoAtivo)

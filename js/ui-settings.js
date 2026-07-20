@@ -2,7 +2,7 @@
 window.App = window.App || {};
 
 window.App.UISettings = (() => {
-  let settingsContainer, themeToggleBtn, themeToggleBtnText;
+  let settingsContainer, themeToggleBtn, themeToggleBtnText, localstorageUsageBadge;
   let categoriesColorsList, addCategoryForm, newCategoryName, newCategoryColor, newCategoryColorHex;
   let llmSettingsForm, settingsLlmUrl, settingsLlmKey, settingsLlmModel, settingsLlmMaxContext;
   let settingsInvestmentCategoriesList;
@@ -16,6 +16,7 @@ window.App.UISettings = (() => {
     settingsContainer                = g(DOM_IDS.SETTINGS_CONTAINER);
     themeToggleBtn                   = g(DOM_IDS.THEME_TOGGLE_BTN);
     themeToggleBtnText               = g(DOM_IDS.THEME_TOGGLE_BTN_TEXT);
+    localstorageUsageBadge           = g(DOM_IDS.LOCALSTORAGE_USAGE_BADGE);
     categoriesColorsList             = g(DOM_IDS.CATEGORIES_COLORS_LIST);
     addCategoryForm                  = g(DOM_IDS.ADD_CATEGORY_FORM);
     newCategoryName                  = g(DOM_IDS.NEW_CATEGORY_NAME);
@@ -236,13 +237,31 @@ window.App.UISettings = (() => {
     if (optMethodPersonalizado) {
       if (state.planejamento && state.planejamento["Personalizado"]) {
         optMethodPersonalizado.classList.remove("hidden");
+        if (!window.App.UIState.hasSetDefaultSettingsPlannerMethod) {
+          if (settingsPlannerMethodSelect) settingsPlannerMethodSelect.value = "Personalizado";
+          window.App.UIState.hasSetDefaultSettingsPlannerMethod = true;
+        }
       } else {
         optMethodPersonalizado.classList.add("hidden");
+        if (settingsPlannerMethodSelect && settingsPlannerMethodSelect.value === "Personalizado") {
+          settingsPlannerMethodSelect.value = "Equilibrado";
+        }
       }
     }
 
     if (themeToggleBtnText) {
       themeToggleBtnText.textContent = state.theme === "light" ? "Mudar para Modo Escuro" : "Mudar para Modo Claro";
+    }
+
+    if (localstorageUsageBadge) {
+      let totalChars = 0;
+      for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+          totalChars += localStorage[key].length + key.length;
+        }
+      }
+      const mbUsed = (totalChars / (1024 * 1024)).toFixed(2);
+      localstorageUsageBadge.textContent = `${mbUsed}/5.0 mb`;
     }
 
     if (categoriesColorsList) {

@@ -487,12 +487,13 @@ window.App.Engine = (() => {
       const totalInvested = investExpenses.reduce((sum, d) => sum + d.valor, 0);
       const pointsPatrimonio = Math.min(200, (totalInvested / 50000) * 200);
 
-      // Obter sumário mensal para usar em despesas do mês e poupança
-      const summary = this.calculateMonthlySummary(perfil, mesAtivo, despesas, financiamentos, anoAtivo);
+      // Obter sumário anual do ano ativo para avaliar os critérios
+      const annualSummary = this.calculateAnnualSummary(perfil, despesas, financiamentos, anoAtivo);
 
       // 3. Liquidez (Até 150 pontos)
-      const currentExpenses = summary.totalGastos - (summary.gastosPorCategoria["Investimento"] || 0);
-      const reserveMeta = Math.max(1000, currentExpenses * 6);
+      const annualExpenses = annualSummary.totalGastos - (annualSummary.gastosPorCategoria["Investimento"] || 0);
+      const averageMonthlySpending = annualExpenses / 12;
+      const reserveMeta = Math.max(1000, averageMonthlySpending * 6);
       const pointsLiquidez = Math.min(150, (totalInvested / reserveMeta) * 150);
 
       // 4. Concentração de investimentos (Até 100 pontos)
@@ -502,25 +503,42 @@ window.App.Engine = (() => {
       });
       const pointsConcentracao = Math.min(100, activeSubs.size * 25);
 
-      // 5. Percentual de gastos essenciais (Até 150 pontos)
-      const essentialGastos = 
-        (summary.gastosPorCategoria["Moradia"] || 0) + 
-        (summary.gastosPorCategoria["Saúde"] || 0) + 
-        (summary.gastosPorCategoria["Alimentação"] || 0) + 
-        (summary.gastosPorCategoria["Financiamento"] || 0);
-      const salary = perfil.salario || 0;
+      // 5. Percentual de gastos essenciais (Até 150 pontos - base trimestral / 3 últimos meses)
+      let trimEssentialGastos = 0;
+      let trimSalary = 0;
+
+      for (let i = 0; i < 3; i++) {
+        let m = mesAtivo - i;
+        let y = anoAtivo;
+        if (m <= 0) {
+          m = 12 + m;
+          y = y - 1;
+        }
+        const monthSummary = this.calculateMonthlySummary(perfil, m, despesas, financiamentos, y);
+        const monthEssential = 
+          (monthSummary.gastosPorCategoria["Moradia"] || 0) + 
+          (monthSummary.gastosPorCategoria["Saúde"] || 0) + 
+          (monthSummary.gastosPorCategoria["Alimentação"] || 0) + 
+          (monthSummary.gastosPorCategoria["Financiamento"] || 0);
+
+        trimEssentialGastos += monthEssential;
+        trimSalary += perfil.salario || 0;
+      }
+
       let pointsEssenciais = 0;
-      if (salary > 0) {
-        const ratio = essentialGastos / salary;
+      if (trimSalary > 0) {
+        const ratio = trimEssentialGastos / trimSalary;
         if (ratio <= 0.5) pointsEssenciais = 150;
         else pointsEssenciais = Math.max(0, (1 - (ratio - 0.5) * 2) * 150);
       }
 
+      const annualSalary = (perfil.salario || 0) * 12;
+
       // 6. Evolução da taxa de poupança (Até 100 pontos)
-      const monthInvest = summary.gastosPorCategoria["Investimento"] || 0;
+      const annualSavings = annualSummary.gastosPorCategoria["Investimento"] || 0;
       let pointsPoupanca = 0;
-      if (salary > 0) {
-        const rate = monthInvest / salary;
+      if (annualSalary > 0) {
+        const rate = annualSavings / annualSalary;
         pointsPoupanca = Math.min(100, (rate / 0.20) * 100);
       }
 
@@ -531,7 +549,7 @@ window.App.Engine = (() => {
         let totalAmortized = 0;
         let totalValue = 0;
         profileFin.forEach(f => {
-          const details = this.getFinancingDetailsForMonth(f, mesAtivo, anoAtivo);
+          const details = this.getFinancingDetailsForMonth(f, 12, anoAtivo);
           const paidMonths = details.parcelaAtual || 0;
           const totalMonths = f.parcelasTotais || 1;
           const ratio = paidMonths / totalMonths;

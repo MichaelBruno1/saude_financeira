@@ -250,6 +250,7 @@
                   <th class="py-3 px-4">Categoria</th>
                   <th class="py-3 px-4">Valor (R$)</th>
                   <th class="py-3 px-4">Parcelas</th>
+                  <th class="py-3 px-4 text-center">Horas de Trabalho</th>
                   <th class="py-3 px-4 text-right">Ações</th>
                 </tr>
               </thead>
@@ -738,10 +739,14 @@
       <!-- Settings Container (initially hidden) -->
       <div id="settings-container" class="hidden space-y-8">
         <!-- Settings Header Toolbar -->
-        <div class="flex bg-slate-950/20 border border-slate-800 p-6 rounded-2xl">
+        <div class="flex items-center justify-between bg-slate-950/20 border border-slate-800 p-6 rounded-2xl">
           <div>
             <h3 class="text-base font-bold text-white">Configurações do Sistema</h3>
             <p class="text-xs text-slate-400">Personalize o tema visual, crie novas categorias de despesas e edite suas cores.</p>
+          </div>
+          <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Uso do LocalStorage</span>
+            <span id="localstorage-usage-badge" class="font-mono text-xs font-bold text-indigo-400">0.00/5.0 mb</span>
           </div>
         </div>
 

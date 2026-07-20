@@ -79,7 +79,7 @@ describe('Financial Score Engine Calculations', () => {
 
     // June: No investments, high essential expenses (Housing)
     const despesas = [
-      { perfil: "Michael", categoria: "Moradia", valor: 2400, mes_inicio: 1, ano_inicio: 2026, parcelas: 1 } // 80% essential ratio
+      { perfil: "Michael", categoria: "Moradia", valor: 2400, mes_inicio: 1, ano_inicio: 2026, parcelas: 1, recorrente: true }
     ];
 
     // Active financing with 0% paid off
@@ -89,7 +89,7 @@ describe('Financial Score Engine Calculations', () => {
 
     const metas = [];
 
-    const res = Engine.calculateFinancialScore(perfil, despesas, financiamentos, metas, 2026, 1);
+    const res = Engine.calculateFinancialScore(perfil, despesas, financiamentos, metas, 2026, 3);
 
     expect(res.details.aportes).toBe(0);         // No investments
     expect(res.details.patrimonio).toBe(0);      // 0 invested

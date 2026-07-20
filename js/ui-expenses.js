@@ -281,13 +281,25 @@ window.App.UIExpenses = (() => {
       }
     }
 
+    // Ordenação personalizada: Recorrentes primeiro, depois as demais por ordem de criação
+    itensFiltrados.sort((a, b) => {
+      const aRec = (a.objetoOriginal && a.objetoOriginal.recorrente === true) || a.tipo === "financiamento";
+      const bRec = (b.objetoOriginal && b.objetoOriginal.recorrente === true) || b.tipo === "financiamento";
+      if (aRec && !bRec) return -1;
+      if (!aRec && bRec) return 1;
+      return 0; // Estável: mantém a ordem de criação
+    });
+
     if (s.expenseCountBadge) s.expenseCountBadge.textContent = `${itensFiltrados.length} total`;
 
     if (itensFiltrados.length === 0) {
       const row = document.createElement("tr");
-      row.innerHTML = `<td colspan="5" class="text-center py-8 text-slate-500 text-xs font-medium">Nenhum gasto cadastrado para este mês.</td>`;
+      row.innerHTML = `<td colspan="6" class="text-center py-8 text-slate-500 text-xs font-medium">Nenhum gasto cadastrado para este mês.</td>`;
       s.expensesTableBody.appendChild(row);
     } else {
+      const activeProfile = perfis.find(p => p.nome === perfilAtivo);
+      const salary = activeProfile ? activeProfile.salario : 0;
+
       itensFiltrados.forEach(item => {
         const row = document.createElement("tr");
         row.className = "hover:bg-slate-900/40 transition border-b border-slate-850 text-slate-300";
@@ -295,6 +307,18 @@ window.App.UIExpenses = (() => {
           ? `<button class="edit-expense-btn bg-slate-800 hover:bg-slate-750 text-indigo-300 hover:text-indigo-200 border border-slate-700 hover:border-slate-650 px-2.5 py-1 rounded-lg transition text-xs mr-1.5 focus:outline-none" data-id="${item.id}">Editar</button>
              <button class="remove-expense-btn bg-red-950/20 hover:bg-red-950/40 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 px-2.5 py-1 rounded-lg transition text-xs focus:outline-none" data-id="${item.id}">Excluir</button>`
           : `<span class="text-xxs font-bold text-slate-500 uppercase tracking-wider bg-slate-950/40 px-2.5 py-1.5 border border-slate-850 rounded-lg">Fixo Contrato</span>`;
+
+        let horasTexto = "-";
+        if (salary > 0) {
+          const valorHora = salary / 220;
+          const horasNecessarias = item.valorParcela / valorHora;
+          if (horasNecessarias < 1) {
+            const mins = Math.round(horasNecessarias * 60);
+            horasTexto = `${mins} min`;
+          } else {
+            horasTexto = `${horasNecessarias.toFixed(1)}h`;
+          }
+        }
 
         row.innerHTML = `
           <td class="py-3 px-4 font-medium text-slate-200">${item.descricao}</td>
@@ -306,6 +330,7 @@ window.App.UIExpenses = (() => {
           </td>
           <td class="py-3 px-4 font-mono text-indigo-300">${formatCurrency(item.valorParcela)}</td>
           <td class="py-3 px-4 font-mono text-slate-400">${item.parcelasTexto}</td>
+          <td class="py-3 px-4 font-mono text-indigo-300 text-center">${horasTexto}</td>
           <td class="py-3 px-4 text-right">${actionCol}</td>
         `;
         s.expensesTableBody.appendChild(row);

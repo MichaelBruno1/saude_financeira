@@ -284,8 +284,15 @@ window.App.UIReports = (() => {
       if (optReportMethodPersonalizado) {
         if (state.planejamento && state.planejamento["Personalizado"]) {
           optReportMethodPersonalizado.classList.remove("hidden");
+          if (!window.App.UIState.hasSetDefaultPlannerMethod) {
+            if (plannerMethodSelect) plannerMethodSelect.value = "Personalizado";
+            window.App.UIState.hasSetDefaultPlannerMethod = true;
+          }
         } else {
           optReportMethodPersonalizado.classList.add("hidden");
+          if (plannerMethodSelect && plannerMethodSelect.value === "Personalizado") {
+            plannerMethodSelect.value = "Equilibrado";
+          }
         }
       }
 
