@@ -285,6 +285,30 @@ window.App.UIAgent = (() => {
   }
 
   async function sendInvoiceTextToLlm(text, apiUrl, apiKey, model) {
+    if (window.App.APIClient.isOnline()) {
+      try {
+        const res = await window.App.APIClient.callLLM("importacao", { texto_fatura: text });
+        let choiceText = res.content.trim();
+        if (choiceText.startsWith("```")) {
+          choiceText = choiceText.replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "");
+        }
+        choiceText = choiceText.trim();
+        choiceText = choiceText.replace(/"value"\s*:\s*"?([0-9]+(?:\.[0-9]+)*(?:,[0-9]+)?)"?/g, (match, numStr) => {
+          if (numStr.includes(",")) {
+            const cleaned = numStr.replace(/\./g, "").replace(",", ".");
+            return `"value": ${cleaned}`;
+          }
+          return `"value": ${numStr}`;
+        });
+        const parsed = JSON.parse(choiceText);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch (err) {
+        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
+      }
+    }
+
     let promptTemplate = "";
     try {
       const response = await fetch("prompts/importacao.md");
@@ -674,6 +698,30 @@ Você deve responder ESTRITAMENTE em formato JSON respeitando a seguinte estrutu
 
     const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
     
+    if (window.App.APIClient.isOnline()) {
+      try {
+        const context = {
+          perfil: activeProfileName,
+          categorias: categoriesList,
+          mes_ativo: `${state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1)} (${MONTHS[(state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1)) - 1] || ""})`,
+          ano_ativo: String(state.anoAtivo),
+          despesas: cleanedExpenses,
+          financiamentos: cleanedFinancing,
+          historico_chat: formattedHistory || "(Sem histórico anterior)",
+          pergunta: userMessage
+        };
+        const res = await window.App.APIClient.callLLM("agente", context);
+        let choiceText = res.content.trim().replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "").trim();
+        try {
+          return JSON.parse(choiceText);
+        } catch (e) {
+          return { message: choiceText, action: { type: "none" } };
+        }
+      } catch (err) {
+        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
+      }
+    }
+
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
       .replace("{{CATEGORIAS}}", categoriesList)
@@ -787,6 +835,29 @@ Com base nos aportes recorrentes, no total já investido e considerando que rest
     const nomeMes = monthNames[currentMonthNum - 1];
     const anoAtual = state.anoAtivo || new Date().getFullYear();
     const mesesRestantes = 12 - currentMonthNum;
+
+    if (window.App.APIClient.isOnline()) {
+      try {
+        const context = {
+          perfil: activeProfileName,
+          salario: profile.salario.toFixed(2),
+          nome_mes: nomeMes,
+          ano_atual: String(anoAtual),
+          meses_restantes: String(mesesRestantes),
+          total_investido: totalInvested.toFixed(2),
+          fgts: fgtsVal.toFixed(2),
+          total_com_fgts: combinedTotal.toFixed(2),
+          reserva_emergencia: targetReserve.toFixed(2),
+          detalhe_investimentos: detalheInvestimentos
+        };
+        const res = await window.App.APIClient.callLLM("analise_investimentos", context);
+        if (res.content) {
+          return res.content;
+        }
+      } catch (err) {
+        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
+      }
+    }
 
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
@@ -932,6 +1003,28 @@ Com base no potencial de economia gerado, explique como o usuário pode otimizar
     const finVal = consolidatedGastos["Financiamento"] || 0;
     consolidatedGastos["Moradia"] = (consolidatedGastos["Moradia"] || 0) + finVal;
     consolidatedGastos["Financiamento"] = 0;
+
+    if (window.App.APIClient.isOnline()) {
+      try {
+        const context = {
+          perfil: activeProfileName,
+          salario: profile.salario.toFixed(2),
+          metodo_planejador: plannerMethod,
+          limites_planejador: limites,
+          gastos_reais: consolidatedGastos,
+          total_investido: totalInvested.toFixed(2),
+          reserva_emergencia: targetReserve.toFixed(2),
+          distribuicao_investimentos: distribuicaoInvestimentos,
+          detalhe_financiamentos: detalheFinanciamentos
+        };
+        const res = await window.App.APIClient.callLLM("plano_economia", context);
+        if (res.content) {
+          return res.content;
+        }
+      } catch (err) {
+        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
+      }
+    }
 
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
@@ -1126,6 +1219,26 @@ Informe:
     consolidatedGastos["Moradia"] = (consolidatedGastos["Moradia"] || 0) + finVal;
     consolidatedGastos["Financiamento"] = 0;
 
+    if (window.App.APIClient.isOnline()) {
+      try {
+        const context = {
+          perfil: activeProfileName,
+          salario: profile.salario.toFixed(2),
+          metodo_planejador: plannerMethod,
+          limites_planejador: limites,
+          gastos_reais: consolidatedGastos,
+          detalhe_despesas: activeDespesas,
+          detalhe_financiamentos: activeFinanciamentos
+        };
+        const res = await window.App.APIClient.callLLM("analise", context);
+        if (res.content) {
+          return res.content;
+        }
+      } catch (err) {
+        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
+      }
+    }
+
     let promptText = promptTemplate
       .replace("{{PERFIL}}", activeProfileName)
       .replace("{{SALARIO}}", profile.salario.toFixed(2))
@@ -1215,6 +1328,33 @@ Gere um relatório Markdown bem detalhado com Diagnóstico, Estratégia de FGTS,
 
     const systemText = String(f.sistema || "price").toUpperCase() === "SAC" ? "SAC (Amortizações Constantes)" : "PRICE (Prestações Constantes)";
 
+    if (window.App.APIClient.isOnline()) {
+      try {
+        const context = {
+          nome_financiamento: f.nome,
+          valor_total: f.valorTotal.toFixed(2),
+          valor_parcela: f.valorParcela.toFixed(2),
+          parcelas_totais: String(f.parcelasTotais),
+          taxa_tr: f.taxaTR.toFixed(3),
+          taxa_juros_anual: (f.taxaJurosAnual || 0).toFixed(2),
+          sistema_amortizacao: systemText,
+          perfil: activeProfileName,
+          salario: profile.salario.toFixed(2),
+          total_investido: totalInvested.toFixed(2),
+          detalhe_investimentos: detalheInvestimentos,
+          fgts: fgtsVal.toFixed(2),
+          reserva_emergencia: targetReserve.toFixed(2),
+          sobra_mensal: sobraMensal.toFixed(2)
+        };
+        const res = await window.App.APIClient.callLLM("plano_amortizacao", context);
+        if (res.content) {
+          return res.content;
+        }
+      } catch (err) {
+        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
+      }
+    }
+
     let promptText = promptTemplate
       .replace("{{NOME_FINANCIAMENTO}}", f.nome)
       .replace("{{VALOR_TOTAL}}", f.valorTotal.toFixed(2))
@@ -1289,6 +1429,45 @@ Retorne apenas JSON cru mapeando categorias para porcentagem. Sem markdown.`;
     const detalheGastosText = Object.entries(gastosAcumulados)
       .map(([cat, val]) => `- **${cat}:** R$ ${val.toFixed(2)}`)
       .join("\n");
+
+    if (window.App.APIClient.isOnline()) {
+      try {
+        const context = {
+          categorias_existentes: categoriasExistentesText,
+          perfil: activeProfileName,
+          salario: profile.salario.toFixed(2),
+          detalhe_gastos: detalheGastosText
+        };
+        const res = await window.App.APIClient.callLLM("metodo_personalizado", context);
+        if (res.content) {
+          let resultText = res.content.trim();
+          if (resultText.startsWith("```")) {
+            resultText = resultText.replace(/^```[a-zA-Z0-9]*\n/, "").replace(/\n```$/, "").trim();
+          }
+          try {
+            const parsed = JSON.parse(resultText);
+            const resultObj = {};
+            let sum = 0;
+            categoriasList.forEach(cat => {
+              let val = parseFloat(parsed[cat]) || 0;
+              if (val < 0) val = 0;
+              resultObj[cat] = val;
+              sum += val;
+            });
+            // normalise sum if it doesn't match 100 perfectly but is close, or let logic handle it.
+            // We can return the resultObj directly!
+            // Wait, we need to return this resultObj. Let's see what the original function does:
+            // The original function returns resultObj.
+            // So if parsed successfully, we can return it!
+            return resultObj;
+          } catch(e) {
+            console.error("Erro ao parsear JSON retornado pelo LLM Proxy:", e);
+          }
+        }
+      } catch (err) {
+        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
+      }
+    }
 
     let promptText = promptTemplate
       .replace("{{CATEGORIAS_EXISTENTES}}", categoriasExistentesText)

@@ -241,6 +241,36 @@ Metas:
             .map((m, idx) => `ID: ${m.id} | Prioridade: ${idx + 1} | Nome: ${m.nome} | Valor do Produto: R$ ${m.valor.toFixed(2)} | Target Atual de Desbloqueio: R$ ${m.valorTarget.toFixed(2)}`)
             .join("\n");
 
+          if (window.App.APIClient.isOnline()) {
+            try {
+              const context = {
+                perfil: activeProfileName,
+                salario: profile.salario.toFixed(2),
+                total_investido: totalInvested.toFixed(2),
+                detalhe_gastos: detalheGastosText,
+                lista_metas: listaMetasText
+              };
+              const res = await window.App.APIClient.callLLM("ajustar_meta", context);
+              if (res.content) {
+                let resultText = res.content.trim();
+                if (resultText.startsWith("```")) {
+                  resultText = resultText.replace(/^```[a-zA-Z0-9]*\n/, "").replace(/\n```$/, "").trim();
+                }
+                const parsed = JSON.parse(resultText);
+                if (Array.isArray(parsed)) {
+                  window.App.State.atualizarMetasTargetsLlm(parsed);
+                  const justificativas = parsed.map(p => `• **${obterNomeMeta(state, p.id)}**: ${p.justificativa}`).join("<br>");
+                  metasLlmJustificationText.innerHTML = justificativas;
+                  metasLlmJustificationCard.classList.remove("hidden");
+                  showStatus("Metas reajustadas pelo agente de IA!");
+                  return;
+                }
+              }
+            } catch (err) {
+              console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
+            }
+          }
+
           const promptText = promptTemplate
             .replace("{{PERFIL}}", activeProfileName)
             .replace("{{SALARIO}}", profile.salario.toFixed(2))
@@ -296,7 +326,27 @@ Metas:
     }
   }
 
-  function carregarFoto(file) {
+  async function carregarFoto(file) {
+    if (window.App.APIClient.isOnline()) {
+      try {
+        if (window.App.UIUtils && window.App.UIUtils.showStatus) {
+          window.App.UIUtils.showStatus("Fazendo upload da imagem...", false);
+        }
+        const uploadedPath = await window.App.APIClient.uploadMetaFoto(file);
+        currentPhotoBase64 = uploadedPath;
+        metaPhotoPreview.src = uploadedPath;
+        metaPhotoPreviewContainer.classList.remove("hidden");
+        metaPhotoUploadZone.classList.add("hidden");
+        if (metaPhotoUrlInput) metaPhotoUrlInput.value = "";
+        if (window.App.UIUtils && window.App.UIUtils.showStatus) {
+          window.App.UIUtils.showStatus("Upload concluído com sucesso!");
+        }
+        return;
+      } catch (err) {
+        console.error("Falha no upload físico da imagem, usando base64 local:", err);
+      }
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       currentPhotoBase64 = e.target.result;
