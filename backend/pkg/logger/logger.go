@@ -8,6 +8,10 @@ import (
 
 var Log *slog.Logger
 
+func init() {
+	Log = slog.Default()
+}
+
 // Init initializes the global slog logger with the specified level.
 func Init(levelStr string) {
 	var level slog.Level
