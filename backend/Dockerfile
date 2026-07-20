@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.22-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -22,6 +22,10 @@ COPY --from=builder /app/server .
 
 # Copy prompts template (since we need them for LLM proxy)
 COPY --from=builder /app/prompts ./prompts
+
+# Copy migration files
+COPY --from=builder /app/migrations ./migrations
+
 
 # Create uploads directory
 RUN mkdir -p uploads/metas

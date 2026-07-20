@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"saude-financeira-api/internal/infrastructure/config"
+	"saude-financeira-api/internal/infrastructure/persistence/postgres"
 	"saude-financeira-api/pkg/logger"
 )
 
@@ -30,6 +31,22 @@ func main() {
 		"env", os.Getenv("GO_ENV"),
 	)
 
+	// Connect to database
+	db, err := postgres.NewConnection(cfg)
+	if err != nil {
+		logger.Log.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	// Run migrations if enabled
+	if cfg.AutoMigrate {
+		if err := postgres.RunMigrations(db, cfg.MigrationsPath); err != nil {
+			logger.Log.Error("Failed to run migrations", "error", err)
+			os.Exit(1)
+		}
+	}
+
 	mux := http.NewServeMux()
 
 	// Health check endpoint
@@ -44,7 +61,17 @@ func main() {
 	// Readiness check endpoint
 	mux.HandleFunc("GET /api/v1/health/ready", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		// In Step 1 we don't check Postgres connection yet, but we will in future steps
+		if err := db.Ping(); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error: &APIResponseErr{
+					Code:    "DATABASE_UNAVAILABLE",
+					Message: err.Error(),
+				},
+			})
+			return
+		}
 		json.NewEncoder(w).Encode(APIResponse{
 			Success: true,
 			Data:    map[string]string{"status": "ready"},
