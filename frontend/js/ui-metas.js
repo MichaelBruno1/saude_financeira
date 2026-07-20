@@ -181,9 +181,8 @@ window.App.UIMetas = (() => {
     // Botão de Ajustar Meta via LLM
     if (btnAjustarMetaLlm) {
       btnAjustarMetaLlm.addEventListener("click", async () => {
-        const config = getLlmConfig();
-        if (!config.apiUrl || !config.model) {
-          alert("Por favor, configure a API da LLM na tela de Configurações primeiro.");
+        if (!window.App.APIClient.isOnline()) {
+          alert("O servidor Go API está offline. Este recurso de IA requer o servidor ativo.");
           return;
         }
 
@@ -191,25 +190,6 @@ window.App.UIMetas = (() => {
         if (ajustarMetaSpinner) ajustarMetaSpinner.classList.remove("hidden");
 
         try {
-          // Carrega prompt template
-          let promptTemplate = "";
-          try {
-            const promptRes = await fetch("prompts/ajustar_meta.md");
-            if (promptRes.ok) promptTemplate = await promptRes.text();
-            else throw new Error("Erro HTTP");
-          } catch (err) {
-            // Fallback embutido caso o fetch falhe
-            promptTemplate = `Você é uma IA especialista em finanças. Reajuste os targets de desbloqueio das metas de forma estritamente crescente.
-Retorne um array JSON com { id, valorTarget, justificativa }. Sem markdown.
-Perfil: {{PERFIL}}
-Salário: R$ {{SALARIO}}
-Total Investido: R$ {{TOTAL_INVESTIDO}}
-Gastos:
-{{DETALHE_GASTOS}}
-Metas:
-{{LISTA_METAS}}`;
-          }
-
           const state = window.App.State.getState();
           const activeProfileName = state.perfilAtivo || "Principal";
           const profile = state.perfis.find(p => p.nome === activeProfileName) || { salario: 0 };
@@ -241,80 +221,33 @@ Metas:
             .map((m, idx) => `ID: ${m.id} | Prioridade: ${idx + 1} | Nome: ${m.nome} | Valor do Produto: R$ ${m.valor.toFixed(2)} | Target Atual de Desbloqueio: R$ ${m.valorTarget.toFixed(2)}`)
             .join("\n");
 
-          if (window.App.APIClient.isOnline()) {
-            try {
-              const context = {
-                perfil: activeProfileName,
-                salario: profile.salario.toFixed(2),
-                total_investido: totalInvested.toFixed(2),
-                detalhe_gastos: detalheGastosText,
-                lista_metas: listaMetasText
-              };
-              const res = await window.App.APIClient.callLLM("ajustar_meta", context);
-              if (res.content) {
-                let resultText = res.content.trim();
-                if (resultText.startsWith("```")) {
-                  resultText = resultText.replace(/^```[a-zA-Z0-9]*\n/, "").replace(/\n```$/, "").trim();
-                }
-                const parsed = JSON.parse(resultText);
-                if (Array.isArray(parsed)) {
-                  window.App.State.atualizarMetasTargetsLlm(parsed);
-                  const justificativas = parsed.map(p => `• **${obterNomeMeta(state, p.id)}**: ${p.justificativa}`).join("<br>");
-                  metasLlmJustificationText.innerHTML = justificativas;
-                  metasLlmJustificationCard.classList.remove("hidden");
-                  showStatus("Metas reajustadas pelo agente de IA!");
-                  return;
-                }
-              }
-            } catch (err) {
-              console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
+          const context = {
+            perfil: activeProfileName,
+            salario: profile.salario.toFixed(2),
+            total_investido: totalInvested.toFixed(2),
+            detalhe_gastos: detalheGastosText,
+            lista_metas: listaMetasText
+          };
+
+          const res = await window.App.APIClient.callLLM("ajustar_meta", context);
+          if (res.content) {
+            let resultText = res.content.trim();
+            if (resultText.startsWith("```")) {
+              resultText = resultText.replace(/^```[a-zA-Z0-9]*\n/, "").replace(/\n```$/, "").trim();
             }
-          }
-
-          const promptText = promptTemplate
-            .replace("{{PERFIL}}", activeProfileName)
-            .replace("{{SALARIO}}", profile.salario.toFixed(2))
-            .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
-            .replace("{{DETALHE_GASTOS}}", detalheGastosText)
-            .replace("{{LISTA_METAS}}", listaMetasText);
-
-          const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.1 });
-
-          const response = await fetch(`${config.apiUrl}/chat/completions`, {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json", 
-              "Authorization": `Bearer ${config.apiKey}` 
-            },
-            body: JSON.stringify(requestBody)
-          });
-
-          if (!response.ok) throw new Error(`Erro API: ${await response.text()}`);
-
-          const resData = await response.json();
-          let resultText = resData.choices?.[0]?.message?.content;
-          if (!resultText) throw new Error("A API retornou vazio.");
-
-          resultText = resultText.trim();
-          if (resultText.startsWith("```")) {
-            resultText = resultText.replace(/^```[a-zA-Z0-9]*\n/, "").replace(/\n```$/, "").trim();
-          }
-
-          const parsed = JSON.parse(resultText);
-          if (Array.isArray(parsed)) {
-            // Aplicar os reajustes no estado
-            window.App.State.atualizarMetasTargetsLlm(parsed);
-
-            // Exibir justificativa geral compilada
-            const justificativas = parsed.map(p => `• **${obterNomeMeta(state, p.id)}**: ${p.justificativa}`).join("<br>");
-            metasLlmJustificationText.innerHTML = justificativas;
-            metasLlmJustificationCard.classList.remove("hidden");
-            
-            showStatus("Metas reajustadas pelo agente de IA!");
+            const parsed = JSON.parse(resultText);
+            if (Array.isArray(parsed)) {
+              window.App.State.atualizarMetasTargetsLlm(parsed);
+              const justificativas = parsed.map(p => `• **${obterNomeMeta(state, p.id)}**: ${p.justificativa}`).join("<br>");
+              metasLlmJustificationText.innerHTML = justificativas;
+              metasLlmJustificationCard.classList.remove("hidden");
+              showStatus("Metas reajustadas pelo agente de IA!");
+            } else {
+              throw new Error("Resposta em formato inválido.");
+            }
           } else {
-            throw new Error("Formato de retorno inválido.");
+            throw new Error("A IA retornou uma resposta vazia.");
           }
-
         } catch (err) {
           console.error(err);
           alert(`Falha no ajuste por IA: ${err.message}`);

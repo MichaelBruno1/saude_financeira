@@ -10,18 +10,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.App.UI.render(state, changedKey);
   });
 
-  // 3. Inscrever o Storage Engine nas atualizações do Estado Central (persistência síncrona automática)
-  window.App.State.subscribe(async (state) => {
+  // 3. Inscrever o Storage Engine nas atualizações do Estado Central (persistência síncrona automática para backup local)
+  window.App.State.subscribe((state) => {
     window.App.Storage.saveToLocalStorage(state);
-    
-    // Asynchronously sync with Go API backend if online
-    if (window.App.APIClient.isOnline()) {
-      try {
-        await window.App.APIClient.importState(state);
-      } catch (err) {
-        console.warn("Falha ao sincronizar com servidor API, dados mantidos localmente:", err);
-      }
-    }
   });
 
   // 4. Inicializar API Client

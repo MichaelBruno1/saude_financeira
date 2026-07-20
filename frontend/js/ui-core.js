@@ -435,9 +435,35 @@ window.App.UI = (() => {
       // ── CSV Export / Import ──────────────────────────────────────────────────
       s.exportCsvBtn.addEventListener("click", () => {
         const state = window.App.State.getState();
-        const success = window.App.Storage.exportAsCSVFile(state);
-        if (success) { window.App.State.atualizarUltimoBackup(); showStatus("Arquivo CSV exportado!"); }
-        else { showStatus("Erro ao exportar CSV.", true); }
+        const activeProfile = state.perfis.find(p => p.nome === state.perfilAtivo);
+        
+        if (window.App.APIClient.isOnline() && activeProfile && activeProfile.id) {
+          window.App.APIClient.exportCSV(activeProfile.id)
+            .then(csvText => {
+              const blob = new Blob(["\ufeff" + csvText], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.setAttribute("href", url);
+              link.setAttribute("download", `perfil-${state.perfilAtivo}.csv`);
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              window.App.State.atualizarUltimoBackup();
+              showStatus("Exportado via servidor.");
+            })
+            .catch(err => {
+              showStatus("Erro ao exportar do servidor: " + err.message, true);
+            });
+        } else {
+          // Fallback to client-side CSV export
+          const success = window.App.Storage.exportAsCSVFile(state);
+          if (success) { 
+            window.App.State.atualizarUltimoBackup(); 
+            showStatus("Arquivo CSV exportado!"); 
+          } else { 
+            showStatus("Erro ao exportar CSV.", true); 
+          }
+        }
       });
 
       s.importCsvBtn.addEventListener("click", () => s.csvFileInput.click());
@@ -445,20 +471,38 @@ window.App.UI = (() => {
       s.csvFileInput.addEventListener("change", e => {
         const file = e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = event => {
-          try {
-            const importedState = window.App.Storage.parseFromCSV(event.target.result);
-            window.App.State.importarPerfilCSV(importedState);
-            s.csvFileInput.value = "";
-            showStatus("Perfil importado com sucesso!");
-          } catch (err) {
-            s.csvFileInput.value = "";
-            showStatus(err.message, true);
-            alert(`Erro na importação: ${err.message}`);
-          }
-        };
-        reader.readAsText(file, "UTF-8");
+
+        if (window.App.APIClient.isOnline()) {
+          showStatus("Importando CSV...");
+          window.App.APIClient.importCSV(file)
+            .then(async res => {
+              s.csvFileInput.value = "";
+              showStatus(`Importação concluída! ${res.perfis_migrados} perfis e ${res.despesas_migradas} despesas importadas.`);
+              // Hydrate state from API response or reload state
+              const apiState = await window.App.APIClient.fetchState();
+              window.App.State.loadState(apiState);
+            })
+            .catch(err => {
+              s.csvFileInput.value = "";
+              showStatus(`Erro: ${err.message}`, true);
+              alert(`Erro na importação: ${err.message}`);
+            });
+        } else {
+          const reader = new FileReader();
+          reader.onload = event => {
+            try {
+              const importedState = window.App.Storage.parseFromCSV(event.target.result);
+              window.App.State.importarPerfilCSV(importedState);
+              s.csvFileInput.value = "";
+              showStatus("Perfil importado localmente.");
+            } catch (err) {
+              s.csvFileInput.value = "";
+              showStatus(err.message, true);
+              alert(`Erro na importação local: ${err.message}`);
+            }
+          };
+          reader.readAsText(file, "UTF-8");
+        }
       });
 
       // ── Backup banner ────────────────────────────────────────────────────────

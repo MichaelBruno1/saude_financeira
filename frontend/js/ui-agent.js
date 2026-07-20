@@ -279,126 +279,22 @@ window.App.UIAgent = (() => {
     }
     console.log("Enviando texto completo da fatura para a LLM...");
 
-    const parsedExpenses = await sendInvoiceTextToLlm(text, apiUrl, apiKey, model);
+    const parsedExpenses = await sendInvoiceTextToLlm(text);
     extractedExpenses = parsedExpenses;
     renderReviewTable();
   }
 
-  async function sendInvoiceTextToLlm(text, apiUrl, apiKey, model) {
-    if (window.App.APIClient.isOnline()) {
-      try {
-        const res = await window.App.APIClient.callLLM("importacao", { texto_fatura: text });
-        let choiceText = res.content.trim();
-        if (choiceText.startsWith("```")) {
-          choiceText = choiceText.replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "");
-        }
-        choiceText = choiceText.trim();
-        choiceText = choiceText.replace(/"value"\s*:\s*"?([0-9]+(?:\.[0-9]+)*(?:,[0-9]+)?)"?/g, (match, numStr) => {
-          if (numStr.includes(",")) {
-            const cleaned = numStr.replace(/\./g, "").replace(",", ".");
-            return `"value": ${cleaned}`;
-          }
-          return `"value": ${numStr}`;
-        });
-        const parsed = JSON.parse(choiceText);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      } catch (err) {
-        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
-      }
+  async function sendInvoiceTextToLlm(text) {
+    if (!window.App.APIClient.isOnline()) {
+      throw new Error("O servidor Go API está offline. Este recurso de IA requer o servidor ativo.");
     }
 
-    let promptTemplate = "";
-    try {
-      const response = await fetch("prompts/importacao.md");
-      if (response.ok) {
-        promptTemplate = await response.text();
-      } else {
-        throw new Error(`Erro HTTP! Status: ${response.status}`);
-      }
-    } catch (err) {
-      console.warn("Erro ao carregar o prompt de 'prompts/importacao.md' via fetch. Usando fallback local:", err);
-      promptTemplate = `Você é um processador de dados especializado em faturas de cartão de crédito. Sua tarefa é analisar o texto extraído de uma fatura de cartão de crédito e retornar ESTRITAMENTE um JSON contendo uma lista de despesas identificadas.
-
-### INSTRUÇÕES DE EXTRAÇÃO:
-1. **Identifique apenas transações de gastos/despesas** (compras, débitos, tarifas). Ignore pagamentos de fatura, créditos, estornos ou saldos anteriores.
-2. **Identifique compras parceladas**:
-   - Compras parceladas normalmente contêm indicações como \`02/05\`, \`2 de 5\`, \`2/5\`, \`Parcela 02\`.
-   - Se for uma compra parcelada, identifique:
-     - \`description\`: O nome do estabelecimento (remova o sufixo da parcela, ex: "Lojas Americanas 02/05" vira "Lojas Americanas").
-     - \`value\`: O valor cobrado NESTA fatura (o valor da parcela individual).
-     - \`isInstallment\`: \`true\`.
-     - \`currentInstallment\`: O número da parcela atual cobrada (no exemplo acima, \`2\`).
-     - \`totalInstallments\`: O total de parcelas (no exemplo acima, \`5\`).
-3. **Se a compra NÃO for parcelada**:
-   - \`description\`: O nome do estabelecimento.
-   - \`value\`: O valor total cobrado.
-   - \`isInstallment\`: \`false\`.
-   - \`currentInstallment\`: \`1\`.
-   - \`totalInstallments\`: \`1\`.
-
-### FORMATO DE RETORNO ESPERADO:
-NÃO escreva nenhuma introdução, explicação ou bloco de raciocínio (como tags <think> ou explicações passo a passo). Não use blocos de código markdown (como \`\`\`json).
-Inicie sua resposta IMEDIATAMENTE com o caractere '[' do JSON e termine com ']'. Apenas o JSON válido é permitido.
-
-Exemplo de formato:
-[
-  {
-    "description": "Supermercado Pão de Açúcar",
-    "value": 156.40,
-    "isInstallment": false,
-    "currentInstallment": 1,
-    "totalInstallments": 1
-  },
-  {
-    "description": "Geladeira Consul",
-    "value": 120.00,
-    "isInstallment": true,
-    "currentInstallment": 3,
-    "totalInstallments": 10
-  }
-]
-
-### TEXTO DA FATURA A SER ANALISADO:
-{{TEXTO_FATURA}}`;
-    }
-
-    const promptText = promptTemplate.replace("{{TEXTO_FATURA}}", text);
-
-    const config = getLlmConfig();
-    const requestBody = prepareLlmRequest(promptText, config);
-
-    const response = await fetch(`${apiUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Erro na chamada da LLM (${response.status}): ${errText}`);
-    }
-
-    const resData = await response.json();
-    console.log("LLM response data:", resData);
-    let choiceText = resData.choices && resData.choices[0] && resData.choices[0].message && resData.choices[0].message.content;
-
-    if (!choiceText) {
-      throw new Error(`A API da LLM retornou uma resposta vazia. (Status: ${response.status}, Resposta: ${JSON.stringify(resData)})`);
-    }
-
-    choiceText = choiceText.trim();
+    const res = await window.App.APIClient.callLLM("importacao", { texto_fatura: text });
+    let choiceText = res.content.trim();
     if (choiceText.startsWith("```")) {
-      choiceText = choiceText.replace(/^```[a-zA-Z]*\n/, "");
-      choiceText = choiceText.replace(/\n```$/, "");
+      choiceText = choiceText.replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "");
     }
     choiceText = choiceText.trim();
-
-    // Sanitizar números com padrão brasileiro (ex: 4.362,68) no JSON retornado pela LLM sem engolir vírgulas estruturais
     choiceText = choiceText.replace(/"value"\s*:\s*"?([0-9]+(?:\.[0-9]+)*(?:,[0-9]+)?)"?/g, (match, numStr) => {
       if (numStr.includes(",")) {
         const cleaned = numStr.replace(/\./g, "").replace(",", ".");
@@ -597,91 +493,10 @@ Exemplo de formato:
   }
 
   async function askFinancialAgent(userMessage) {
-    const config = getLlmConfig();
-    if (!config.apiUrl || !config.model) throw new Error("Configuração da LLM incompleta.");
+    if (!window.App.APIClient.isOnline()) {
+      throw new Error("O servidor Go API está offline. Este recurso de IA requer o servidor ativo.");
+    }
     
-    let promptTemplate = "";
-    try {
-      const response = await fetch("prompts/agente.md");
-      if (response.ok) promptTemplate = await response.text();
-      else throw new Error("Erro HTTP");
-    } catch (err) {
-      promptTemplate = `Você é o Agente Financeiro Inteligente integrado à aplicação Saúde Financeira.
-Sua principal função é ajudar o usuário a gerenciar suas finanças pessoais (despesas e orçamento) e tirar dúvidas sobre finanças.
-
-## Diretrizes e Restrições Críticas (Siga Estritamente):
-1. **Foco e Limites do Tema**:
-   - Responda a perguntas sobre todo o conteúdo do perfil ativo do usuário (despesas, financiamentos, etc.).
-   - Responda a dúvidas sobre finanças em geral, mesmo aquelas que não estejam diretamente relacionadas ao projeto (ex: conceitos de investimentos, taxas, inflação, etc.).
-   - **NÃO** responda a perguntas que não sejam relacionadas ao tema "finanças" (ex: "Qual a capital da Bahia?", "Quem descobriu o Brasil?", receitas, tecnologia geral, etc.). Nesses casos, responda educadamente dizendo que você é um agente financeiro e só pode responder a perguntas sobre finanças.
-2. **Independência de Contexto (Descartar Histórico)**:
-   - A cada resposta, todo o contexto anterior deve ser descartado. Trate cada pergunta como se fosse única e a primeira da conversa, sem considerar ou depender de mensagens passadas ou do histórico anterior.
-3. **Tom e Comunicação**:
-   - As respostas (no campo \`"message"\`) devem ser extremamente curtas e objetivas.
-   - **NUNCA** responda com perguntas ou faça perguntas de volta ao usuário. Suas respostas devem ser puramente afirmativas, diretas e conclusivas.
-4. **Gerenciamento de Gastos/Despesas**:
-   - Você **PODE** propor o cadastro de uma nova despesa (\`adicionarDespesa\`) se o usuário solicitar explicitamente (ex: "cadastra mercado de 50 reais").
-   - Você **PODE** propor a edição de uma despesa existente (\`editarDespesa\`) se o usuário solicitar explicitamente (ex: "altere o valor da despesa X para 100 reais").
-   - Você **PODE** propor a exclusão de uma despesa existente (\`removerDespesa\`) se o usuário solicitar explicitamente (ex: "apague a despesa X" ou "delete o gasto de 40 reais de ontem").
-5. **Ações Bloqueadas**:
-   - Você **NÃO PODE** alterar as configurações do projeto.
-   - Você **NÃO PODE** alterar as regras de negócio do projeto.
-   - Você **NÃO PODE** criar novas categorias. Use apenas as categorias permitidas já existentes listadas abaixo. Se uma categoria sugerida não existir, mapeie para a existente mais próxima ou "Outros", sem inventar novas.
-   - Você **NÃO PODE** criar ou apagar perfis.
-
-## Formato da Resposta:
-Você deve responder ESTRITAMENTE em formato JSON respeitando a seguinte estrutura. Não adicione nenhuma explicação extra fora do JSON e não envolva o JSON em blocos de código markdown (como \`\`\`json). A resposta deve ser um JSON válido cru:
-{
-  "message": "Sua resposta curta, direta e objetiva...",
-  "action": {
-    "type": "adicionarDespesa" | "editarDespesa" | "removerDespesa" | "none",
-    "params": {
-      // Se for "adicionarDespesa":
-      "descricao": "Nome da despesa",
-      "valor": 150.00,
-      "categoria": "Moradia", // Deve ser uma das categorias permitidas
-      "mes_inicio": 7, // Mês de início (1-12)
-      "ano_inicio": 2026, // Ano de início
-      "parcelas": 1, // Quantidade de parcelas (opcional, default 1)
-      "recorrente": false // Se é recorrente (opcional, default false)
-
-      // Se for "editarDespesa":
-      "id": "id-da-despesa-a-ser-editada",
-      "descricao": "Novo nome", // Opcional, apenas se alterar
-      "valor": 200.00, // Opcional, apenas se alterar
-      "categoria": "Lazer", // Opcional, apenas se alterar e deve ser uma das permitidas
-      "mes_inicio": 7, // Opcional, apenas se alterar
-      "ano_inicio": 2026, // Opcional, apenas se alterar
-      "parcelas": 1, // Opcional, apenas se alterar
-      "recorrente": false // Opcional, apenas se alterar
-
-      // Se for "removerDespesa":
-      "id": "id-da-despesa-a-ser-removida",
-      "descricao": "Nome da despesa" // Opcional, para ajudar a identificar se id falhar
-    }
-  }
-}
-
-## Contexto de Negócio do Usuário:
-- **Perfil Ativo**: {{PERFIL}}
-- **Categorias Permitidas**: {{CATEGORIAS}}
-- **Mês Ativo de Referência**: {{MES_ATIVO}}
-- **Ano Ativo de Referência**: {{ANO_ATIVO}}
-
-### Lista de Despesas Cadastradas:
-{{DESPESAS}}
-
-### Lista de Financiamentos Ativos:
-{{FINANCIAMENTOS}}
-
-## Histórico da Conversa (ATENÇÃO: Descarte este histórico para raciocinar, trate a pergunta atual isoladamente):
-{{HISTORICO_CHAT}}
-
-## Nova Pergunta do Usuário:
-{{PERGUNTA}}
-`;
-    }
-
     const state = window.App.State.getState();
     const activeProfileName = state.perfilAtivo || "Principal";
     const profileExpenses = state.despesas.filter(d => d.perfil === activeProfileName);
@@ -698,112 +513,28 @@ Você deve responder ESTRITAMENTE em formato JSON respeitando a seguinte estrutu
 
     const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
     
-    if (window.App.APIClient.isOnline()) {
-      try {
-        const context = {
-          perfil: activeProfileName,
-          categorias: categoriesList,
-          mes_ativo: `${state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1)} (${MONTHS[(state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1)) - 1] || ""})`,
-          ano_ativo: String(state.anoAtivo),
-          despesas: cleanedExpenses,
-          financiamentos: cleanedFinancing,
-          historico_chat: formattedHistory || "(Sem histórico anterior)",
-          pergunta: userMessage
-        };
-        const res = await window.App.APIClient.callLLM("agente", context);
-        let choiceText = res.content.trim().replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "").trim();
-        try {
-          return JSON.parse(choiceText);
-        } catch (e) {
-          return { message: choiceText, action: { type: "none" } };
-        }
-      } catch (err) {
-        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
-      }
-    }
+    const context = {
+      perfil: activeProfileName,
+      categorias: categoriesList,
+      mes_ativo: `${state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1)} (${MONTHS[(state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1)) - 1] || ""})`,
+      ano_ativo: String(state.anoAtivo),
+      despesas: cleanedExpenses,
+      financiamentos: cleanedFinancing,
+      historico_chat: formattedHistory || "(Sem histórico anterior)",
+      pergunta: userMessage
+    };
 
-    let promptText = promptTemplate
-      .replace("{{PERFIL}}", activeProfileName)
-      .replace("{{CATEGORIAS}}", categoriesList)
-      .replace("{{MES_ATIVO}}", `${state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1)} (${MONTHS[(state.mesAtivo <= 12 ? state.mesAtivo : (new Date().getMonth() + 1)) - 1] || ""})`)
-      .replace("{{ANO_ATIVO}}", String(state.anoAtivo))
-      .replace("{{DESPESAS}}", JSON.stringify(cleanedExpenses))
-      .replace("{{FINANCIAMENTOS}}", JSON.stringify(cleanedFinancing))
-      .replace("{{HISTORICO_CHAT}}", formattedHistory || "(Sem histórico anterior)")
-      .replace("{{PERGUNTA}}", userMessage);
-
-    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.1 });
-
-    const response = await fetch(`${config.apiUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
-    const resData = await response.json();
-    let choiceText = resData.choices && resData.choices[0] && resData.choices[0].message && resData.choices[0].message.content;
-    
-    if (!choiceText) throw new Error("A API retornou vazio.");
-    
-    choiceText = choiceText.trim().replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "").trim();
-    
+    const res = await window.App.APIClient.callLLM("agente", context);
+    let choiceText = res.content.trim().replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "").trim();
     try {
       return JSON.parse(choiceText);
     } catch (e) {
       return { message: choiceText, action: { type: "none" } };
     }
   }
-
   async function askInvestmentsAnalysis() {
-    const config = getLlmConfig();
-    if (!config.apiUrl || !config.model) throw new Error("Configuração da LLM incompleta.");
-    
-    let promptTemplate = "";
-    try {
-      const response = await fetch("prompts/analise_investimentos.md");
-      if (response.ok) promptTemplate = await response.text();
-      else throw new Error("Erro HTTP");
-    } catch (err) {
-      promptTemplate = `Você é um consultor financeiro e especialista em alocação de ativos e investimentos.
-Analise a carteira de investimentos do usuário abaixo e retorne um diagnóstico objetivo, analítico e bem-humorado.
-
-## Dados Financeiros do Usuário
-**Perfil:** {{PERFIL}}
-**Renda/Salário Declarado:** R$ {{SALARIO}}
-**Mês de Referência Atual:** {{NOME_MES}} de {{ANO_ATUAL}} (Restam {{MESES_RESTANTES}} meses para o fim do ano)
-
-**Total Investido (Excluindo FGTS):** R$ {{TOTAL_INVESTIDO}}
-**Saldo no FGTS:** R$ {{FGTS}}
-**Patrimônio Total (Investimentos + FGTS):** R$ {{TOTAL_COM_FGTS}}
-**Reserva de Emergência Ideal (Alvo Calculado):** R$ {{RESERVA_EMERGENCIA}}
-
-### Alocação por Categoria de Investimento:
-{{DETALHE_INVESTIMENTOS}}
-
----
-
-## Estrutura do Relatório (Gere em Markdown):
-
-### 🎯 Diagnóstico da Alocação
-Analise a alocação atual (CDB, Previdência, Ações, Poupança, etc.). Destaque se a alocação está muito concentrada, se o montante total investido em relação à renda mensal faz sentido e qual o nível de risco percebido.
-
-### ⚖️ Oportunidade de Otimização
-Faça uma crítica construtiva. Se houver poupança, explique com bom humor por que deixar dinheiro na poupança é um "pecado financeiro". Recomende ajustes práticos de realocação para maximizar os rendimentos.
-
-### 💡 Próximos Aportes
-Sugira como o usuário deve distribuir os seus próximos aportes financeiros mensais para equilibrar a carteira.
-
-### 🔮 Previsão de Fechamento Anual
-Com base nos aportes recorrentes, no total já investido e considerando que restam exatamente {{MESES_RESTANTES}} meses para o fim do ano, faça uma projeção do valor total que o usuário deverá ter investido ao fechar o ano. Brinque com essa previsão (ex: se o usuário vai poder viajar para as Maldivas ou apenas para a praia mais próxima).
-
----
-
-## Estilo da Resposta:
-- Seja direto, claro e analítico.
-- Use humor inteligente e analogias engraçadas para descrever os hábitos de investimento do usuário (ex: comparar deixar muito dinheiro parado a comprar pão seco).
-- Não invente informações; baseie-se estritamente nas categorias e montantes reais informados.
-`;
+    if (!window.App.APIClient.isOnline()) {
+      throw new Error("O servidor Go API está offline. Este recurso de IA requer o servidor ativo.");
     }
     
     const state = window.App.State.getState();
@@ -836,113 +567,29 @@ Com base nos aportes recorrentes, no total já investido e considerando que rest
     const anoAtual = state.anoAtivo || new Date().getFullYear();
     const mesesRestantes = 12 - currentMonthNum;
 
-    if (window.App.APIClient.isOnline()) {
-      try {
-        const context = {
-          perfil: activeProfileName,
-          salario: profile.salario.toFixed(2),
-          nome_mes: nomeMes,
-          ano_atual: String(anoAtual),
-          meses_restantes: String(mesesRestantes),
-          total_investido: totalInvested.toFixed(2),
-          fgts: fgtsVal.toFixed(2),
-          total_com_fgts: combinedTotal.toFixed(2),
-          reserva_emergencia: targetReserve.toFixed(2),
-          detalhe_investimentos: detalheInvestimentos
-        };
-        const res = await window.App.APIClient.callLLM("analise_investimentos", context);
-        if (res.content) {
-          return res.content;
-        }
-      } catch (err) {
-        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
-      }
+    const context = {
+      perfil: activeProfileName,
+      salario: profile.salario.toFixed(2),
+      nome_mes: nomeMes,
+      ano_atual: String(anoAtual),
+      meses_restantes: String(mesesRestantes),
+      total_investido: totalInvested.toFixed(2),
+      fgts: fgtsVal.toFixed(2),
+      total_com_fgts: combinedTotal.toFixed(2),
+      reserva_emergencia: targetReserve.toFixed(2),
+      detalhe_investimentos: detalheInvestimentos
+    };
+
+    const res = await window.App.APIClient.callLLM("analise_investimentos", context);
+    if (res.content) {
+      return res.content;
     }
-
-    let promptText = promptTemplate
-      .replace("{{PERFIL}}", activeProfileName)
-      .replace("{{SALARIO}}", profile.salario.toFixed(2))
-      .replace("{{NOME_MES}}", nomeMes)
-      .replace("{{ANO_ATUAL}}", String(anoAtual))
-      .replace(/\{\{MESES_RESTANTES\}\}/g, String(mesesRestantes))
-      .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
-      .replace("{{FGTS}}", fgtsVal.toFixed(2))
-      .replace("{{TOTAL_COM_FGTS}}", combinedTotal.toFixed(2))
-      .replace("{{RESERVA_EMERGENCIA}}", targetReserve.toFixed(2))
-      .replace("{{DETALHE_INVESTIMENTOS}}", detalheInvestimentos);
-      
-    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.3 });
-
-    const response = await fetch(`${config.apiUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
-      body: JSON.stringify(requestBody)
-    });
-    
-    if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
-    const resData = await response.json();
-    const resultText = resData.choices?.[0]?.message?.content;
-    if (!resultText) throw new Error("Retorno vazio.");
-    return resultText;
+    throw new Error("A IA retornou uma resposta vazia.");
   }
 
   async function askSavingsPlan() {
-    const config = getLlmConfig();
-    if (!config.apiUrl || !config.model) throw new Error("Configuração da LLM incompleta.");
-    
-    let promptTemplate = "";
-    try {
-      const response = await fetch("prompts/plano_economia.md");
-      if (response.ok) promptTemplate = await response.text();
-      else throw new Error("Erro HTTP");
-    } catch (err) {
-      promptTemplate = `Você é um consultor financeiro especialista em otimização de orçamento e planejamento de economia.
-Analise os dados financeiros do usuário abaixo e elabore um plano de economia estratégico, detalhado e prático.
-
-## Dados Financeiros do Usuário
-
-**Perfil:** {{PERFIL}}
-**Salário/Renda Mensal:** R$ {{SALARIO}}
-
-**Método Financeiro Selecionado:** {{METODO_PLANEJADOR}}
-**Limites de Metas recomendadas:**
-{{LIMITES_PLANEJADOR}}
-
-**Gastos Reais por Categoria (Mês Ativo):**
-{{GASTOS_REAIS}}
-
-**Investimentos Cadastrados:**
-**Total Investido:** R$ {{TOTAL_INVESTIDO}}
-**Reserva de Emergência Ideal Alvo:** R$ {{RESERVA_EMERGENCIA}}
-**Distribuição por Categoria:**
-{{DISTRIBUICAO_INVESTIMENTOS}}
-
-**Financiamentos e Dívidas Ativas:**
-{{DETALHE_FINANCIAMENTOS}}
-
----
-
-## Estrutura do Relatório (Gere em Markdown):
-
-### 🎯 Diagnóstico Orçamentário
-Faça um breve resumo (3 a 4 frases) do estado atual do usuário. Aponte se ele está gastando acima da renda, se a proporção de investimentos está saudável e qual o impacto das dívidas no orçamento.
-
-### 🛡️ Onde Cortar Gastos (Plano de Ação)
-Identifique as 3 categorias de gastos mais críticas onde o usuário está extrapolando ou que possuem maior potencial de economia imediata. Dê sugestões de ações práticas para reduzir essas despesas.
-
-### 💸 Estratégia de Quitação de Dívidas
-Se o usuário tiver financiamentos/dívidas ativos, sugira uma estratégia para amortizá-los mais rapidamente. Se não tiver dívidas, explique como ele pode alocar esse potencial de poupança extra.
-
-### 🚀 Aceleração de Investimentos
-Com base no potencial de economia gerado, explique como o usuário pode otimizar a distribuição de seus investimentos atuais. Dê sugestões sobre como diversificar ou aumentar os aportes mensais.
-
----
-
-## Estilo e Tom:
-- Seja extremamente prático, objetivo e realista.
-- Use um tom profissional, porém leve e bem-humorado (comentários inteligentes e divertidos sobre o padrão de consumo).
-- Não invente dados; baseie-se estritamente nas despesas, investimentos e financiamentos fornecidos.
-`;
+    if (!window.App.APIClient.isOnline()) {
+      throw new Error("O servidor Go API está offline. Este recurso de IA requer o servidor ativo.");
     }
     
     const state = window.App.State.getState();
@@ -1004,151 +651,30 @@ Com base no potencial de economia gerado, explique como o usuário pode otimizar
     consolidatedGastos["Moradia"] = (consolidatedGastos["Moradia"] || 0) + finVal;
     consolidatedGastos["Financiamento"] = 0;
 
-    if (window.App.APIClient.isOnline()) {
-      try {
-        const context = {
-          perfil: activeProfileName,
-          salario: profile.salario.toFixed(2),
-          metodo_planejador: plannerMethod,
-          limites_planejador: limites,
-          gastos_reais: consolidatedGastos,
-          total_investido: totalInvested.toFixed(2),
-          reserva_emergencia: targetReserve.toFixed(2),
-          distribuicao_investimentos: distribuicaoInvestimentos,
-          detalhe_financiamentos: detalheFinanciamentos
-        };
-        const res = await window.App.APIClient.callLLM("plano_economia", context);
-        if (res.content) {
-          return res.content;
-        }
-      } catch (err) {
-        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
-      }
+    const context = {
+      perfil: activeProfileName,
+      salario: profile.salario.toFixed(2),
+      metodo_planejador: plannerMethod,
+      limites_planejador: limites,
+      gastos_reais: consolidatedGastos,
+      total_investido: totalInvested.toFixed(2),
+      reserva_emergencia: targetReserve.toFixed(2),
+      distribuicao_investimentos: distribuicaoInvestimentos,
+      detalhe_financiamentos: detalheFinanciamentos
+    };
+
+    const res = await window.App.APIClient.callLLM("plano_economia", context);
+    if (res.content) {
+      return res.content;
     }
-
-    let promptText = promptTemplate
-      .replace("{{PERFIL}}", activeProfileName)
-      .replace("{{SALARIO}}", profile.salario.toFixed(2))
-      .replace("{{METODO_PLANEJADOR}}", plannerMethod)
-      .replace("{{LIMITES_PLANEJADOR}}", JSON.stringify(limites, null, 2))
-      .replace("{{GASTOS_REAIS}}", JSON.stringify(consolidatedGastos, null, 2))
-      .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
-      .replace("{{RESERVA_EMERGENCIA}}", targetReserve.toFixed(2))
-      .replace("{{DISTRIBUICAO_INVESTIMENTOS}}", distribuicaoInvestimentos)
-      .replace("{{DETALHE_FINANCIAMENTOS}}", detalheFinanciamentos);
-      
-    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.3 });
-
-    const response = await fetch(`${config.apiUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
-      body: JSON.stringify(requestBody)
-    });
-    
-    if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
-    const resData = await response.json();
-    const resultText = resData.choices?.[0]?.message?.content;
-    if (!resultText) throw new Error("Retorno vazio.");
-    return resultText;
+    throw new Error("A IA retornou uma resposta vazia.");
   }
 
 
   
   async function askFinancialAnalysis() {
-    const config = getLlmConfig();
-    if (!config.apiUrl || !config.model) throw new Error("Configuração da LLM incompleta.");
-    
-    let promptTemplate = ``;
-    try {
-      const response = await fetch("prompts/analise.md");
-      if (response.ok) promptTemplate = await response.text();
-      else throw new Error("Erro HTTP");
-    } catch (err) {
-      promptTemplate = `Você é um consultor financeiro pessoal. Analise os dados abaixo e gere um diagnóstico curto, claro e útil.
-
-## Dados do usuário
-
-**Perfil:** {{PERFIL}}
-
-**Salário Mensal:**
-{{SALARIO}}
-
-**Método Financeiro ({{METODO_PLANEJADOR}}):**
-{{LIMITES_PLANEJADOR}}
-
-**Resumo dos Gastos:**
-{{GASTOS_REAIS}}
-
-**Despesas Detalhadas:**
-{{DETALHE_DESPESAS}}
-
-**Financiamentos:**
-{{DETALHE_FINANCIAMENTOS}}
-
----
-
-## Gere um relatório em Markdown contendo apenas:
-
-### 🩺 Saúde Financeira
-Classifique como:
-- Excelente
-- Boa
-- Atenção
-- Crítica
-
-Explique em até 3 frases o motivo.
-
----
-
-### 📊 Comparação com o Planejamento
-
-Mostre:
-
-- ✅ Categorias dentro da meta
-- ⚠️ Categorias próximo da meta
-- 🚨 Categorias acima da meta
-
-Se possível, informe quanto passou do limite.
-
----
-
-### 💡 O que Fazer Agora
-
-Liste no máximo 5 ações práticas, priorizadas pelo maior impacto financeiro.
-
----
-
-### 💰 Para Onde Seu Dinheiro Está Indo
-
-Resuma quais categorias mais consomem a renda e informe se o valor destinado aos investimentos está adequado.
-
----
-
-### 🔮 Se Nada Mudar...
-
-Projete o resultado financeiro até o final do ano considerando o padrão atual de receitas e despesas.
-
-Informe:
-
-- saldo estimado;
-- principais riscos;
-- oportunidade de economia.
-
----
-
-## Estilo da resposta
-
-- Seja curto e direto.
-- Evite repetir informações.
-- Use linguagem simples.
-- Escreva como um consultor experiente e bem-humorado.
-- Faça comentários leves e ocasionais (uma piada ou comparação divertida), sem exagerar.
-- Nunca invente informações.
-- Não explique como fez os cálculos.
-- Não faça introduções nem encerramentos.
-- Um baixo gasto com saúde deve ser visto como algo positivo, pois não representa problemas de saúde.
-- Um baixo gasto com alimentação deve ser visto como algo positivo, pois representa um baixo uso de apps de delivery de comida.
-`;
+    if (!window.App.APIClient.isOnline()) {
+      throw new Error("O servidor Go API está offline. Este recurso de IA requer o servidor ativo.");
     }
     
     const state = window.App.State.getState();
@@ -1219,80 +745,28 @@ Informe:
     consolidatedGastos["Moradia"] = (consolidatedGastos["Moradia"] || 0) + finVal;
     consolidatedGastos["Financiamento"] = 0;
 
-    if (window.App.APIClient.isOnline()) {
-      try {
-        const context = {
-          perfil: activeProfileName,
-          salario: profile.salario.toFixed(2),
-          metodo_planejador: plannerMethod,
-          limites_planejador: limites,
-          gastos_reais: consolidatedGastos,
-          detalhe_despesas: activeDespesas,
-          detalhe_financiamentos: activeFinanciamentos
-        };
-        const res = await window.App.APIClient.callLLM("analise", context);
-        if (res.content) {
-          return res.content;
-        }
-      } catch (err) {
-        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
-      }
+    const context = {
+      perfil: activeProfileName,
+      salario: profile.salario.toFixed(2),
+      metodo_planejador: plannerMethod,
+      limites_planejador: limites,
+      gastos_reais: consolidatedGastos,
+      detalhe_despesas: activeDespesas,
+      detalhe_financiamentos: activeFinanciamentos
+    };
+
+    const res = await window.App.APIClient.callLLM("analise", context);
+    if (res.content) {
+      return res.content;
     }
-
-    let promptText = promptTemplate
-      .replace("{{PERFIL}}", activeProfileName)
-      .replace("{{SALARIO}}", profile.salario.toFixed(2))
-      .replace("{{METODO_PLANEJADOR}}", plannerMethod)
-      .replace("{{LIMITES_PLANEJADOR}}", JSON.stringify(limites))
-      .replace("{{GASTOS_REAIS}}", JSON.stringify(consolidatedGastos))
-      .replace("{{DETALHE_DESPESAS}}", JSON.stringify(activeDespesas))
-      .replace("{{DETALHE_FINANCIAMENTOS}}", JSON.stringify(activeFinanciamentos));
-      
-    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.3 });
-
-    const response = await fetch(`${config.apiUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
-      body: JSON.stringify(requestBody)
-    });
-    
-    if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
-    const resData = await response.json();
-    const resultText = resData.choices?.[0]?.message?.content;
-    if (!resultText) throw new Error("Retorno vazio.");
-    return resultText;
+    throw new Error("A IA retornou uma resposta vazia.");
   }
 
   async function askAmortizationPlan(financingId) {
-    const config = getLlmConfig();
-    if (!config.apiUrl || !config.model) throw new Error("Configuração da LLM incompleta.");
-    
-    let promptTemplate = "";
-    try {
-      const response = await fetch("prompts/plano_amortizacao.md");
-      if (response.ok) promptTemplate = await response.text();
-      else throw new Error("Erro HTTP");
-    } catch (err) {
-      // Fallback
-      promptTemplate = `Você é um consultor financeiro especialista em financiamentos e amortizações.
-Sua missão é elaborar um plano de amortização baseado na vida financeira do perfil ativo, focado no financiamento escolhido:
-Nome: {{NOME_FINANCIAMENTO}}
-Valor: R$ {{VALOR_TOTAL}}
-Parcela: R$ {{VALOR_PARCELA}}
-Prazo: {{PARCELAS_TOTAIS}} parcelas
-Taxa TR: {{TAXA_TR}}% a.m.
-Sistema: {{SISTEMA_AMORTIZACAO}}
-
-Dados do Perfil:
-Salário: R$ {{SALARIO}}
-Investido: R$ {{TOTAL_INVESTIDO}}
-Reserva Ideal: R$ {{RESERVA_EMERGENCIA}}
-FGTS: R$ {{FGTS}}
-Sobra Mensal Real: R$ {{SOBRA_MENSAL}}
-
-Gere um relatório Markdown bem detalhado com Diagnóstico, Estratégia de FGTS, Plano de Aportes Extraordinários, Projeção de Economia de Tempo e Juros, e Dicas de Ouro.`;
+    if (!window.App.APIClient.isOnline()) {
+      throw new Error("O servidor Go API está offline. Este recurso de IA requer o servidor ativo.");
     }
-
+    
     const state = window.App.State.getState();
     const activeProfileName = state.perfilAtivo || "Principal";
     const profile = state.perfis.find(p => p.nome === activeProfileName) || { salario: 0, fgts: 0 };
@@ -1328,83 +802,33 @@ Gere um relatório Markdown bem detalhado com Diagnóstico, Estratégia de FGTS,
 
     const systemText = String(f.sistema || "price").toUpperCase() === "SAC" ? "SAC (Amortizações Constantes)" : "PRICE (Prestações Constantes)";
 
-    if (window.App.APIClient.isOnline()) {
-      try {
-        const context = {
-          nome_financiamento: f.nome,
-          valor_total: f.valorTotal.toFixed(2),
-          valor_parcela: f.valorParcela.toFixed(2),
-          parcelas_totais: String(f.parcelasTotais),
-          taxa_tr: f.taxaTR.toFixed(3),
-          taxa_juros_anual: (f.taxaJurosAnual || 0).toFixed(2),
-          sistema_amortizacao: systemText,
-          perfil: activeProfileName,
-          salario: profile.salario.toFixed(2),
-          total_investido: totalInvested.toFixed(2),
-          detalhe_investimentos: detalheInvestimentos,
-          fgts: fgtsVal.toFixed(2),
-          reserva_emergencia: targetReserve.toFixed(2),
-          sobra_mensal: sobraMensal.toFixed(2)
-        };
-        const res = await window.App.APIClient.callLLM("plano_amortizacao", context);
-        if (res.content) {
-          return res.content;
-        }
-      } catch (err) {
-        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
-      }
+    const context = {
+      nome_financiamento: f.nome,
+      valor_total: f.valorTotal.toFixed(2),
+      valor_parcela: f.valorParcela.toFixed(2),
+      parcelas_totais: String(f.parcelasTotais),
+      taxa_tr: f.taxaTR.toFixed(3),
+      taxa_juros_anual: (f.taxaJurosAnual || 0).toFixed(2),
+      sistema_amortizacao: systemText,
+      perfil: activeProfileName,
+      salario: profile.salario.toFixed(2),
+      total_investido: totalInvested.toFixed(2),
+      detalhe_investimentos: detalheInvestimentos,
+      fgts: fgtsVal.toFixed(2),
+      reserva_emergencia: targetReserve.toFixed(2),
+      sobra_mensal: sobraMensal.toFixed(2)
+    };
+
+    const res = await window.App.APIClient.callLLM("plano_amortizacao", context);
+    if (res.content) {
+      return res.content;
     }
-
-    let promptText = promptTemplate
-      .replace("{{NOME_FINANCIAMENTO}}", f.nome)
-      .replace("{{VALOR_TOTAL}}", f.valorTotal.toFixed(2))
-      .replace("{{VALOR_PARCELA}}", f.valorParcela.toFixed(2))
-      .replace("{{PARCELAS_TOTAIS}}", String(f.parcelasTotais))
-      .replace("{{TAXA_TR}}", f.taxaTR.toFixed(3))
-      .replace("{{TAXA_JUROS_ANUAL}}", (f.taxaJurosAnual || 0).toFixed(2))
-      .replace("{{SISTEMA_AMORTIZACAO}}", systemText)
-      .replace("{{PERFIL}}", activeProfileName)
-      .replace("{{SALARIO}}", profile.salario.toFixed(2))
-      .replace("{{TOTAL_INVESTIDO}}", totalInvested.toFixed(2))
-      .replace("{{DETALHE_INVESTIMENTOS}}", detalheInvestimentos)
-      .replace("{{FGTS}}", fgtsVal.toFixed(2))
-      .replace("{{RESERVA_EMERGENCIA}}", targetReserve.toFixed(2))
-      .replace("{{SOBRA_MENSAL}}", sobraMensal.toFixed(2));
-
-    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.3 });
-
-    const response = await fetch(`${config.apiUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
-    const resData = await response.json();
-    const resultText = resData.choices?.[0]?.message?.content;
-    if (!resultText) throw new Error("Retorno vazio.");
-    return resultText;
+    throw new Error("A IA retornou uma resposta vazia.");
   }
 
   async function askCustomMethod() {
-    const config = getLlmConfig();
-    if (!config.apiUrl || !config.model) throw new Error("Configuração da LLM incompleta.");
-
-    let promptTemplate = "";
-    try {
-      const response = await fetch("prompts/metodo_personalizado.md");
-      if (response.ok) promptTemplate = await response.text();
-      else throw new Error("Erro HTTP");
-    } catch (err) {
-      // Fallback
-      promptTemplate = `Você é um IA especialista em organização financeira.
-Crie um método "Personalizado" com soma total exatamente 100.
-Categorias: {{CATEGORIAS_EXISTENTES}}
-Perfil: {{PERFIL}}
-Salário: R$ {{SALARIO}}
-Gastos Reais:
-{{DETALHE_GASTOS}}
-Retorne apenas JSON cru mapeando categorias para porcentagem. Sem markdown.`;
+    if (!window.App.APIClient.isOnline()) {
+      throw new Error("O servidor Go API está offline. Este recurso de IA requer o servidor ativo.");
     }
 
     const state = window.App.State.getState();
@@ -1430,105 +854,58 @@ Retorne apenas JSON cru mapeando categorias para porcentagem. Sem markdown.`;
       .map(([cat, val]) => `- **${cat}:** R$ ${val.toFixed(2)}`)
       .join("\n");
 
-    if (window.App.APIClient.isOnline()) {
+    const context = {
+      categorias_existentes: categoriasExistentesText,
+      perfil: activeProfileName,
+      salario: profile.salario.toFixed(2),
+      detalhe_gastos: detalheGastosText
+    };
+
+    const res = await window.App.APIClient.callLLM("metodo_personalizado", context);
+    if (res.content) {
+      let resultText = res.content.trim();
+      if (resultText.startsWith("```")) {
+        resultText = resultText.replace(/^```[a-zA-Z0-9]*\n/, "").replace(/\n```$/, "").trim();
+      }
       try {
-        const context = {
-          categorias_existentes: categoriasExistentesText,
-          perfil: activeProfileName,
-          salario: profile.salario.toFixed(2),
-          detalhe_gastos: detalheGastosText
-        };
-        const res = await window.App.APIClient.callLLM("metodo_personalizado", context);
-        if (res.content) {
-          let resultText = res.content.trim();
-          if (resultText.startsWith("```")) {
-            resultText = resultText.replace(/^```[a-zA-Z0-9]*\n/, "").replace(/\n```$/, "").trim();
+        const parsed = JSON.parse(resultText);
+        const resultObj = {};
+        let sum = 0;
+        categoriasList.forEach(cat => {
+          let val = parseFloat(parsed[cat]) || 0;
+          if (val < 0) val = 0;
+          resultObj[cat] = val;
+          sum += val;
+        });
+
+        if (sum !== 100 && sum > 0) {
+          let currentSum = 0;
+          categoriasList.forEach(cat => {
+            resultObj[cat] = Math.round((resultObj[cat] / sum) * 100);
+            currentSum += resultObj[cat];
+          });
+          
+          let diff = 100 - currentSum;
+          if (diff !== 0) {
+            const maxCat = categoriasList.reduce((max, cat) => resultObj[cat] > resultObj[max] ? cat : max, categoriasList[0]);
+            resultObj[maxCat] += diff;
           }
-          try {
-            const parsed = JSON.parse(resultText);
-            const resultObj = {};
-            let sum = 0;
-            categoriasList.forEach(cat => {
-              let val = parseFloat(parsed[cat]) || 0;
-              if (val < 0) val = 0;
-              resultObj[cat] = val;
-              sum += val;
-            });
-            // normalise sum if it doesn't match 100 perfectly but is close, or let logic handle it.
-            // We can return the resultObj directly!
-            // Wait, we need to return this resultObj. Let's see what the original function does:
-            // The original function returns resultObj.
-            // So if parsed successfully, we can return it!
-            return resultObj;
-          } catch(e) {
-            console.error("Erro ao parsear JSON retornado pelo LLM Proxy:", e);
-          }
+        } else if (sum === 0) {
+          const share = Math.floor(100 / categoriasList.length);
+          categoriasList.forEach(cat => {
+            resultObj[cat] = share;
+          });
+          const diff = 100 - (share * categoriasList.length);
+          resultObj[categoriasList[0]] += diff;
         }
-      } catch (err) {
-        console.warn("Falha no LLM Proxy do backend, tentando fallback direto...", err);
+
+        return resultObj;
+      } catch(e) {
+        console.error("Erro ao parsear JSON retornado pelo LLM Proxy:", e);
+        throw new Error(`Retorno da LLM não é um JSON válido: ${resultText}`);
       }
     }
-
-    let promptText = promptTemplate
-      .replace("{{CATEGORIAS_EXISTENTES}}", categoriasExistentesText)
-      .replace("{{PERFIL}}", activeProfileName)
-      .replace("{{SALARIO}}", profile.salario.toFixed(2))
-      .replace("{{DETALHE_GASTOS}}", detalheGastosText);
-
-    const requestBody = prepareLlmRequest(promptText, config, { temperature: 0.1 });
-
-    const response = await fetch(`${config.apiUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.apiKey}` },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) throw new Error(`Erro: ${await response.text()}`);
-    const resData = await response.json();
-    let resultText = resData.choices?.[0]?.message?.content;
-    if (!resultText) throw new Error("Retorno vazio.");
-
-    resultText = resultText.trim();
-    if (resultText.startsWith("```")) {
-      resultText = resultText.replace(/^```[a-zA-Z0-9]*\n/, "").replace(/\n```$/, "").trim();
-    }
-
-    try {
-      const parsed = JSON.parse(resultText);
-      const resultObj = {};
-      let sum = 0;
-      categoriasList.forEach(cat => {
-        let val = parseFloat(parsed[cat]) || 0;
-        if (val < 0) val = 0;
-        resultObj[cat] = val;
-        sum += val;
-      });
-
-      if (sum !== 100 && sum > 0) {
-        let currentSum = 0;
-        categoriasList.forEach(cat => {
-          resultObj[cat] = Math.round((resultObj[cat] / sum) * 100);
-          currentSum += resultObj[cat];
-        });
-        
-        let diff = 100 - currentSum;
-        if (diff !== 0) {
-          const maxCat = categoriasList.reduce((max, cat) => resultObj[cat] > resultObj[max] ? cat : max, categoriasList[0]);
-          resultObj[maxCat] += diff;
-        }
-      } else if (sum === 0) {
-        const share = Math.floor(100 / categoriasList.length);
-        categoriasList.forEach(cat => {
-          resultObj[cat] = share;
-        });
-        const diff = 100 - (share * categoriasList.length);
-        resultObj[categoriasList[0]] += diff;
-      }
-
-      return resultObj;
-    } catch (err) {
-      throw new Error(`Retorno da LLM não é um JSON válido: ${resultText}`);
-    }
+    throw new Error("A IA retornou uma resposta vazia.");
   }
 
   function init() {

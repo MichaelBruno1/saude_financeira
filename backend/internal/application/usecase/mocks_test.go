@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -283,6 +284,12 @@ func (m *MockMetaRepository) GetByPerfil(ctx context.Context, perfilID uuid.UUID
 			list = append(list, meta)
 		}
 	}
+	sort.Slice(list, func(i, j int) bool {
+		if list[i].Prioridade == list[j].Prioridade {
+			return list[i].ID.String() < list[j].ID.String()
+		}
+		return list[i].Prioridade < list[j].Prioridade
+	})
 	return list, nil
 }
 

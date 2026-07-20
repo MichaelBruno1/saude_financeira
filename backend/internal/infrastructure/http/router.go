@@ -30,7 +30,7 @@ func NewRouter(cfg RouterConfig) http.Handler {
 	mux := http.NewServeMux()
 
 	// Health Check
-	mux.HandleFunc("GET /health", cfg.Health.Check)
+	mux.HandleFunc("/health", cfg.Health.Check)
 
 	// API v1 Routing
 	prefix := "/api/v1"
@@ -101,7 +101,7 @@ func NewRouter(cfg RouterConfig) http.Handler {
 	// RequestID -> Logging -> Recovery -> CORS -> AuthPlaceholder -> Router
 	handler := http.Handler(mux)
 	handler = middleware.AuthPlaceholder(handler)
-	handler = middleware.CORS(cfg.Config.CORSOrigins)(handler)
+	handler = middleware.CORS(cfg.Config.CorsOrigins)(handler)
 	handler = middleware.Recovery(handler)
 	handler = middleware.Logging(handler)
 	handler = middleware.RequestID(handler)

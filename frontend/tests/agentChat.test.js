@@ -24,6 +24,20 @@ global.window = {
       atualizarDespesa: vi.fn(),
       removerDespesa: vi.fn()
     },
+    APIClient: {
+      isOnline: () => true,
+      callLLM: (endpoint, context) => {
+        return global.fetch(`/api/v1/llm/${endpoint}`, {
+          method: "POST",
+          body: JSON.stringify(context)
+        })
+        .then(res => res.json())
+        .then(json => {
+          const content = json.choices?.[0]?.message?.content || json.content || "";
+          return { content };
+        });
+      }
+    },
     LlmConfig: { apiUrl: "http://localhost:11434", apiKey: "test-key", model: "llama3" }
   }
 };
