@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/base64"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"saude-financeira-api/internal/application/dto"
-	domainErr "saude-financeira-api/internal/domain/errors"
 )
 
 type MigrationPostgres struct {

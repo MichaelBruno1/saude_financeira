@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"saude-financeira-api/internal/application/dto"
 	"saude-financeira-api/internal/domain/entity"
 	domainErr "saude-financeira-api/internal/domain/errors"
 	"saude-financeira-api/internal/domain/repository"
@@ -331,5 +332,35 @@ func TestPostgresRepositoriesIntegration(t *testing.T) {
 	_, err = metaRepo.GetByID(ctx, m.ID)
 	if !errors.Is(err, domainErr.ErrNotFound) {
 		t.Error("meta should have been deleted cascade")
+	}
+
+	// 8. Test Migration Repository
+	migRepo := NewMigrationPostgres(db)
+	state := &dto.LocalStorageState{
+		Perfis: []dto.LocalStoragePerfil{
+			{Nome: "MigrationUser", Salario: 8000, FGTS: 15000},
+		},
+		Despesas: []dto.LocalStorageDespesa{
+			{ID: "d1", Perfil: "MigrationUser", Descricao: "Cinema", Valor: 50, Categoria: "Lazer", MesInicio: 1, AnoInicio: 2026, Parcelas: 1},
+		},
+		Financiamentos: []dto.LocalStorageFinanciamento{
+			{ID: "f1", Perfil: "MigrationUser", Nome: "Apartment", ValorTotal: 200000, ValorParcela: 1000, ParcelasTotais: 200, MesInicio: 1, AnoInicio: 2026, Sistema: "price"},
+		},
+		Metas: []dto.LocalStorageMeta{
+			{ID: "m1", Perfil: "MigrationUser", Nome: "Trip", Valor: 4000, Comprado: false, Prioridade: 0, ValorTarget: 4000},
+		},
+		Categorias: map[string]string{
+			"Lazer": "#ff00ff",
+		},
+		Theme: []byte(`"dark"`),
+	}
+
+	migRes, err := migRepo.ImportState(ctx, state, ".")
+	if err != nil {
+		t.Fatalf("migration import failed: %v", err)
+	}
+
+	if migRes.PerfisMigrados != 1 || migRes.DespesasMigradas != 1 || migRes.FinanciamentosMigrados != 1 || migRes.MetasMigradas != 1 {
+		t.Errorf("migration results mismatch: %+v", migRes)
 	}
 }
