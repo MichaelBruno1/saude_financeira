@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"saude-financeira-api/internal/application/dto"
@@ -59,10 +60,10 @@ func (uc *PlanejamentoUseCase) GetPlanejamento(ctx context.Context) ([]*dto.Plan
 	}
 
 	res := make([]*dto.PlanejamentoResponse, 0, len(grouped))
-	for _, metodo := range methods {
+	for m, limites := range grouped {
 		res = append(res, &dto.PlanejamentoResponse{
-			Metodo:  metodo,
-			Limites: grouped[metodo],
+			Metodo:  m,
+			Limites: limites,
 		})
 	}
 
@@ -70,7 +71,7 @@ func (uc *PlanejamentoUseCase) GetPlanejamento(ctx context.Context) ([]*dto.Plan
 }
 
 func (uc *PlanejamentoUseCase) UpdatePlanejamento(ctx context.Context, metodo string, req dto.UpdatePlanejamentoRequest) error {
-	if metodo != "Conservador" && metodo != "Equilibrado" && metodo != "Agressivo" && metodo != "Personalizado" {
+	if metodo != "Conservador" && metodo != "Equilibrado" && metodo != "Agressivo" && !strings.HasPrefix(metodo, "Personalizado") {
 		return fmt.Errorf("%w: invalid planning method", domainErr.ErrInvalidInput)
 	}
 

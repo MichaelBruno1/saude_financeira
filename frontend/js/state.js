@@ -145,7 +145,14 @@ window.App.State = (() => {
 
     // Obter cópia do estado atual
     getState() {
-      return JSON.parse(JSON.stringify(_state));
+      const copy = JSON.parse(JSON.stringify(_state));
+      const activeProfile = copy.perfilAtivo;
+      if (activeProfile && copy.planejamento["Personalizado_" + activeProfile]) {
+        copy.planejamento["Personalizado"] = copy.planejamento["Personalizado_" + activeProfile];
+      } else {
+        delete copy.planejamento["Personalizado"];
+      }
+      return copy;
     },
 
     loadState(newState) {
@@ -294,18 +301,20 @@ window.App.State = (() => {
         }
       };
 
-      const metodos = ["Conservador", "Equilibrado", "Agressivo", "Personalizado"];
-      metodos.forEach(metodo => {
-        if (!_state.planejamento[metodo]) {
-          if (metodo === "Personalizado") return;
-          _state.planejamento[metodo] = {};
-        }
+      // Map global "Personalizado" (if present) to profile-scoped name
+      if (_state.planejamento["Personalizado"] && _state.perfilAtivo) {
+        _state.planejamento["Personalizado_" + _state.perfilAtivo] = _state.planejamento["Personalizado"];
+        delete _state.planejamento["Personalizado"];
+      }
+
+      // Fill all methods in planning with missing category defaults
+      for (const metodo in _state.planejamento) {
         for (const cat in _state.categorias) {
           if (_state.planejamento[metodo][cat] === undefined) {
             _state.planejamento[metodo][cat] = 0;
           }
         }
-      });
+      }
 
       notify();
     },
@@ -873,6 +882,14 @@ window.App.State = (() => {
         throw new Error("Método de planejamento inválido.");
       }
 
+      let targetMetodo = metodo;
+      if (metodo === "Personalizado") {
+        if (!_state.perfilAtivo) {
+          throw new Error("Nenhum perfil ativo para atualizar limites personalizados.");
+        }
+        targetMetodo = "Personalizado_" + _state.perfilAtivo;
+      }
+
       let total = 0;
       for (const cat in limites) {
         if (cat !== "Investimento") {
@@ -889,21 +906,21 @@ window.App.State = (() => {
 
       const sobra = 100 - total;
 
-      if (!_state.planejamento[metodo]) {
-        _state.planejamento[metodo] = {};
+      if (!_state.planejamento[targetMetodo]) {
+        _state.planejamento[targetMetodo] = {};
       }
 
       for (const cat in _state.categorias) {
         const val = Math.max(0, parseFloat(limites[cat]) || 0);
-        _state.planejamento[metodo][cat] = val;
+        _state.planejamento[targetMetodo][cat] = val;
       }
 
-      _state.planejamento[metodo]["Investimento"] = (_state.planejamento[metodo]["Investimento"] || 0) + sobra;
+      _state.planejamento[targetMetodo]["Investimento"] = (_state.planejamento[targetMetodo]["Investimento"] || 0) + sobra;
 
       notify("planejamento");
 
       if (window.App.APIClient.isOnline()) {
-        window.App.APIClient.updatePlanejamento(metodo, _state.planejamento[metodo]).catch(err => {
+        window.App.APIClient.updatePlanejamento(targetMetodo, _state.planejamento[targetMetodo]).catch(err => {
           console.error("Erro ao salvar limites no backend:", err);
         });
       }
