@@ -58,6 +58,31 @@ func (uc *PlanejamentoUseCase) GetPlanejamento(ctx context.Context, perfilID uui
 		grouped[limit.Metodo][catName] = limit.Percentual
 	}
 
+	// Define default system presets for templates if database values are empty
+	defaultPresets := map[string]map[string]float64{
+		"Conservador": {
+			"Saúde": 8, "Alimentação": 18, "Moradia": 30, "Lazer": 5,
+			"Cartão de Crédito": 8, "Serviços por Assinatura": 2, "Serviços": 9,
+			"Investimento": 20, "Financiamento": 0, "Outros": 0, "Amortização": 0,
+		},
+		"Equilibrado": {
+			"Saúde": 7, "Alimentação": 18, "Moradia": 28, "Lazer": 10,
+			"Cartão de Crédito": 10, "Serviços por Assinatura": 2, "Serviços": 10,
+			"Investimento": 15, "Financiamento": 0, "Outros": 0, "Amortização": 0,
+		},
+		"Agressivo": {
+			"Saúde": 6, "Alimentação": 17, "Moradia": 25, "Lazer": 7,
+			"Cartão de Crédito": 8, "Serviços por Assinatura": 2, "Serviços": 10,
+			"Investimento": 25, "Financiamento": 0, "Outros": 0, "Amortização": 0,
+		},
+	}
+
+	for metodo, defaults := range defaultPresets {
+		if len(grouped[metodo]) == 0 {
+			grouped[metodo] = defaults
+		}
+	}
+
 	res := make([]*dto.PlanejamentoResponse, 0, len(grouped))
 	for metodo, limites := range grouped {
 		if metodo != "Conservador" && metodo != "Equilibrado" && metodo != "Agressivo" && len(limites) == 0 {
