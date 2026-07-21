@@ -3,11 +3,31 @@ window.App = window.App || {};
 
 window.App.APIClient = (() => {
   let _isOnline = false;
+  let _apiBaseUrl = "";
+
+  function getApiBaseUrl() {
+    const loc = window.location;
+    if (loc.hostname === "localhost" || loc.hostname === "127.0.0.1" || loc.protocol === "file:") {
+      if (loc.port !== "8081" && loc.port !== "8080") {
+        return "http://localhost:8081";
+      }
+    }
+    return "";
+  }
+
+  _apiBaseUrl = getApiBaseUrl();
 
   async function checkHealth() {
     try {
-      const response = await fetch("/health");
+      const response = await fetch(`${_apiBaseUrl}/health`);
       if (response.ok) {
+        if (!_apiBaseUrl) {
+          const contentType = response.headers.get("Content-Type");
+          if (contentType && contentType.includes("text/html")) {
+            _isOnline = false;
+            return false;
+          }
+        }
         _isOnline = true;
       } else {
         _isOnline = false;
@@ -51,7 +71,7 @@ window.App.APIClient = (() => {
     }
 
     const fn = async () => {
-      const response = await fetch(path, options);
+      const response = await fetch(`${_apiBaseUrl}${path}`, options);
       if (response.status === 204) {
         return null;
       }
@@ -211,7 +231,7 @@ window.App.APIClient = (() => {
     // LLM
     async callLLM(endpoint, context, messages = []) {
       const fn = async () => {
-        const response = await fetch(`/api/v1/llm/${endpoint}`, {
+        const response = await fetch(`${_apiBaseUrl}/api/v1/llm/${endpoint}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
