@@ -69,27 +69,39 @@ func (uc *LLMUseCase) ProxyLLM(ctx context.Context, req dto.LLMProxyRequest) (*d
 }
 
 func (uc *LLMUseCase) resolveLLMConfig(ctx context.Context) (string, string, string, error) {
-	apiURL := uc.cfg.LLMAPIURL
-	apiKey := uc.cfg.LLMAPIKey
-	model := uc.cfg.LLMModel
+	apiURL := ""
+	apiKey := ""
+	model := ""
 
-	// If any is missing, check settings database
-	if apiURL == "" || apiKey == "" || model == "" {
-		dbVal, err := uc.settingsRepo.Get(ctx, "llm_config")
-		if err == nil {
+	// 1. Try to read from settings database first (user-defined in UI)
+	dbVal, err := uc.settingsRepo.Get(ctx, "llm_config")
+	if err == nil {
+		var wrapper struct {
+			Value entity.LLMConfig `json:"value"`
+		}
+		if err := json.Unmarshal(dbVal, &wrapper); err == nil && wrapper.Value.APIUrl != "" {
+			apiURL = wrapper.Value.APIUrl
+			apiKey = wrapper.Value.APIKey
+			model = wrapper.Value.Model
+		} else {
 			var dbConfig entity.LLMConfig
 			if err := json.Unmarshal(dbVal, &dbConfig); err == nil {
-				if apiURL == "" {
-					apiURL = dbConfig.APIUrl
-				}
-				if apiKey == "" {
-					apiKey = dbConfig.APIKey
-				}
-				if model == "" {
-					model = dbConfig.Model
-				}
+				apiURL = dbConfig.APIUrl
+				apiKey = dbConfig.APIKey
+				model = dbConfig.Model
 			}
 		}
+	}
+
+	// 2. Fallback to Env variables if not defined in database
+	if apiURL == "" {
+		apiURL = uc.cfg.LLMAPIURL
+	}
+	if apiKey == "" {
+		apiKey = uc.cfg.LLMAPIKey
+	}
+	if model == "" {
+		model = uc.cfg.LLMModel
 	}
 
 	return apiURL, apiKey, model, nil

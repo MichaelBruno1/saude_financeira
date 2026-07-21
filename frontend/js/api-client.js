@@ -263,7 +263,20 @@ window.App.APIClient = (() => {
 
     // Estado completo
     async fetchState() {
-      return await _fetch("GET", "/api/v1/state");
+      const state = await _fetch("GET", "/api/v1/state");
+      try {
+        const plan = await this.getPlanejamento();
+        if (Array.isArray(plan)) {
+          const planObj = {};
+          plan.forEach(item => {
+            planObj[item.metodo] = item.limites;
+          });
+          state.planejamento = planObj;
+        }
+      } catch (err) {
+        console.warn("APIClient: falha ao buscar limites do planejador do backend:", err);
+      }
+      return state;
     },
 
     // Migração
