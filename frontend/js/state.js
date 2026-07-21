@@ -196,7 +196,8 @@ window.App.State = (() => {
         mes_inicio: parseInt(d.mes_inicio) || 1,
         ano_inicio: parseInt(d.ano_inicio) || new Date().getFullYear(),
         parcelas: parseInt(d.parcelas) || 1,
-        recorrente: !!d.recorrente
+        recorrente: !!d.recorrente,
+        created_at: d.created_at || d.createdAt || new Date().toISOString()
       })) : [];
 
       _state.metas = Array.isArray(newState.metas) ? newState.metas.map(m => ({
@@ -560,7 +561,8 @@ window.App.State = (() => {
         mes_inicio: Math.min(12, Math.max(1, parseInt(mes_inicio) || 1)),
         ano_inicio: parseInt(ano_inicio) || _state.anoAtivo || new Date().getFullYear(),
         parcelas: Math.max(1, parseInt(parcelas) || 1),
-        recorrente: !!recorrente
+        recorrente: !!recorrente,
+        created_at: new Date().toISOString()
       };
 
       _state.despesas.push(novoGasto);

@@ -281,13 +281,23 @@ window.App.UIExpenses = (() => {
       }
     }
 
-    // Ordenação personalizada: Recorrentes primeiro, depois as demais por ordem de criação
+    // Ordenação personalizada: Recorrentes/Financiamentos primeiro (ordem decrescente de valor), depois as demais por ordem de criação (mais antiga para mais nova)
     itensFiltrados.sort((a, b) => {
       const aRec = (a.objetoOriginal && a.objetoOriginal.recorrente === true) || a.tipo === "financiamento";
       const bRec = (b.objetoOriginal && b.objetoOriginal.recorrente === true) || b.tipo === "financiamento";
+      
       if (aRec && !bRec) return -1;
       if (!aRec && bRec) return 1;
-      return 0; // Estável: mantém a ordem de criação
+      
+      if (aRec && bRec) {
+        // Ordem decrescente de valor
+        return b.valorParcela - a.valorParcela;
+      }
+      
+      // Ambas não recorrentes: ordem de criação da mais antiga para a mais nova
+      const aTime = (a.objetoOriginal && a.objetoOriginal.created_at) || "";
+      const bTime = (b.objetoOriginal && b.objetoOriginal.created_at) || "";
+      return aTime.localeCompare(bTime);
     });
 
     if (s.expenseCountBadge) s.expenseCountBadge.textContent = `${itensFiltrados.length} total`;
