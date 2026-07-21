@@ -1,147 +1,302 @@
-﻿# Saúde Financeira
+# Saúde Financeira
 
-Uma aplicação de gestão de saúde financeira pessoal **estritamente local** (Frontend SPA), executada a partir de um arquivo único `index.html` sem necessidade de servidor ou banco de dados em nuvem.
+Uma aplicação full-stack de **gestão de saúde financeira pessoal** com arquitetura cliente-servidor (Go + PostgreSQL) servida via Docker Compose, com frontend em Vanilla JS/HTML.
+
+> **Evolução**: O projeto foi migrado de uma SPA frontend-only (LocalStorage) para uma arquitetura cliente-servidor completa, mantendo compatibilidade retroativa via fluxo de migração de dados do LocalStorage para o PostgreSQL.
+
+---
 
 ## Funcionalidades
 
-- **Múltiplos Perfis**: Gerenciamento de perfis isolados com salários base e dados independentes.
-- **Calendário Multi-Anual Dinâmico**: Visualização e lançamento de despesas em abas de anos e meses criados dinamicamente.
-- **Configurações Personalizadas**: Cadastro de categorias, paleta colorida interativa e alternância entre Modo Claro e Escuro.
-- **Financiamentos & Simulador de Amortização**: Controle de contratos de financiamento com aplicação de TR e Simulador SAC integrado.
-- **Cartão de Crédito Parcelado**: Divisão automática de despesas parceladas distribuídas nos meses subsequentes.
-- **Investimentos**: Painel de portfólio com KPIs de total investido, FGTS, reserva de emergência ideal e gráfico de alocação por categoria.
-- **Planejador Financeiro**: Metas percentuais por categoria (Conservador, Equilibrado, Agressivo) com comparativo visual.
-- **Persistência Local**: Salvamento automático e síncrono no LocalStorage do navegador.
-- **Sincronização via CSV**: Importação e exportação incremental de perfis isolados em CSV estruturado.
-- **Importação de Fatura PDF**: Extração automática de despesas de faturas de cartão via IA (requer LLM configurada).
-- **Agente Financeiro**: Chat conversacional que lança e edita despesas via linguagem natural (requer LLM configurada).
-- **Dashboard**: Gráficos donut e lineares responsivos com cores customizadas pelo usuário.
+- **Múltiplos Perfis**: Perfis financeiros isolados com salários base e dados independentes.
+- **Calendário Multi-Anual Dinâmico**: Lançamento de despesas em abas de anos e meses criados dinamicamente.
+- **Financiamentos & Simulador de Amortização**: Controle de contratos SAC/PRICE com aplicação de TR.
+- **Cartão de Crédito Parcelado**: Divisão automática de despesas parceladas nos meses subsequentes.
+- **Investimentos**: Painel de portfólio com KPIs de total investido, FGTS, reserva de emergência e gráfico de alocação.
+- **Metas Financeiras**: Metas com prioridade, valor target calculado sequencialmente e fluxo de compra.
+- **Planejador Financeiro**: Limites percentuais por categoria (Conservador, Equilibrado, Agressivo).
+- **Sincronização via CSV**: Importação e exportação incremental por perfil.
+- **Importação de Fatura PDF**: Extração de despesas de faturas via IA (proxy seguro de LLM no backend).
+- **Agente Financeiro**: Chat conversacional que lança despesas via linguagem natural.
+- **Migração do LocalStorage**: Banner de migração para importar dados existentes do navegador para o banco de dados.
+- **Dashboard**: Gráficos donut e lineares responsivos com cores customizadas.
 
 ---
 
 ## Arquitetura
 
-A aplicação adota o padrão **Single Page Application (SPA) em Vanilla JS**, estruturado em camadas:
+### Stack
 
-| Módulo              | Arquivo              | Responsabilidade                                                   |
-|---------------------|----------------------|--------------------------------------------------------------------|
-| UI Controller       | `js/ui.js`           | Vinculação de eventos DOM, renderização de abas, modais e tabelas  |
-| State Manager       | `js/state.js`        | Estado central em memória com padrão Observer (subscribe/notify)   |
-| Storage             | `js/storage.js`      | Persistência em LocalStorage e serialização/desserialização CSV    |
-| Financial Engine    | `js/engine.js`       | Motor de cálculos: parcelas, projeções e simulações de amortização |
-| Charts Renderer     | `js/charts.js`       | Abstração de gráficos Chart.js (donut, linha, planejador)          |
-| App Entry Point     | `js/app.js`          | Inicialização e orquestração do ciclo de vida                      |
+| Camada      | Tecnologia                                     |
+|-------------|------------------------------------------------|
+| Frontend    | HTML + Vanilla JS (módulos ES6)                |
+| Servidor    | Go 1.22 (`net/http`)                           |
+| Banco       | PostgreSQL 15                                  |
+| Migração DB | `golang-migrate/migrate`                       |
+| Deploy      | Docker Compose (3 containers)                  |
+| Proxy       | Nginx (serve frontend + proxy reverso → Go)    |
+
+### Estrutura de Containers
+
+```
+nginx (:80)  ──► frontend/  (HTML/JS/CSS estáticos)
+              └─► /api/v1/  ──► go-api (:8081) ──► postgres (:5432)
+```
+
+### Estrutura do Backend (Go)
+
+```
+backend/
+├── cmd/server/           # Ponto de entrada (main.go + router.go)
+├── internal/
+│   ├── application/
+│   │   ├── dto/          # Data Transfer Objects
+│   │   └── usecase/      # Lógica de negócio (casos de uso)
+│   ├── domain/
+│   │   ├── entity/       # Entidades com validação
+│   │   ├── errors/       # Erros de domínio tipados
+│   │   └── repository/   # Interfaces de repositório
+│   └── infrastructure/
+│       ├── config/       # Configuração via variáveis de ambiente
+│       ├── http/
+│       │   ├── handler/  # Handlers HTTP
+│       │   └── middleware/ # CORS, logging, recuperação de pânico
+│       ├── llm/          # Cliente LLM (proxy para OpenAI/Groq/Gemini)
+│       └── persistence/postgres/ # Implementação PostgreSQL
+├── migrations/           # Arquivos SQL de migração
+└── Dockerfile
+```
+
+### Módulos do Frontend
+
+| Módulo            | Arquivo            | Responsabilidade                                          |
+|-------------------|--------------------|-----------------------------------------------------------|
+| API Client        | `js/api-client.js` | Chamadas HTTP ao backend com retry e backoff              |
+| State Manager     | `js/state.js`      | Estado central em memória, observable, com fallback local |
+| UI Controller     | `js/ui.js`         | Eventos DOM, renderização, modais e tabelas               |
+| Financial Engine  | `js/engine.js`     | Motor de cálculos: parcelas, projeções SAC/PRICE          |
+| Charts Renderer   | `js/charts.js`     | Abstração Chart.js (donut, linha, planejador)             |
+| App Entry Point   | `js/app.js`        | Inicialização e ciclo de vida                             |
+
+---
+
+## Pré-requisitos
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (inclui Docker Compose)
+- **Opcional** (para desenvolvimento local do backend): Go 1.22+
 
 ---
 
 ## Como Executar
 
-### Opção 1: Arquivo direto (mais simples)
-
-Abra o arquivo `index.html` diretamente no navegador (protocolo `file:///`) clicando duas vezes sobre ele. Não requer instalação.
-
-> **Limitação**: O Agente IA e a importação de PDF não funcionam via `file:///` por restrições de `fetch`. Para essas funcionalidades, use as opções 2 ou 3.
-
-### Opção 2: Servidor de desenvolvimento local (npm)
+### Produção via Docker Compose (recomendado)
 
 ```bash
-# 1. Instalar dependências de desenvolvimento
+# Clone o repositório
+git clone <URL_DO_REPO>
+cd saude_financeira
+
+# Suba o stack completo (primeiro start pode levar ~1 min para build)
+docker compose up -d --build
+
+# Acesse no navegador
+# http://localhost:80
+```
+
+#### Variáveis de Ambiente (opcionais)
+
+Crie um arquivo `.env` na raiz (copiado de `.env.example`):
+
+```env
+# Banco de dados (use os padrões ou customize)
+POSTGRES_USER=saude
+POSTGRES_PASSWORD=saude123
+POSTGRES_DB=saude_financeira
+
+# LLM (opcional — necessário para Agente IA e importação PDF)
+LLM_PROVIDER=openai          # openai | groq | gemini
+LLM_API_KEY=sk-...
+LLM_MODEL=gpt-4o-mini
+```
+
+#### Comandos Úteis
+
+```bash
+# Ver logs do backend
+docker compose logs -f api
+
+# Parar os containers
+docker compose down
+
+# Resetar banco de dados (apaga todos os dados)
+docker compose down -v && docker compose up -d --build
+
+# Rodar migrations manualmente
+docker compose exec api migrate -path /app/migrations -database "postgres://..." up
+```
+
+---
+
+## Desenvolvimento Local (sem Docker)
+
+### Backend (Go)
+
+```bash
+cd backend
+
+# Instalar dependências
+go mod download
+
+# Rodar o servidor (requer PostgreSQL local rodando na porta 5432)
+go run ./cmd/server/
+
+# Variáveis de ambiente necessárias
+$env:DATABASE_URL="postgres://saude:saude123@localhost:5432/saude_financeira?sslmode=disable"
+$env:PORT="8081"
+$env:UPLOADS_PATH="./uploads"
+```
+
+### Frontend
+
+```bash
+cd frontend
+
+# Instalar dependências de teste
 npm install
 
-# 2. Iniciar o servidor de desenvolvimento
+# Iniciar servidor de desenvolvimento
 npm run dev
-
-# 3. Acessar em: http://localhost:3000
+# → http://localhost:3000
 ```
-
-Para compilar o Tailwind CSS de produção (opcional):
-```bash
-npm run build:css
-```
-
-### Opção 3: Docker (sem Node.js no host)
-
-> Requer [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado.
-
-```bash
-# 1. Compilar o CSS (requer Node.js apenas neste passo)
-npm run build:css
-
-# 2. Construir e subir o container
-docker-compose up -d
-
-# 3. Acessar em: http://localhost:8080
-```
-
-Para parar:
-```bash
-docker-compose down
-```
-
-> Especificação completa do Docker em [`spec/08-infrastructure/docker.md`](spec/08-infrastructure/docker.md).
 
 ---
 
-## Persistência e Backup de Dados
+## Testes
 
-Por ser uma aplicação estritamente local, todos os dados são salvos no **LocalStorage** do navegador.
-
-> ⚠️ **Atenção**: Limpar os dados de navegação, cookies ou histórico do navegador apagará o LocalStorage e causará **perda definitiva de dados**.
->
-> **Use a ferramenta "Exportar Perfil (CSV)"** no rodapé do menu lateral como mecanismo de backup físico. Recomenda-se exportar regularmente. Um banner de aviso é exibido automaticamente quando o último backup tem mais de 15 dias.
-
----
-
-## Inteligência Artificial (LLM)
-
-As funcionalidades de IA (Análise Financeira, Plano de Economia, Importação de PDF e Agente Conversacional) requerem acesso a uma LLM compatível com a API OpenAI (`/chat/completions`).
-
-**Provedores suportados (qualquer um):**
-- [Ollama](https://ollama.com/) (local, gratuito) — recomendado para uso 100% offline
-- [LM Studio](https://lmstudio.ai/) (local, gratuito)
-- [OpenAI API](https://platform.openai.com/) (nuvem, pago)
-- [Groq](https://groq.com/) (nuvem, gratuito com limites)
-
-**Configuração:**
-Acesse a aba **Configurações** → seção **Inteligência Artificial** e preencha:
-- **URL Base**: ex. `http://localhost:11434/v1` (Ollama) ou `https://api.openai.com/v1` (OpenAI)
-- **Chave de API**: sua chave (ou qualquer string para provedores locais)
-- **Modelo**: ex. `llama3`, `gpt-4o-mini`, `gemma3`
-
----
-
-## Testes e Qualidade
+### Frontend (Vitest)
 
 ```bash
-# Linting do código JavaScript
-npm run lint
-
-# Testes unitários e de integração (Vitest)
+cd frontend
 npm run test
+
+# Resultado esperado:
+# 8 suítes de teste, 23 testes — todos passando ✓
 ```
 
-Os testes cobrem os módulos de State (`state.js`), Engine (`engine.js`), configuração LLM e as funcionalidades do Agente de Chat e Investimentos.
+### Backend (Go)
+
+```bash
+cd backend
+
+# Testes unitários e de handler (não requerem banco)
+go test ./internal/application/usecase/... ./internal/domain/entity/... ./internal/infrastructure/http/handler/... ./internal/infrastructure/http/middleware/...
+
+# Testes de integração (requerem PostgreSQL na porta 5432)
+go test ./internal/infrastructure/persistence/postgres/...
+
+# Todos os testes (com cobertura)
+go test -cover ./...
+```
+
+#### Cobertura por Pacote
+
+| Pacote                                   | Cobertura |
+|------------------------------------------|-----------|
+| `domain/entity` (validações)             | ~64%      |
+| `application/usecase` (casos de uso)     | ~48-80%   |
+| `infrastructure/http/handler` (handlers) | ~47%      |
+| `infrastructure/http/middleware`         | ~92%      |
+| `infrastructure/persistence/postgres`*   | ~44%      |
+
+> *Tests de integração postgres exigem banco de dados ativo e são saltados automaticamente se indisponível.
 
 ---
 
-## Débitos Técnicos
+## API Reference
 
-Os débitos técnicos conhecidos do projeto estão documentados e priorizados em:
-[`spec/07-quality/technical-debt.md`](spec/07-quality/technical-debt.md)
+Base URL: `http://localhost:80/api/v1`
+
+### Perfis
+
+| Método | Endpoint                        | Descrição                  |
+|--------|---------------------------------|----------------------------|
+| GET    | `/perfis`                       | Listar todos os perfis      |
+| POST   | `/perfis`                       | Criar novo perfil           |
+| PUT    | `/perfis/{id}/salario`          | Atualizar salário           |
+| PUT    | `/perfis/{id}/fgts`             | Atualizar FGTS              |
+| DELETE | `/perfis/{id}`                  | Remover perfil              |
+
+### Despesas
+
+| Método | Endpoint                              | Descrição                        |
+|--------|---------------------------------------|----------------------------------|
+| GET    | `/perfis/{pid}/despesas`              | Listar despesas do perfil        |
+| POST   | `/perfis/{pid}/despesas`              | Criar despesa                    |
+| POST   | `/perfis/{pid}/despesas/bulk`         | Criar múltiplas despesas         |
+| PUT    | `/despesas/{id}`                      | Atualizar despesa                |
+| DELETE | `/despesas/{id}`                      | Remover despesa                  |
+
+### Financiamentos
+
+| Método | Endpoint                                 | Descrição                         |
+|--------|------------------------------------------|-----------------------------------|
+| GET    | `/perfis/{pid}/financiamentos`           | Listar financiamentos do perfil   |
+| POST   | `/perfis/{pid}/financiamentos`           | Criar financiamento               |
+| PUT    | `/financiamentos/{id}`                   | Atualizar financiamento           |
+| DELETE | `/financiamentos/{id}`                   | Remover financiamento             |
+
+### Metas
+
+| Método | Endpoint                                 | Descrição                        |
+|--------|------------------------------------------|----------------------------------|
+| GET    | `/perfis/{pid}/metas`                    | Listar metas do perfil           |
+| POST   | `/perfis/{pid}/metas`                    | Criar meta                       |
+| PUT    | `/metas/{id}`                            | Atualizar meta                   |
+| DELETE | `/metas/{id}`                            | Remover meta                     |
+| POST   | `/metas/{id}/comprar`                    | Marcar como comprada             |
+| PUT    | `/perfis/{pid}/metas/reordenar`          | Reordenar prioridades            |
+| PUT    | `/perfis/{pid}/metas/targets`            | Atualizar valores target         |
+
+### Categorias
+
+| Método | Endpoint                                      | Descrição                            |
+|--------|-----------------------------------------------|--------------------------------------|
+| GET    | `/categorias`                                 | Listar categorias                    |
+| POST   | `/categorias`                                 | Criar categoria                      |
+| PUT    | `/categorias/{id}/cor`                        | Atualizar cor da categoria           |
+| GET    | `/categorias/investimento`                    | Listar categorias de investimento    |
+| POST   | `/categorias/investimento`                    | Criar categoria de investimento      |
+
+### Outros
+
+| Método | Endpoint                       | Descrição                                      |
+|--------|--------------------------------|------------------------------------------------|
+| GET    | `/state`                       | Estado completo do banco (hidratação frontend) |
+| POST   | `/migration/import-state`      | Importar estado do LocalStorage                |
+| GET    | `/csv/{pid}`                   | Exportar CSV do perfil                         |
+| POST   | `/csv/import`                  | Importar CSV (upsert por perfil)               |
+| POST   | `/llm/proxy`                   | Proxy seguro para LLM configurada              |
+| GET    | `/settings`                    | Obter configurações                            |
+| PUT    | `/settings/{key}`              | Atualizar configuração                         |
+| GET    | `/health`                      | Status de saúde da API                         |
 
 ---
 
-## Documentação Completa
+## Migração do LocalStorage para o Banco de Dados
 
-A documentação técnica detalhada está organizada na pasta [`spec/`](spec/):
+Usuários vindos da versão anterior (SPA) verão automaticamente um **banner de migração** no topo do app após o primeiro acesso. O banner só aparece quando:
+1. Existem dados salvos no LocalStorage do navegador; **E**
+2. O banco de dados ainda não possui perfis cadastrados.
 
-| Pasta                | Conteúdo                                           |
-|----------------------|----------------------------------------------------|
-| `01-overview/`       | Visão do produto, restrições e user stories        |
-| `02-architecture/`   | Arquitetura do sistema, modelo de dados e contratos|
-| `03-modules/`        | Documentação detalhada de cada módulo              |
-| `04-features/`       | Especificação de funcionalidades                   |
-| `05-api/`            | Contratos de API e integrações                     |
-| `06-data-formats/`   | Formatos de dados (LocalStorage, CSV)              |
-| `07-quality/`        | Estratégia de testes e débitos técnicos            |
-| `08-infrastructure/` | Especificação de Docker e infraestrutura           |
+**Processo:**
+1. Clique em **"Migrar dados"** no banner.
+2. O frontend serializa o estado completo do LocalStorage.
+3. O backend importa todos os perfis, despesas, financiamentos, metas e categorias.
+4. As fotos de metas referenciadas localmente são preservadas no diretório de uploads.
+5. Após a migração bem-sucedida, o LocalStorage é limpo e o banner desaparece.
+
+---
+
+## Licença
+
+MIT

@@ -52,6 +52,11 @@ coverage/
 *.lcov
 .nyc_output/
 
+# ── Go build artifacts ───────────────────────────────────────
+*.exe
+*.test
+coverage.out
+
 # ── Arquivos temporários ─────────────────────────────────────
 tmp/
 temp/

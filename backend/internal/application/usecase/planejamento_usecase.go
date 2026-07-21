@@ -1,0 +1,168 @@
+package usecase
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/google/uuid"
+	"saude-financeira-api/internal/application/dto"
+	"saude-financeira-api/internal/domain/entity"
+	domainErr "saude-financeira-api/internal/domain/errors"
+	"saude-financeira-api/internal/domain/repository"
+)
+
+type PlanejamentoUseCase struct {
+	repo    repository.PlanejamentoRepository
+	catRepo repository.CategoriaRepository
+}
+
+func NewPlanejamentoUseCase(repo repository.PlanejamentoRepository, catRepo repository.CategoriaRepository) *PlanejamentoUseCase {
+	return &PlanejamentoUseCase{
+		repo:    repo,
+		catRepo: catRepo,
+	}
+}
+
+func (uc *PlanejamentoUseCase) GetPlanejamento(ctx context.Context, perfilID uuid.UUID) ([]*dto.PlanejamentoResponse, error) {
+	limits, err := uc.repo.GetAll(ctx, perfilID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch all categories to map IDs to Names
+	cats, err := uc.catRepo.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	catMap := make(map[uuid.UUID]string)
+	for _, c := range cats {
+		catMap[c.ID] = c.Nome
+	}
+
+	// Group by Method
+	grouped := make(map[string]map[string]float64)
+	methods := []string{"Conservador", "Equilibrado", "Agressivo", "Personalizado"}
+	for _, m := range methods {
+		grouped[m] = make(map[string]float64)
+	}
+
+	for _, limit := range limits {
+		catName, ok := catMap[limit.CategoriaID]
+		if !ok {
+			continue // Skip if category not found
+		}
+		if _, ok := grouped[limit.Metodo]; !ok {
+			grouped[limit.Metodo] = make(map[string]float64)
+		}
+		grouped[limit.Metodo][catName] = limit.Percentual
+	}
+
+	// Define default system presets for templates if database values are empty
+	defaultPresets := map[string]map[string]float64{
+		"Conservador": {
+			"Saúde": 8, "Alimentação": 18, "Moradia": 30, "Lazer": 5,
+			"Cartão de Crédito": 8, "Serviços por Assinatura": 2, "Serviços": 9,
+			"Investimento": 20, "Financiamento": 0, "Outros": 0, "Amortização": 0,
+		},
+		"Equilibrado": {
+			"Saúde": 7, "Alimentação": 18, "Moradia": 28, "Lazer": 10,
+			"Cartão de Crédito": 10, "Serviços por Assinatura": 2, "Serviços": 10,
+			"Investimento": 15, "Financiamento": 0, "Outros": 0, "Amortização": 0,
+		},
+		"Agressivo": {
+			"Saúde": 6, "Alimentação": 17, "Moradia": 25, "Lazer": 7,
+			"Cartão de Crédito": 8, "Serviços por Assinatura": 2, "Serviços": 10,
+			"Investimento": 25, "Financiamento": 0, "Outros": 0, "Amortização": 0,
+		},
+	}
+
+	for metodo, defaults := range defaultPresets {
+		if len(grouped[metodo]) == 0 {
+			grouped[metodo] = defaults
+		}
+	}
+
+	res := make([]*dto.PlanejamentoResponse, 0, len(grouped))
+	for metodo, limites := range grouped {
+		if metodo != "Conservador" && metodo != "Equilibrado" && metodo != "Agressivo" && len(limites) == 0 {
+			continue
+		}
+		res = append(res, &dto.PlanejamentoResponse{
+			Metodo:  metodo,
+			Limites: limites,
+		})
+	}
+
+	return res, nil
+}
+
+func (uc *PlanejamentoUseCase) UpdatePlanejamento(ctx context.Context, perfilID uuid.UUID, metodo string, req dto.UpdatePlanejamentoRequest) error {
+	if metodo != "Conservador" && metodo != "Equilibrado" && metodo != "Agressivo" && metodo != "Personalizado" {
+		return fmt.Errorf("%w: invalid planning method", domainErr.ErrInvalidInput)
+	}
+
+	// 1. Verify percentage sum <= 100
+	totalPercent := 0.0
+	for _, pct := range req.Limites {
+		if pct < 0 || pct > 100 {
+			return fmt.Errorf("%w: percentual must be between 0 and 100", domainErr.ErrValidation)
+		}
+		totalPercent += pct
+	}
+
+	if totalPercent > 100.0 {
+		return fmt.Errorf("%w: total percentage limit cannot exceed 100%%, got %.2f%%", domainErr.ErrValidation, totalPercent)
+	}
+
+	// 2. Clear current limits for this method to prevent orphans
+	var targetPerfilID uuid.UUID
+	if metodo == "Personalizado" {
+		targetPerfilID = perfilID
+	} else {
+		targetPerfilID = uuid.Nil
+	}
+
+	if err := uc.repo.DeleteByMetodo(ctx, targetPerfilID, metodo); err != nil {
+		return err
+	}
+
+	// 3. Insert new limits
+	for catName, percent := range req.Limites {
+		// Resolve category
+		cat, err := uc.catRepo.GetByNome(ctx, catName)
+		if err != nil {
+			if errors.Is(err, domainErr.ErrNotFound) {
+				// Create dynamically
+				cat = &entity.Categoria{
+					ID:       uuid.New(),
+					Nome:     catName,
+					Cor:      "#64748b",
+					IsSystem: false,
+				}
+				if err := uc.catRepo.Create(ctx, cat); err != nil {
+					return err
+				}
+			} else {
+				return err
+			}
+		}
+
+		pl := &entity.Planejamento{
+			ID:          uuid.New(),
+			Metodo:      metodo,
+			CategoriaID: cat.ID,
+			Percentual:  percent,
+		}
+
+		if metodo == "Personalizado" {
+			pl.PerfilID = &perfilID
+		}
+
+		if err := uc.repo.Create(ctx, pl); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

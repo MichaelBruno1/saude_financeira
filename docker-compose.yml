@@ -1,11 +1,70 @@
-version: "3.8"
+version: "3.9"
 
 services:
-  saude-financeira:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: saude-financeira
-    ports:
-      - "0.0.0.0:8080:80"
+  frontend:
+    build: ./frontend
+    container_name: saude-financeira-frontend
+    ports: ["${FRONTEND_PORT:-8080}:80"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [saude-financeira-net]
     restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: saude-financeira-backend
+    ports: ["${BACKEND_PORT:-8081}:8081"]
+    environment:
+      - SERVER_PORT=8081
+      - DATABASE_URL=postgres://${DB_USER:-saude}:${DB_PASSWORD:-saude123}@postgres:5432/${DB_NAME:-saude_financeira}?sslmode=disable
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - CORS_ORIGINS=http://localhost:${FRONTEND_PORT:-8080}
+      - AUTO_MIGRATE=true
+      - UPLOADS_PATH=/app/uploads
+      - LLM_API_URL=${LLM_API_URL:-}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-}
+      - LLM_TIMEOUT=${LLM_TIMEOUT:-120s}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [saude-financeira-net]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: saude-financeira-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-saude}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-saude123}
+      POSTGRES_DB: ${DB_NAME:-saude_financeira}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - pgbackups:/backups
+    ports: ["${DB_PORT:-5432}:5432"]
+    networks: [saude-financeira-net]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-saude}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  pgdata:
+  pgbackups:
+  uploads:
+
+networks:
+  saude-financeira-net:
+    driver: bridge
