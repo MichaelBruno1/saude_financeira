@@ -13,7 +13,6 @@ COPY llm_config.js     /usr/share/nginx/html/
 COPY css/              /usr/share/nginx/html/css/
 COPY js/               /usr/share/nginx/html/js/
 COPY public/           /usr/share/nginx/html/public/
-COPY prompts/          /usr/share/nginx/html/prompts/
 
 # Expoe a porta 80 do container
 EXPOSE 80
