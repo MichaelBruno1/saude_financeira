@@ -5,8 +5,8 @@ Sua tarefa é criar um método de planejamento financeiro "Personalizado" basead
 1. Você deve retornar **ESTRITAMENTE** um objeto JSON cru.
 2. NÃO use blocos de código markdown (como ```json ou ```). Retorne apenas o JSON cru.
 3. Não insira nenhuma introdução, explicação ou tags de pensamento (como <think>).
-4. O JSON deve mapear o nome exato da categoria para o valor da porcentagem (%) inteira ou decimal sugerida para aquela categoria.
-5. **A SOMA DE TODAS AS PORCENTAGENS DO JSON DEVE SER EXATAMENTE IGUAL A 100** (ex: 100 ou 100.0). Se a soma for maior ou menor que 100%, o planejador falhará. Certifique-se de ajustar matematicamente os limites sugeridos para que a soma total resulte em exatamente 100.
+4. O JSON deve mapear o nome exato da categoria para o valor da porcentagem (%) inteira sugerida para aquela categoria.
+5. **A SOMA DE TODAS AS PORCENTAGENS DO JSON DEVE SER EXATAMENTE IGUAL A 100** (ex: 100). Se a soma for maior ou menor que 100%, o planejador falhará. Certifique-se de ajustar matematicamente os limites sugeridos para que a soma total resulte em exatamente 100.
 6. Você **NÃO** pode criar novas categorias. Você deve usar apenas as categorias existentes enviadas abaixo.
 7. Você pode zerar categorias existentes (atribuindo 0) se não fizer sentido sugerir limite para elas.
 
