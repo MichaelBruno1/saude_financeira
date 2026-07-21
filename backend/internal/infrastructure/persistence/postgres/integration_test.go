@@ -30,6 +30,11 @@ func TestPostgresRepositoriesIntegration(t *testing.T) {
 
 	ctx := context.Background()
 
+	// Run migrations to ensure database schema is up-to-date
+	if err := RunMigrations(db, "../../../../migrations"); err != nil {
+		t.Fatalf("failed to run migrations in integration test: %v", err)
+	}
+
 	// Clear test tables in order of dependencies
 	_, _ = db.ExecContext(ctx, "DELETE FROM despesas")
 	_, _ = db.ExecContext(ctx, "DELETE FROM metas")
@@ -273,6 +278,18 @@ func TestPostgresRepositoriesIntegration(t *testing.T) {
 		t.Fatalf("failed to create plan: %v", err)
 	}
 
+	// Create profile-specific plan
+	plProfile := &entity.Planejamento{
+		Metodo:      "Personalizado",
+		CategoriaID: c.ID,
+		Percentual:  20.0,
+		PerfilID:    &p.ID,
+	}
+	err = planRepo.Create(ctx, plProfile)
+	if err != nil {
+		t.Fatalf("failed to create profile-specific plan: %v", err)
+	}
+
 	limits, err := planRepo.GetByMetodo(ctx, "Conservador")
 	if err != nil {
 		t.Fatalf("failed to get limits: %v", err)
@@ -288,6 +305,39 @@ func TestPostgresRepositoriesIntegration(t *testing.T) {
 	}
 	if !found {
 		t.Error("expected to find custom category in Conservador limits")
+	}
+
+	// GetAll for profile p.ID
+	allLimits, err := planRepo.GetAll(ctx, p.ID)
+	if err != nil {
+		t.Fatalf("failed to get all limits for profile: %v", err)
+	}
+	foundGlobal := false
+	foundProfile := false
+	for _, l := range allLimits {
+		if l.Metodo == "Conservador" && l.CategoriaID == c.ID {
+			foundGlobal = true
+		}
+		if l.Metodo == "Personalizado" && l.CategoriaID == c.ID {
+			foundProfile = true
+		}
+	}
+	if !foundGlobal || !foundProfile {
+		t.Errorf("expected to find both global and profile-specific limits, got global: %t, profile: %t", foundGlobal, foundProfile)
+	}
+
+	// Delete profile plan
+	err = planRepo.DeleteByMetodo(ctx, p.ID, "Personalizado")
+	if err != nil {
+		t.Fatalf("failed to delete profile limits: %v", err)
+	}
+
+	// Verify profile plan is deleted but global is not
+	allLimits, _ = planRepo.GetAll(ctx, p.ID)
+	for _, l := range allLimits {
+		if l.Metodo == "Personalizado" {
+			t.Error("profile planning should have been deleted")
+		}
 	}
 
 	// 7. Test Settings Repository

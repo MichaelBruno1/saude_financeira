@@ -192,7 +192,7 @@ func TestPlanejamentoUseCaseExtra(t *testing.T) {
 	_ = catRepo.Create(ctx, &entity.Categoria{ID: uuid.New(), Nome: "Moradia"})
 
 	// 1. GetPlanejamento — initially empty
-	plan, err := planUC.GetPlanejamento(ctx)
+	plan, err := planUC.GetPlanejamento(ctx, uuid.Nil)
 	if err != nil {
 		t.Fatalf("GetPlanejamento: expected no error, got: %v", err)
 	}
@@ -201,7 +201,7 @@ func TestPlanejamentoUseCaseExtra(t *testing.T) {
 	}
 
 	// 2. UpdatePlanejamento — valid
-	err = planUC.UpdatePlanejamento(ctx, "Conservador", dto.UpdatePlanejamentoRequest{
+	err = planUC.UpdatePlanejamento(ctx, uuid.Nil, "Conservador", dto.UpdatePlanejamentoRequest{
 		Limites: map[string]float64{"Moradia": 25.0},
 	})
 	if err != nil {
@@ -209,7 +209,7 @@ func TestPlanejamentoUseCaseExtra(t *testing.T) {
 	}
 
 	// 3. GetPlanejamento after update
-	plan, err = planUC.GetPlanejamento(ctx)
+	plan, err = planUC.GetPlanejamento(ctx, uuid.Nil)
 	if err != nil {
 		t.Fatalf("GetPlanejamento after update: expected no error, got: %v", err)
 	}

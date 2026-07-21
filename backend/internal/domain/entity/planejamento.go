@@ -12,6 +12,7 @@ type Planejamento struct {
 	Metodo      string
 	CategoriaID uuid.UUID
 	Percentual  float64
+	PerfilID    *uuid.UUID
 	UpdatedAt   time.Time
 }
 

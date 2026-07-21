@@ -352,10 +352,12 @@ func (m *MockPlanejamentoRepository) GetByMetodo(ctx context.Context, metodo str
 	return list, nil
 }
 
-func (m *MockPlanejamentoRepository) GetAll(ctx context.Context) ([]*entity.Planejamento, error) {
+func (m *MockPlanejamentoRepository) GetAll(ctx context.Context, perfilID uuid.UUID) ([]*entity.Planejamento, error) {
 	var list []*entity.Planejamento
 	for _, pl := range m.limits {
-		list = append(list, pl)
+		if pl.PerfilID == nil || *pl.PerfilID == perfilID || perfilID == uuid.Nil {
+			list = append(list, pl)
+		}
 	}
 	return list, nil
 }
@@ -375,10 +377,12 @@ func (m *MockPlanejamentoRepository) UpdatePercentual(ctx context.Context, metod
 	return nil
 }
 
-func (m *MockPlanejamentoRepository) DeleteByMetodo(ctx context.Context, metodo string) error {
+func (m *MockPlanejamentoRepository) DeleteByMetodo(ctx context.Context, perfilID uuid.UUID, metodo string) error {
 	for key, pl := range m.limits {
 		if pl.Metodo == metodo {
-			delete(m.limits, key)
+			if pl.PerfilID == nil || *pl.PerfilID == perfilID || perfilID == uuid.Nil {
+				delete(m.limits, key)
+			}
 		}
 	}
 	return nil

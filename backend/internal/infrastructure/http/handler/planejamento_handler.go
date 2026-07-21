@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/google/uuid"
 	"saude-financeira-api/internal/application/dto"
 	"saude-financeira-api/internal/application/usecase"
 	domainErr "saude-financeira-api/internal/domain/errors"
@@ -19,7 +20,14 @@ func NewPlanejamentoHandler(uc *usecase.PlanejamentoUseCase) *PlanejamentoHandle
 }
 
 func (h *PlanejamentoHandler) Obter(w http.ResponseWriter, r *http.Request) {
-	plan, err := h.uc.GetPlanejamento(r.Context())
+	pidStr := r.PathValue("pid")
+	pid, err := uuid.Parse(pidStr)
+	if err != nil {
+		writeError(w, fmt.Errorf("%w: invalid profile id format: %s", domainErr.ErrInvalidInput, err.Error()))
+		return
+	}
+
+	plan, err := h.uc.GetPlanejamento(r.Context(), pid)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -28,6 +36,13 @@ func (h *PlanejamentoHandler) Obter(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PlanejamentoHandler) Atualizar(w http.ResponseWriter, r *http.Request) {
+	pidStr := r.PathValue("pid")
+	pid, err := uuid.Parse(pidStr)
+	if err != nil {
+		writeError(w, fmt.Errorf("%w: invalid profile id format: %s", domainErr.ErrInvalidInput, err.Error()))
+		return
+	}
+
 	metodo := r.PathValue("metodo")
 
 	var req dto.UpdatePlanejamentoRequest
@@ -36,7 +51,7 @@ func (h *PlanejamentoHandler) Atualizar(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err := h.uc.UpdatePlanejamento(r.Context(), metodo, req)
+	err = h.uc.UpdatePlanejamento(r.Context(), pid, metodo, req)
 	if err != nil {
 		writeError(w, err)
 		return

@@ -92,8 +92,11 @@ func TestPlanejamentoHandler(t *testing.T) {
 	cID := uuid.New()
 	catRepo.cats[cID] = &entity.Categoria{ID: cID, Nome: "Moradia", Cor: "#aabbcc"}
 
+	pid := uuid.New().String()
+
 	// 1. Obter — empty state
 	req := httptest.NewRequest("GET", "/", nil)
+	req.SetPathValue("pid", pid)
 	rec := httptest.NewRecorder()
 	h.Obter(rec, req)
 	if rec.Code != http.StatusOK {
@@ -103,6 +106,7 @@ func TestPlanejamentoHandler(t *testing.T) {
 	// 2. Atualizar — valid
 	body := `{"limites":{"Moradia":25.0}}`
 	req2 := httptest.NewRequest("PUT", "/", bytes.NewBufferString(body))
+	req2.SetPathValue("pid", pid)
 	req2.SetPathValue("metodo", "Conservador")
 	rec2 := httptest.NewRecorder()
 	h.Atualizar(rec2, req2)
@@ -112,6 +116,7 @@ func TestPlanejamentoHandler(t *testing.T) {
 
 	// 3. Atualizar — bad JSON
 	req3 := httptest.NewRequest("PUT", "/", bytes.NewBufferString("{invalid"))
+	req3.SetPathValue("pid", pid)
 	req3.SetPathValue("metodo", "Conservador")
 	rec3 := httptest.NewRecorder()
 	h.Atualizar(rec3, req3)
@@ -132,9 +137,9 @@ func (m *mockPlanRepoH) Create(ctx context.Context, pl *entity.Planejamento) err
 func (m *mockPlanRepoH) GetByMetodo(ctx context.Context, metodo string) ([]*entity.Planejamento, error) {
 	return nil, nil
 }
-func (m *mockPlanRepoH) GetAll(ctx context.Context) ([]*entity.Planejamento, error) { return nil, nil }
+func (m *mockPlanRepoH) GetAll(ctx context.Context, perfilID uuid.UUID) ([]*entity.Planejamento, error) { return nil, nil }
 func (m *mockPlanRepoH) UpdatePercentual(ctx context.Context, metodo string, catID uuid.UUID, pct float64) error {
 	return nil
 }
-func (m *mockPlanRepoH) DeleteByMetodo(ctx context.Context, metodo string) error { return nil }
+func (m *mockPlanRepoH) DeleteByMetodo(ctx context.Context, perfilID uuid.UUID, metodo string) error { return nil }
 

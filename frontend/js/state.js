@@ -920,9 +920,12 @@ window.App.State = (() => {
       notify("planejamento");
 
       if (window.App.APIClient.isOnline()) {
-        window.App.APIClient.updatePlanejamento(targetMetodo, _state.planejamento[targetMetodo]).catch(err => {
-          console.error("Erro ao salvar limites no backend:", err);
-        });
+        const active = _state.perfis.find(p => p.nome === _state.perfilAtivo);
+        if (active) {
+          window.App.APIClient.updatePlanejamento(active.id, metodo, _state.planejamento[targetMetodo]).catch(err => {
+            console.error("Erro ao salvar limites no backend:", err);
+          });
+        }
       }
       return true;
     },

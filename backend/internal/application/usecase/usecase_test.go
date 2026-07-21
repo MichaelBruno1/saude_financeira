@@ -232,7 +232,7 @@ func TestPlanejamentoUseCase(t *testing.T) {
 			"Alimentação": 20.0,
 		},
 	}
-	err := planUC.UpdatePlanejamento(ctx, "Conservador", req)
+	err := planUC.UpdatePlanejamento(ctx, uuid.Nil, "Conservador", req)
 	if err != nil {
 		t.Fatalf("failed to update planning: %v", err)
 	}
@@ -244,7 +244,7 @@ func TestPlanejamentoUseCase(t *testing.T) {
 			"Alimentação": 50.0,
 		},
 	}
-	err = planUC.UpdatePlanejamento(ctx, "Conservador", reqExceeded)
+	err = planUC.UpdatePlanejamento(ctx, uuid.Nil, "Conservador", reqExceeded)
 	if err == nil || !errors.Is(err, domainErr.ErrValidation) {
 		t.Errorf("expected ErrValidation due to percentage sum exceeding 100%%, got %v", err)
 	}

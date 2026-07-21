@@ -19,9 +19,9 @@ func NewPlanejamentoPostgres(db *sql.DB) *PlanejamentoPostgres {
 
 func (r *PlanejamentoPostgres) Create(ctx context.Context, pl *entity.Planejamento) error {
 	query := `
-		INSERT INTO planejamento (id, metodo, categoria_id, percentual, updated_at)
-		VALUES ($1, $2, $3, $4, NOW())
-		ON CONFLICT (metodo, categoria_id) DO UPDATE
+		INSERT INTO planejamento (id, metodo, categoria_id, percentual, perfil_id, updated_at)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+		ON CONFLICT (metodo, categoria_id, perfil_id) DO UPDATE
 		SET percentual = EXCLUDED.percentual, updated_at = NOW()
 		RETURNING id, updated_at
 	`
@@ -34,6 +34,7 @@ func (r *PlanejamentoPostgres) Create(ctx context.Context, pl *entity.Planejamen
 		pl.Metodo,
 		pl.CategoriaID,
 		pl.Percentual,
+		pl.PerfilID,
 	).Scan(&pl.ID, &pl.UpdatedAt)
 
 	if err != nil {
@@ -44,7 +45,7 @@ func (r *PlanejamentoPostgres) Create(ctx context.Context, pl *entity.Planejamen
 
 func (r *PlanejamentoPostgres) GetByMetodo(ctx context.Context, metodo string) ([]*entity.Planejamento, error) {
 	query := `
-		SELECT id, metodo, categoria_id, percentual, updated_at
+		SELECT id, metodo, categoria_id, percentual, perfil_id, updated_at
 		FROM planejamento
 		WHERE metodo = $1
 	`
@@ -62,6 +63,7 @@ func (r *PlanejamentoPostgres) GetByMetodo(ctx context.Context, metodo string) (
 			&pl.Metodo,
 			&pl.CategoriaID,
 			&pl.Percentual,
+			&pl.PerfilID,
 			&pl.UpdatedAt,
 		)
 		if err != nil {
@@ -76,12 +78,27 @@ func (r *PlanejamentoPostgres) GetByMetodo(ctx context.Context, metodo string) (
 	return limits, nil
 }
 
-func (r *PlanejamentoPostgres) GetAll(ctx context.Context) ([]*entity.Planejamento, error) {
-	query := `
-		SELECT id, metodo, categoria_id, percentual, updated_at
-		FROM planejamento
-	`
-	rows, err := r.db.QueryContext(ctx, query)
+func (r *PlanejamentoPostgres) GetAll(ctx context.Context, perfilID uuid.UUID) ([]*entity.Planejamento, error) {
+	var query string
+	var rows *sql.Rows
+	var err error
+
+	if perfilID == uuid.Nil {
+		query = `
+			SELECT id, metodo, categoria_id, percentual, perfil_id, updated_at
+			FROM planejamento
+			WHERE perfil_id IS NULL
+		`
+		rows, err = r.db.QueryContext(ctx, query)
+	} else {
+		query = `
+			SELECT id, metodo, categoria_id, percentual, perfil_id, updated_at
+			FROM planejamento
+			WHERE perfil_id IS NULL OR perfil_id = $1
+		`
+		rows, err = r.db.QueryContext(ctx, query, perfilID)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to query all planejamento: %w", err)
 	}
@@ -95,6 +112,7 @@ func (r *PlanejamentoPostgres) GetAll(ctx context.Context) ([]*entity.Planejamen
 			&pl.Metodo,
 			&pl.CategoriaID,
 			&pl.Percentual,
+			&pl.PerfilID,
 			&pl.UpdatedAt,
 		)
 		if err != nil {
@@ -111,9 +129,9 @@ func (r *PlanejamentoPostgres) GetAll(ctx context.Context) ([]*entity.Planejamen
 
 func (r *PlanejamentoPostgres) UpdatePercentual(ctx context.Context, metodo string, categoriaID uuid.UUID, percentual float64) error {
 	query := `
-		INSERT INTO planejamento (id, metodo, categoria_id, percentual, updated_at)
-		VALUES ($1, $2, $3, $4, NOW())
-		ON CONFLICT (metodo, categoria_id) DO UPDATE
+		INSERT INTO planejamento (id, metodo, categoria_id, percentual, perfil_id, updated_at)
+		VALUES ($1, $2, $3, $4, NULL, NOW())
+		ON CONFLICT (metodo, categoria_id, perfil_id) DO UPDATE
 		SET percentual = EXCLUDED.percentual, updated_at = NOW()
 	`
 	id := uuid.New()
@@ -124,12 +142,23 @@ func (r *PlanejamentoPostgres) UpdatePercentual(ctx context.Context, metodo stri
 	return nil
 }
 
-func (r *PlanejamentoPostgres) DeleteByMetodo(ctx context.Context, metodo string) error {
-	query := `
-		DELETE FROM planejamento
-		WHERE metodo = $1
-	`
-	_, err := r.db.ExecContext(ctx, query, metodo)
+func (r *PlanejamentoPostgres) DeleteByMetodo(ctx context.Context, perfilID uuid.UUID, metodo string) error {
+	var err error
+	var query string
+	if perfilID == uuid.Nil {
+		query = `
+			DELETE FROM planejamento
+			WHERE perfil_id IS NULL AND metodo = $1
+		`
+		_, err = r.db.ExecContext(ctx, query, metodo)
+	} else {
+		query = `
+			DELETE FROM planejamento
+			WHERE perfil_id = $1 AND metodo = $2
+		`
+		_, err = r.db.ExecContext(ctx, query, perfilID, metodo)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to delete limits by metodo: %w", err)
 	}

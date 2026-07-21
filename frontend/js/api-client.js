@@ -203,11 +203,11 @@ window.App.APIClient = (() => {
     },
 
     // Planejamento
-    async getPlanejamento() {
-      return await _fetch("GET", "/api/v1/planejamento");
+    async getPlanejamento(perfilId) {
+      return await _fetch("GET", `/api/v1/perfis/${perfilId}/planejamento`);
     },
-    async updatePlanejamento(metodo, limites) {
-      return await _fetch("PUT", `/api/v1/planejamento/${metodo}`, { limites });
+    async updatePlanejamento(perfilId, metodo, limites) {
+      return await _fetch("PUT", `/api/v1/perfis/${perfilId}/planejamento/${metodo}`, { limites });
     },
 
     // Settings
@@ -265,13 +265,20 @@ window.App.APIClient = (() => {
     async fetchState() {
       const state = await _fetch("GET", "/api/v1/state");
       try {
-        const plan = await this.getPlanejamento();
-        if (Array.isArray(plan)) {
-          const planObj = {};
-          plan.forEach(item => {
-            planObj[item.metodo] = item.limites;
-          });
-          state.planejamento = planObj;
+        if (state && Array.isArray(state.perfis)) {
+          state.planejamento = {};
+          await Promise.all(state.perfis.map(async (profile) => {
+            const plan = await this.getPlanejamento(profile.id);
+            if (Array.isArray(plan)) {
+              plan.forEach(item => {
+                if (item.metodo === "Personalizado") {
+                  state.planejamento["Personalizado_" + profile.nome] = item.limites;
+                } else {
+                  state.planejamento[item.metodo] = item.limites;
+                }
+              });
+            }
+          }));
         }
       } catch (err) {
         console.warn("APIClient: falha ao buscar limites do planejador do backend:", err);

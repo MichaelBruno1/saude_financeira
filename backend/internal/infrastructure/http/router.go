@@ -72,8 +72,8 @@ func NewRouter(cfg RouterConfig) http.Handler {
 	mux.HandleFunc("POST "+prefix+"/categorias-investimento", cfg.Categoria.CriarInvestimento)
 
 	// Planejamento
-	mux.HandleFunc("GET "+prefix+"/planejamento", cfg.Planejamento.Obter)
-	mux.HandleFunc("PUT "+prefix+"/planejamento/{metodo}", cfg.Planejamento.Atualizar)
+	mux.HandleFunc("GET "+prefix+"/perfis/{pid}/planejamento", cfg.Planejamento.Obter)
+	mux.HandleFunc("PUT "+prefix+"/perfis/{pid}/planejamento/{metodo}", cfg.Planejamento.Atualizar)
 
 	// Settings
 	mux.HandleFunc("GET "+prefix+"/settings", cfg.Settings.ObterTodas)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
 	"saude-financeira-api/internal/application/dto"
@@ -25,8 +24,8 @@ func NewPlanejamentoUseCase(repo repository.PlanejamentoRepository, catRepo repo
 	}
 }
 
-func (uc *PlanejamentoUseCase) GetPlanejamento(ctx context.Context) ([]*dto.PlanejamentoResponse, error) {
-	limits, err := uc.repo.GetAll(ctx)
+func (uc *PlanejamentoUseCase) GetPlanejamento(ctx context.Context, perfilID uuid.UUID) ([]*dto.PlanejamentoResponse, error) {
+	limits, err := uc.repo.GetAll(ctx, perfilID)
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +59,12 @@ func (uc *PlanejamentoUseCase) GetPlanejamento(ctx context.Context) ([]*dto.Plan
 	}
 
 	res := make([]*dto.PlanejamentoResponse, 0, len(grouped))
-	for m, limites := range grouped {
+	for metodo, limites := range grouped {
+		if metodo != "Conservador" && metodo != "Equilibrado" && metodo != "Agressivo" && len(limites) == 0 {
+			continue
+		}
 		res = append(res, &dto.PlanejamentoResponse{
-			Metodo:  m,
+			Metodo:  metodo,
 			Limites: limites,
 		})
 	}
@@ -70,8 +72,8 @@ func (uc *PlanejamentoUseCase) GetPlanejamento(ctx context.Context) ([]*dto.Plan
 	return res, nil
 }
 
-func (uc *PlanejamentoUseCase) UpdatePlanejamento(ctx context.Context, metodo string, req dto.UpdatePlanejamentoRequest) error {
-	if metodo != "Conservador" && metodo != "Equilibrado" && metodo != "Agressivo" && !strings.HasPrefix(metodo, "Personalizado") {
+func (uc *PlanejamentoUseCase) UpdatePlanejamento(ctx context.Context, perfilID uuid.UUID, metodo string, req dto.UpdatePlanejamentoRequest) error {
+	if metodo != "Conservador" && metodo != "Equilibrado" && metodo != "Agressivo" && metodo != "Personalizado" {
 		return fmt.Errorf("%w: invalid planning method", domainErr.ErrInvalidInput)
 	}
 
@@ -89,7 +91,14 @@ func (uc *PlanejamentoUseCase) UpdatePlanejamento(ctx context.Context, metodo st
 	}
 
 	// 2. Clear current limits for this method to prevent orphans
-	if err := uc.repo.DeleteByMetodo(ctx, metodo); err != nil {
+	var targetPerfilID uuid.UUID
+	if metodo == "Personalizado" {
+		targetPerfilID = perfilID
+	} else {
+		targetPerfilID = uuid.Nil
+	}
+
+	if err := uc.repo.DeleteByMetodo(ctx, targetPerfilID, metodo); err != nil {
 		return err
 	}
 
@@ -119,6 +128,10 @@ func (uc *PlanejamentoUseCase) UpdatePlanejamento(ctx context.Context, metodo st
 			Metodo:      metodo,
 			CategoriaID: cat.ID,
 			Percentual:  percent,
+		}
+
+		if metodo == "Personalizado" {
+			pl.PerfilID = &perfilID
 		}
 
 		if err := uc.repo.Create(ctx, pl); err != nil {
