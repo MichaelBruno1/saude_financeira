@@ -1084,7 +1084,7 @@ window.App.State = (() => {
         model: String(model || "").trim(),
         maxContext: parseInt(maxContext) || 10240
       };
-      console.log("State: Configuração da LLM atualizada no estado central:", _state.llmConfig);
+      console.log("State: Configuração da LLM atualizada no estado central:", _state.llmConfig.model);
       notify("llmConfig");
 
       if (window.App.APIClient.isOnline()) {
