@@ -127,8 +127,9 @@ window.App.UISettings = (() => {
     if (btnGenerateCustomMethod) {
       btnGenerateCustomMethod.addEventListener("click", async () => {
         const state = window.App.State.getState();
+        const isOnline = window.App.APIClient.isOnline();
         const llm = state.llmConfig || {};
-        if (!llm.apiUrl || !llm.model) {
+        if (!isOnline && (!llm.apiUrl || !llm.model)) {
           alert("Por favor, configure as chaves da LLM nas Configurações antes de gerar o método personalizado.");
           return;
         }

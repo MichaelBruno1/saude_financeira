@@ -267,10 +267,10 @@ window.App.UIAgent = (() => {
   async function sendTextToLlm(text) {
     const config = getLlmConfig();
     const apiUrl = config.apiUrl;
-    const apiKey = config.apiKey;
     const model = config.model;
+    const isOnline = window.App.APIClient.isOnline();
 
-    if (!apiUrl || !model) {
+    if (!isOnline && (!apiUrl || !model)) {
       throw new Error("Configuração da LLM incompleta. Certifique-se de preencher URL Base e Modelo nas Configurações.");
     }
 
