@@ -294,10 +294,10 @@ window.App.UIExpenses = (() => {
         return b.valorParcela - a.valorParcela;
       }
       
-      // Ambas não recorrentes: ordem de criação da mais antiga para a mais nova
+      // Ambas não recorrentes: ordem de criação decrescente (da mais nova para a mais antiga)
       const aTime = (a.objetoOriginal && a.objetoOriginal.created_at) || "";
       const bTime = (b.objetoOriginal && b.objetoOriginal.created_at) || "";
-      return aTime.localeCompare(bTime);
+      return bTime.localeCompare(aTime);
     });
 
     if (s.expenseCountBadge) s.expenseCountBadge.textContent = `${itensFiltrados.length} total`;
