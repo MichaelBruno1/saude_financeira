@@ -7,10 +7,14 @@ window.App.APIClient = (() => {
 
   function getApiBaseUrl() {
     const loc = window.location;
-    if (loc.hostname === "localhost" || loc.hostname === "127.0.0.1" || loc.protocol === "file:") {
-      if (loc.port !== "8081" && loc.port !== "8080") {
-        return "http://localhost:8081";
-      }
+    // Se a porta for de desenvolvimento (diferente de 8080 e 8081 e não vazia),
+    // resolve dinamicamente para o backend na mesma máquina/IP
+    if (loc.port !== "8081" && loc.port !== "8080" && loc.port !== "") {
+      return `${loc.protocol}//${loc.hostname}:8081`;
+    }
+    // Se acessado diretamente via arquivo local (file://)
+    if (loc.protocol === "file:") {
+      return "http://localhost:8081";
     }
     return "";
   }
