@@ -9,6 +9,7 @@ window.App.UISettings = (() => {
   let settingsPlannerInputsGrid, settingsPlannerMethodSelect, settingsPlannerTotalSum;
   let settingsPlannerWarning, settingsPlannerInfo, settingsPlannerSobraSpan;
   let btnGenerateCustomMethod, generateCustomMethodSpinner, optMethodPersonalizado;
+  let lastProfile = null;
 
   function mapElements(DOM_IDS) {
     const g = id => document.getElementById(id);
@@ -234,6 +235,12 @@ window.App.UISettings = (() => {
 
   function render(state) {
     const { showStatus } = window.App.UIUtils;
+    const { perfilAtivo } = state;
+    
+    if (perfilAtivo !== lastProfile) {
+      lastProfile = perfilAtivo;
+      window.App.UIState.hasSetDefaultSettingsPlannerMethod = false;
+    }
     
     if (optMethodPersonalizado) {
       if (state.planejamento && state.planejamento["Personalizado"]) {

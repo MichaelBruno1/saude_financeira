@@ -8,6 +8,7 @@ window.App.UIReports = (() => {
   let generateSavingsPlanBtn, savingsPlanLoader, savingsPlanResultCard, savingsPlanTimestamp, savingsPlanTextContent;
   
   let reportsComparisonCard, reportsComparisonSubtitle, reportsComparisonContainer;
+  let lastProfile = null;
 
   function mapElements(DOM_IDS) {
     const g = id => document.getElementById(id);
@@ -232,6 +233,12 @@ window.App.UIReports = (() => {
   function render(state) {
     const { formatCurrency } = window.App.UIUtils;
     const { perfis, perfilAtivo, despesas, anoAtivo, financiamentos } = state;
+    
+    if (perfilAtivo !== lastProfile) {
+      lastProfile = perfilAtivo;
+      window.App.UIState.hasSetDefaultPlannerMethod = false;
+    }
+
     const ativo = perfis.find(p => p.nome === perfilAtivo);
     
     if (reportsContainer && !reportsContainer.classList.contains("hidden")) {
