@@ -98,6 +98,10 @@ window.App.UISettings = (() => {
     // Alterar método no planejador
     if (settingsPlannerMethodSelect) {
       settingsPlannerMethodSelect.addEventListener("change", () => {
+        const state = window.App.State.getState();
+        const activeProfile = state.perfilAtivo || "Principal";
+        window.App.UIState.selectedMethodPerProfile = window.App.UIState.selectedMethodPerProfile || {};
+        window.App.UIState.selectedMethodPerProfile[activeProfile] = settingsPlannerMethodSelect.value;
         renderPlannerSettingsForm();
       });
     }
@@ -144,6 +148,10 @@ window.App.UISettings = (() => {
 
           const result = await window.App.UIAgent.askCustomMethod();
           
+          const activeProfile = state.perfilAtivo || "Principal";
+          window.App.UIState.selectedMethodPerProfile = window.App.UIState.selectedMethodPerProfile || {};
+          window.App.UIState.selectedMethodPerProfile[activeProfile] = "Personalizado";
+
           window.App.State.atualizarPlanejamento("Personalizado", result);
           
           if (optMethodPersonalizado) optMethodPersonalizado.classList.remove("hidden");
@@ -239,22 +247,29 @@ window.App.UISettings = (() => {
     
     if (perfilAtivo !== lastProfile) {
       lastProfile = perfilAtivo;
-      window.App.UIState.hasSetDefaultSettingsPlannerMethod = false;
     }
     
+    const activeProfileName = state.perfilAtivo || "Principal";
+    window.App.UIState.selectedMethodPerProfile = window.App.UIState.selectedMethodPerProfile || {};
+    const hasPersonalizado = state.planejamento && state.planejamento["Personalizado"];
+    
     if (optMethodPersonalizado) {
-      if (state.planejamento && state.planejamento["Personalizado"]) {
+      if (hasPersonalizado) {
         optMethodPersonalizado.classList.remove("hidden");
-        if (!window.App.UIState.hasSetDefaultSettingsPlannerMethod) {
-          if (settingsPlannerMethodSelect) settingsPlannerMethodSelect.value = "Personalizado";
-          window.App.UIState.hasSetDefaultSettingsPlannerMethod = true;
-        }
       } else {
         optMethodPersonalizado.classList.add("hidden");
-        if (settingsPlannerMethodSelect && settingsPlannerMethodSelect.value === "Personalizado") {
-          settingsPlannerMethodSelect.value = "Equilibrado";
-        }
       }
+    }
+
+    let plannerMethod = window.App.UIState.selectedMethodPerProfile[activeProfileName];
+    if (!plannerMethod) {
+      plannerMethod = hasPersonalizado ? "Personalizado" : "Equilibrado";
+    } else if (plannerMethod === "Personalizado" && !hasPersonalizado) {
+      plannerMethod = "Equilibrado";
+    }
+    
+    if (settingsPlannerMethodSelect) {
+      settingsPlannerMethodSelect.value = plannerMethod;
     }
 
     if (themeToggleBtnText) {

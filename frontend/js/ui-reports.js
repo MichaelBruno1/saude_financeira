@@ -47,6 +47,9 @@ window.App.UIReports = (() => {
     if (plannerMethodSelect) {
       plannerMethodSelect.addEventListener("change", () => {
         const state = window.App.State.getState();
+        const activeProfile = state.perfilAtivo || "Principal";
+        window.App.UIState.selectedMethodPerProfile = window.App.UIState.selectedMethodPerProfile || {};
+        window.App.UIState.selectedMethodPerProfile[activeProfile] = plannerMethodSelect.value;
         window.App.UIReports.render(state);
       });
     }
@@ -288,19 +291,27 @@ window.App.UIReports = (() => {
         }
       }
 
+      const activeProfileName = state.perfilAtivo || "Principal";
+      window.App.UIState.selectedMethodPerProfile = window.App.UIState.selectedMethodPerProfile || {};
+      const hasPersonalizado = state.planejamento && state.planejamento["Personalizado"];
+
       if (optReportMethodPersonalizado) {
-        if (state.planejamento && state.planejamento["Personalizado"]) {
+        if (hasPersonalizado) {
           optReportMethodPersonalizado.classList.remove("hidden");
-          if (!window.App.UIState.hasSetDefaultPlannerMethod) {
-            if (plannerMethodSelect) plannerMethodSelect.value = "Personalizado";
-            window.App.UIState.hasSetDefaultPlannerMethod = true;
-          }
         } else {
           optReportMethodPersonalizado.classList.add("hidden");
-          if (plannerMethodSelect && plannerMethodSelect.value === "Personalizado") {
-            plannerMethodSelect.value = "Equilibrado";
-          }
         }
+      }
+
+      let plannerMethod = window.App.UIState.selectedMethodPerProfile[activeProfileName];
+      if (!plannerMethod) {
+        plannerMethod = hasPersonalizado ? "Personalizado" : "Equilibrado";
+      } else if (plannerMethod === "Personalizado" && !hasPersonalizado) {
+        plannerMethod = "Equilibrado";
+      }
+
+      if (plannerMethodSelect) {
+        plannerMethodSelect.value = plannerMethod;
       }
 
       // Renderizar Planejador Financeiro Comparativo
