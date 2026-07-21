@@ -35,7 +35,7 @@ window.App.Storage = (() => {
     // Gravar o estado completo no LocalStorage em JSON
     saveToLocalStorage(data) {
       try {
-        console.log("Storage: Gravando estado no LocalStorage. llmConfig ativa:", data.llmConfig);
+        console.log("Storage: Gravando estado no LocalStorage. llmConfig ativa:", data.llmConfig.model);
         const serialized = JSON.stringify(data);
         localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
         return true;
@@ -51,7 +51,7 @@ window.App.Storage = (() => {
         const serialized = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (serialized) {
           const parsed = JSON.parse(serialized);
-          console.log("Storage: Carregado estado do LocalStorage. llmConfig recuperada:", parsed ? parsed.llmConfig : null);
+          console.log("Storage: Carregado estado do LocalStorage. llmConfig recuperada");
           // Validação básica de estrutura
           if (parsed && Array.isArray(parsed.perfis) && Array.isArray(parsed.despesas)) {
             return parsed;

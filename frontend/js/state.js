@@ -148,9 +148,15 @@ window.App.State = (() => {
       return JSON.parse(JSON.stringify(_state));
     },
 
-    // Carregar ou substituir todo o estado (usado na inicialização e imports)
     loadState(newState) {
       if (!newState) return;
+      
+      const unwrapSetting = (val) => {
+        if (val && typeof val === "object" && val.hasOwnProperty("value")) {
+          return val.value;
+        }
+        return val;
+      };
       
       const profilesMap = {};
       _state.perfis = Array.isArray(newState.perfis) ? newState.perfis.map(p => {
@@ -245,9 +251,14 @@ window.App.State = (() => {
         _state.categorias["Amortização"] = "#06b6d4";
       }
 
-      _state.theme = newState.theme || "dark";
-      _state.ultimoBackup = newState.ultimoBackup ? parseInt(newState.ultimoBackup) || null : null;
-      _state.llmConfig = newState.llmConfig || { apiUrl: "", apiKey: "", model: "" };
+      const rawTheme = unwrapSetting(newState.theme);
+      _state.theme = typeof rawTheme === "string" ? rawTheme : "dark";
+
+      const rawBackup = unwrapSetting(newState.ultimoBackup);
+      _state.ultimoBackup = rawBackup ? parseInt(rawBackup) || null : null;
+
+      const rawLlm = unwrapSetting(newState.llmConfig || newState.llm_config);
+      _state.llmConfig = rawLlm || { apiUrl: "", apiKey: "", model: "" };
 
 
       _state.planejamento = newState.planejamento || {
