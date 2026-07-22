@@ -299,8 +299,12 @@ window.App.UIReports = (() => {
       if (optReportMethodPersonalizado) {
         if (hasPersonalizado) {
           optReportMethodPersonalizado.classList.remove("hidden");
+          optReportMethodPersonalizado.disabled = false;
+          optReportMethodPersonalizado.hidden = false;
         } else {
           optReportMethodPersonalizado.classList.add("hidden");
+          optReportMethodPersonalizado.disabled = true;
+          optReportMethodPersonalizado.hidden = true;
         }
       }
 
@@ -313,12 +317,15 @@ window.App.UIReports = (() => {
 
       if (plannerMethodSelect) {
         plannerMethodSelect.value = plannerMethod;
+        if (plannerMethod === "Personalizado" && optReportMethodPersonalizado) {
+          optReportMethodPersonalizado.selected = true;
+        }
       }
 
       // Renderizar Planejador Financeiro Comparativo
       if (plannerComparisonTableBody) {
         plannerComparisonTableBody.innerHTML = "";
-        const selectedMethod = plannerMethodSelect ? plannerMethodSelect.value : "Equilibrado";
+        const selectedMethod = plannerMethod;
         const actualMethodKey = (selectedMethod === "Personalizado")
           ? (state.planejamento[customKey] ? customKey : "Personalizado")
           : selectedMethod;

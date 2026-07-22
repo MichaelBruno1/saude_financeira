@@ -262,8 +262,12 @@ window.App.UISettings = (() => {
     if (optMethodPersonalizado) {
       if (hasPersonalizado) {
         optMethodPersonalizado.classList.remove("hidden");
+        optMethodPersonalizado.disabled = false;
+        optMethodPersonalizado.hidden = false;
       } else {
         optMethodPersonalizado.classList.add("hidden");
+        optMethodPersonalizado.disabled = true;
+        optMethodPersonalizado.hidden = true;
       }
     }
 
@@ -276,6 +280,9 @@ window.App.UISettings = (() => {
     
     if (settingsPlannerMethodSelect) {
       settingsPlannerMethodSelect.value = plannerMethod;
+      if (plannerMethod === "Personalizado" && optMethodPersonalizado) {
+        optMethodPersonalizado.selected = true;
+      }
     }
 
     if (themeToggleBtnText) {
