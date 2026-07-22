@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -427,6 +428,16 @@ func TestMetaHandler(t *testing.T) {
 	h.Comprar(rec3, req3)
 	if rec3.Code != http.StatusOK {
 		t.Errorf("Comprar: expected 200, got %d: %s", rec3.Code, rec3.Body.String())
+	}
+
+	// 3b. Reordenar
+	reorderBody := fmt.Sprintf(`{"ids":["%s"]}`, mIDStr)
+	reqReorder := httptest.NewRequest("POST", "/", bytes.NewBufferString(reorderBody))
+	reqReorder.SetPathValue("pid", pID.String())
+	recReorder := httptest.NewRecorder()
+	h.Reordenar(recReorder, reqReorder)
+	if recReorder.Code != http.StatusOK {
+		t.Errorf("Reordenar: expected 200, got %d: %s", recReorder.Code, recReorder.Body.String())
 	}
 
 	// 4. Remover

@@ -207,7 +207,7 @@ window.App.State = (() => {
         valor: parseFloat(m.valor) || 0,
         foto: String(m.foto || "").trim(),
         comprado: !!m.comprado,
-        prioridade: parseInt(m.prioridade) || 0,
+        prioridade: m.prioridade !== undefined && m.prioridade !== null ? (parseInt(m.prioridade) >= 0 ? parseInt(m.prioridade) : 0) : 0,
         valorTarget: parseFloat(m.valorTarget !== undefined ? m.valorTarget : (m.valor_target !== undefined ? m.valor_target : 0))
       })) : [];
 
