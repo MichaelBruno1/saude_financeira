@@ -293,7 +293,8 @@ window.App.UIReports = (() => {
 
       const activeProfileName = state.perfilAtivo || "Principal";
       window.App.UIState.selectedMethodPerProfile = window.App.UIState.selectedMethodPerProfile || {};
-      const hasPersonalizado = state.planejamento && state.planejamento["Personalizado"];
+      const customKey = "Personalizado_" + activeProfileName;
+      const hasPersonalizado = !!(state.planejamento && (state.planejamento[customKey] || state.planejamento["Personalizado"]));
 
       if (optReportMethodPersonalizado) {
         if (hasPersonalizado) {
@@ -317,8 +318,11 @@ window.App.UIReports = (() => {
       // Renderizar Planejador Financeiro Comparativo
       if (plannerComparisonTableBody) {
         plannerComparisonTableBody.innerHTML = "";
-        const plannerMethod = plannerMethodSelect ? plannerMethodSelect.value : "Equilibrado";
-        const limites = (state.planejamento && state.planejamento[plannerMethod]) || {};
+        const selectedMethod = plannerMethodSelect ? plannerMethodSelect.value : "Equilibrado";
+        const actualMethodKey = (selectedMethod === "Personalizado")
+          ? (state.planejamento[customKey] ? customKey : "Personalizado")
+          : selectedMethod;
+        const limites = (state.planejamento && state.planejamento[actualMethodKey]) || {};
         
         if (window.App.Charts) window.App.Charts.renderPlannerChart("planner-chart-canvas", limites);
 

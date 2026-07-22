@@ -214,8 +214,13 @@ window.App.UISettings = (() => {
     settingsPlannerInputsGrid.innerHTML = "";
 
     const state = window.App.State.getState();
+    const activeProfileName = state.perfilAtivo || "Principal";
+    const customKey = "Personalizado_" + activeProfileName;
     const metodo = settingsPlannerMethodSelect.value;
-    const limites = (state.planejamento && state.planejamento[metodo]) || {};
+    const actualMethodKey = (metodo === "Personalizado")
+      ? (state.planejamento[customKey] ? customKey : "Personalizado")
+      : metodo;
+    const limites = (state.planejamento && state.planejamento[actualMethodKey]) || {};
     const cats = state.categorias || {};
 
     for (const name in cats) {
@@ -251,7 +256,8 @@ window.App.UISettings = (() => {
     
     const activeProfileName = state.perfilAtivo || "Principal";
     window.App.UIState.selectedMethodPerProfile = window.App.UIState.selectedMethodPerProfile || {};
-    const hasPersonalizado = state.planejamento && state.planejamento["Personalizado"];
+    const customKey = "Personalizado_" + activeProfileName;
+    const hasPersonalizado = !!(state.planejamento && (state.planejamento[customKey] || state.planejamento["Personalizado"]));
     
     if (optMethodPersonalizado) {
       if (hasPersonalizado) {
