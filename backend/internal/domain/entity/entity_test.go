@@ -117,17 +117,30 @@ func TestDespesaValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "negative valor",
+			name: "zero valor",
 			despesa: Despesa{
 				PerfilID:    perfilID,
 				Descricao:   "Mercado",
-				Valor:       -50.0,
+				Valor:       0.0,
 				CategoriaID: catID,
 				MesInicio:   5,
 				AnoInicio:   2026,
 				Parcelas:    1,
 			},
 			wantErr: true,
+		},
+		{
+			name: "valid negative valor (saque)",
+			despesa: Despesa{
+				PerfilID:    perfilID,
+				Descricao:   "Saque Resgate",
+				Valor:       -50.0,
+				CategoriaID: catID,
+				MesInicio:   5,
+				AnoInicio:   2026,
+				Parcelas:    1,
+			},
+			wantErr: false,
 		},
 		{
 			name: "invalid mes",
