@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -104,8 +105,17 @@ func (h *MetaHandler) Reordenar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, fmt.Errorf("%w: failed to read request body", domainErr.ErrInvalidInput))
+		return
+	}
+
 	var idsStr []string
-	if err := json.NewDecoder(r.Body).Decode(&idsStr); err != nil {
+	var req dto.ReorderMetasRequest
+	if err := json.Unmarshal(bodyBytes, &req); err == nil && len(req.IDs) > 0 {
+		idsStr = req.IDs
+	} else if err := json.Unmarshal(bodyBytes, &idsStr); err != nil {
 		writeError(w, fmt.Errorf("%w: failed to parse request body: %s", domainErr.ErrInvalidInput, err.Error()))
 		return
 	}

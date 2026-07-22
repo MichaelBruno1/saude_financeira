@@ -33,8 +33,8 @@ func (d *Despesa) Validate() error {
 	if len(d.Descricao) > 255 {
 		return fmt.Errorf("descricao cannot be longer than 255 characters")
 	}
-	if d.Valor <= 0 {
-		return fmt.Errorf("valor must be greater than zero")
+	if d.Valor == 0 {
+		return fmt.Errorf("valor cannot be zero")
 	}
 	if d.CategoriaID == uuid.Nil {
 		return fmt.Errorf("categoria_id is required")

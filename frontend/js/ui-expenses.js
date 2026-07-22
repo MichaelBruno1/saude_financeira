@@ -321,7 +321,8 @@ window.App.UIExpenses = (() => {
         let horasTexto = "-";
         if (salary > 0) {
           const valorHora = salary / 220;
-          const horasNecessarias = item.valorParcela / valorHora;
+          const valParcela = Math.max(0, item.valorParcela);
+          const horasNecessarias = valParcela / valorHora;
           if (horasNecessarias < 1) {
             const mins = Math.round(horasNecessarias * 60);
             horasTexto = `${mins} min`;

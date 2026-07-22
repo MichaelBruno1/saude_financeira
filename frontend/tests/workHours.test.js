@@ -216,4 +216,35 @@ describe('Work Hours Calculation in Expenses List', () => {
     // 3º deve ser "Terceiro Eventual" (id: exp-3)
     expect(renderedRows[2].innerHTML).toContain('Terceiro Eventual');
   });
+
+  it('should clamp negative expense amounts to 0 min for work hours calculation', () => {
+    const UIExpenses = global.window.App.UIExpenses;
+    
+    global.window.App.UIState.expensesTableBody = domElements['expenses-table-body'];
+    global.window.App.UIState.expenseCategoryFilter = domElements['expense-category-filter'];
+    global.window.App.UIState.expenseCountBadge = domElements['expense-count-badge'];
+
+    const state = {
+      perfis: [{ nome: "Michael", salario: 2200 }],
+      perfilAtivo: "Michael",
+      despesas: [
+        { id: "exp-neg", perfil: "Michael", descricao: "Saque Investimento", valor: -200, categoria: "Investimento", mes_inicio: 1, ano_inicio: 2026, parcelas: 1, recorrente: false }
+      ],
+      financiamentos: [],
+      mesAtivo: 1,
+      anoAtivo: 2026,
+      categorias: { "Investimento": "#eab308" }
+    };
+
+    const renderedRows = [];
+    domElements['expenses-table-body'].appendChild = vi.fn().mockImplementation((row) => {
+      renderedRows.push(row);
+    });
+
+    UIExpenses.render(state);
+
+    expect(renderedRows.length).toBe(1);
+    const rowContent = renderedRows[0].innerHTML;
+    expect(rowContent).toContain('0 min');
+  });
 });

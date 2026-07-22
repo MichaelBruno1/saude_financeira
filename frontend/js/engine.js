@@ -107,7 +107,11 @@ window.App.Engine = (() => {
         if (info && info.active) {
           const categoria = gastosPorCategoria.hasOwnProperty(d.categoria) ? d.categoria : "Outros";
           gastosPorCategoria[categoria] += info.valorParcela;
-          totalGastos += info.valorParcela;
+          if (d.categoria === "Investimento" && info.valorParcela < 0) {
+            // Saque de investimento: reduz total investido na categoria, mas não afeta totalGastos ou saldoRestante
+          } else {
+            totalGastos += info.valorParcela;
+          }
         }
       });
 

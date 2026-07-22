@@ -221,8 +221,11 @@ window.App.UI = (() => {
   function parseBRLValue(formattedString) {
     if (typeof formattedString === "number") return formattedString;
     if (!formattedString) return 0;
-    const clean = String(formattedString).replace(/\./g, "").replace(",", ".");
-    return parseFloat(clean) || 0;
+    const str = String(formattedString).trim();
+    const isNegative = str.startsWith("-") || str.includes("-");
+    const clean = str.replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".");
+    const num = parseFloat(clean) || 0;
+    return isNegative ? -num : num;
   }
 
   function getLlmConfig() {
