@@ -15,8 +15,6 @@ window.App.UI = (() => {
     AI_ANALYSIS_RESULT_CARD: "ai-analysis-result-card",
     AI_ANALYSIS_TEXT_CONTENT: "ai-analysis-text-content",
     AI_ANALYSIS_TIMESTAMP: "ai-analysis-timestamp",
-    BACKUP_WARNING_BANNER: "backup-warning-banner",
-    BTN_CLOSE_BACKUP_BANNER: "btn-close-backup-banner",
     BTN_OPEN_PDF_IMPORT: "btn-open-pdf-import",
     BTN_GENERATE_AMORTIZATION_PLAN: "btn-generate-amortization-plan",
     AMORTIZATION_PLAN_SPINNER: "amortization-plan-spinner",
@@ -305,8 +303,6 @@ window.App.UI = (() => {
       s.sidebarInvestimentosBtn= g(DOM_IDS.SIDEBAR_INVESTIMENTOS_BTN);
       s.sidebarMetasBtn        = g(DOM_IDS.SIDEBAR_METAS_BTN);
       s.addExpenseBtn          = g(DOM_IDS.ADD_EXPENSE_BTN);
-      s.backupWarningBanner    = g(DOM_IDS.BACKUP_WARNING_BANNER);
-      s.btnCloseBackupBanner   = g(DOM_IDS.BTN_CLOSE_BACKUP_BANNER);
       s.monthlyExpensesContainer = g(DOM_IDS.MONTHLY_EXPENSES_CONTAINER);
       s.reportsContainer       = g(DOM_IDS.REPORTS_CONTAINER);
       s.financingContainer     = g(DOM_IDS.FINANCING_CONTAINER);
@@ -508,13 +504,6 @@ window.App.UI = (() => {
         }
       });
 
-      // ── Backup banner ────────────────────────────────────────────────────────
-      if (s.btnCloseBackupBanner) {
-        s.btnCloseBackupBanner.addEventListener("click", () => {
-          if (s.backupWarningBanner) s.backupWarningBanner.classList.add("hidden");
-        });
-      }
-
       // ── Seletor de mês do gráfico de pizza ───────────────────────────────────
       if (s.reportsPizzaMonthSelect) {
         s.reportsPizzaMonthSelect.addEventListener("change", () => {
@@ -642,16 +631,6 @@ window.App.UI = (() => {
       const { formatCurrency } = window.App.UIUtils;
       const { perfis, perfilAtivo, despesas, mesAtivo, anoAtivo, financiamentos } = state;
 
-      // Banner de backup
-      if (s.backupWarningBanner && (changedKey === "all" || changedKey === "ultimoBackup" || changedKey === "despesas" || changedKey === "financiamentos")) {
-        const quinzeDiasMs = 15 * 24 * 60 * 60 * 1000;
-        const possuiDados  = (Array.isArray(despesas) && despesas.length > 0) || (Array.isArray(financiamentos) && financiamentos.length > 0);
-        if (possuiDados && (!state.ultimoBackup || (Date.now() - state.ultimoBackup) > quinzeDiasMs)) {
-          s.backupWarningBanner.classList.remove("hidden");
-        } else {
-          s.backupWarningBanner.classList.add("hidden");
-        }
-      }
 
       // Tema
       if (document.body && (changedKey === "all" || changedKey === "theme")) {
