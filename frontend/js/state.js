@@ -114,6 +114,10 @@ window.App.State = (() => {
     return active ? active.id : null;
   }
 
+  function isUUID(id) {
+    return typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  }
+
   // Notificar todos os inscritos sobre a mudança de estado
   function notify(changedKey = "all") {
     // Passar uma cópia profunda para garantir imutabilidade fora do estado central
@@ -620,7 +624,7 @@ window.App.State = (() => {
         notify("metas");
       }
 
-      if (window.App.APIClient.isOnline() && d.id && isNaN(parseInt(d.id))) {
+      if (window.App.APIClient.isOnline() && isUUID(d.id)) {
         window.App.APIClient.deleteDespesa(d.id).catch(err => {
           console.error("Erro ao deletar despesa no backend:", err);
         });
@@ -662,7 +666,7 @@ window.App.State = (() => {
         notify("metas");
       }
 
-      if (window.App.APIClient.isOnline() && d.id && isNaN(parseInt(d.id))) {
+      if (window.App.APIClient.isOnline() && isUUID(d.id)) {
         const payload = {
           descricao: descFormatada,
           valor: valorFloat,
@@ -772,7 +776,7 @@ window.App.State = (() => {
 
       notify("financiamentos");
 
-      if (window.App.APIClient.isOnline() && f.id && isNaN(parseInt(f.id))) {
+      if (window.App.APIClient.isOnline() && isUUID(f.id)) {
         const payload = {
           nome: f.nome,
           valorTotal: f.valorTotal,
@@ -801,7 +805,7 @@ window.App.State = (() => {
       _state.financiamentos.splice(idx, 1);
       notify("financiamentos");
 
-      if (window.App.APIClient.isOnline() && f.id && isNaN(parseInt(f.id))) {
+      if (window.App.APIClient.isOnline() && isUUID(f.id)) {
         window.App.APIClient.deleteFinanciamento(f.id).catch(err => {
           console.error("Erro ao deletar financiamento no backend:", err);
         });
@@ -984,11 +988,20 @@ window.App.State = (() => {
           foto: novaMeta.foto || null,
           comprado: novaMeta.comprado
         };
+        const tempId = novaMeta.id;
         window.App.APIClient.createMeta(pid, payload)
           .then(res => {
-            novaMeta.id = res.id;
-            novaMeta.prioridade = res.prioridade;
-            novaMeta.valorTarget = res.valor_target;
+            const current = _state.metas.find(m => m.id === tempId);
+            if (!current) {
+              // Deleted while creation was in flight
+              window.App.APIClient.deleteMeta(res.id).catch(err => {
+                console.error("Erro ao deletar meta pós-criação no backend:", err);
+              });
+              return;
+            }
+            current.id = res.id;
+            current.prioridade = res.prioridade;
+            current.valorTarget = res.valor_target;
             notify("metas");
           })
           .catch(err => {
@@ -1017,12 +1030,48 @@ window.App.State = (() => {
       _recalcularMetasTargets(perfil);
       notify("metas");
 
-      if (window.App.APIClient.isOnline() && meta.id && isNaN(parseInt(meta.id))) {
+      if (window.App.APIClient.isOnline() && isUUID(meta.id)) {
         window.App.APIClient.deleteMeta(meta.id).catch(err => {
           console.error("Erro ao remover meta no backend:", err);
         });
       }
       return true;
+    },
+
+    atualizarMeta(id, nome, valor, foto) {
+      const meta = _state.metas.find(m => m.id === id);
+      if (!meta) {
+        throw new Error("Meta não encontrada.");
+      }
+      const nomeClean = String(nome).trim();
+      if (!nomeClean) {
+        throw new Error("O nome da meta não pode ser vazio.");
+      }
+      const valorFloat = parseFloat(valor) || 0;
+      if (valorFloat <= 0) {
+        throw new Error("O valor da meta deve ser maior que zero.");
+      }
+
+      meta.nome = nomeClean;
+      meta.valor = valorFloat;
+      if (foto !== undefined) {
+        meta.foto = String(foto || "").trim();
+      }
+
+      _recalcularMetasTargets(meta.perfil);
+      notify("metas");
+
+      if (window.App.APIClient.isOnline() && isUUID(meta.id)) {
+        window.App.APIClient.updateMeta(meta.id, {
+          nome: meta.nome,
+          valor: meta.valor,
+          foto: meta.foto || null,
+          comprado: meta.comprado
+        }).catch(err => {
+          console.error("Erro ao atualizar meta no backend:", err);
+        });
+      }
+      return meta;
     },
 
     reordenarMetas(idsOrdenados) {
@@ -1039,7 +1088,7 @@ window.App.State = (() => {
       notify("metas");
 
       const pid = _getPerfilIDAtivo();
-      if (window.App.APIClient.isOnline() && pid) {
+      if (window.App.APIClient.isOnline() && pid && idsOrdenados.every(isUUID)) {
         window.App.APIClient.reorderMetas(pid, idsOrdenados).catch(err => {
           console.error("Erro ao reordenar metas no backend:", err);
         });
@@ -1069,7 +1118,7 @@ window.App.State = (() => {
       _recalcularMetasTargets(perfil);
       notify("metas");
 
-      if (window.App.APIClient.isOnline() && meta.id && isNaN(parseInt(meta.id))) {
+      if (window.App.APIClient.isOnline() && isUUID(meta.id)) {
         window.App.APIClient.comprarMeta(meta.id).catch(err => {
           console.error("Erro ao comprar meta no backend:", err);
         });

@@ -440,6 +440,16 @@ func TestMetaHandler(t *testing.T) {
 		t.Errorf("Reordenar: expected 200, got %d: %s", recReorder.Code, recReorder.Body.String())
 	}
 
+	// 3c. AtualizarTargets
+	targetsBody := fmt.Sprintf(`{"reajustes":[{"id":"%s","valorTarget":4500}]}`, mIDStr)
+	reqTargets := httptest.NewRequest("PUT", "/", bytes.NewBufferString(targetsBody))
+	reqTargets.SetPathValue("pid", pID.String())
+	recTargets := httptest.NewRecorder()
+	h.AtualizarTargets(recTargets, reqTargets)
+	if recTargets.Code != http.StatusOK {
+		t.Errorf("AtualizarTargets: expected 200, got %d: %s", recTargets.Code, recTargets.Body.String())
+	}
+
 	// 4. Remover
 	req4 := httptest.NewRequest("DELETE", "/", nil)
 	req4.SetPathValue("id", mIDStr)

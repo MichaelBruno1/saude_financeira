@@ -166,13 +166,22 @@ func (h *MetaHandler) AtualizarTargets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req []dto.MetaReajusteTarget
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, fmt.Errorf("%w: failed to read request body", domainErr.ErrInvalidInput))
+		return
+	}
+
+	var reajustes []dto.MetaReajusteTarget
+	var req dto.UpdateMetaTargetsRequest
+	if err := json.Unmarshal(bodyBytes, &req); err == nil && len(req.Reajustes) > 0 {
+		reajustes = req.Reajustes
+	} else if err := json.Unmarshal(bodyBytes, &reajustes); err != nil {
 		writeError(w, fmt.Errorf("%w: failed to parse request body: %s", domainErr.ErrInvalidInput, err.Error()))
 		return
 	}
 
-	err = h.uc.UpdateMetaTargets(r.Context(), pid, req)
+	err = h.uc.UpdateMetaTargets(r.Context(), pid, reajustes)
 	if err != nil {
 		writeError(w, err)
 		return

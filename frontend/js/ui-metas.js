@@ -8,6 +8,7 @@ window.App.UIMetas = (() => {
   let metaPhotoUploadZone, metaPhotoFileInput, metaPhotoUrlInput;
   let metaPhotoPreviewContainer, metaPhotoPreview, btnMetaPhotoClear;
   let metasActiveList, metasPurchasedList;
+  let editMetaModal, closeEditMetaModalBtn, formEditMeta, editMetaId, editMetaNome, editMetaValor, editMetaFoto, modalEditMetaCancelBtn;
 
   let currentPhotoBase64 = "";
 
@@ -30,6 +31,15 @@ window.App.UIMetas = (() => {
     btnMetaPhotoClear         = g("btn-meta-photo-clear");
     metasActiveList           = g("metas-active-list");
     metasPurchasedList        = g("metas-purchased-list");
+
+    editMetaModal             = g("edit-meta-modal");
+    closeEditMetaModalBtn     = g("close-edit-meta-modal-btn");
+    formEditMeta              = g("modal-edit-meta-form");
+    editMetaId                = g("modal-edit-meta-id");
+    editMetaNome              = g("modal-edit-meta-nome");
+    editMetaValor             = g("modal-edit-meta-valor");
+    editMetaFoto              = g("modal-edit-meta-foto");
+    modalEditMetaCancelBtn    = g("modal-edit-meta-cancel-btn");
   }
 
   function getLlmConfig() {
@@ -87,6 +97,47 @@ window.App.UIMetas = (() => {
     if (metaValorInput) {
       metaValorInput.addEventListener("input", (e) => {
         e.target.value = formatBRLInput(e.target.value);
+      });
+    }
+
+    if (editMetaValor) {
+      editMetaValor.addEventListener("input", (e) => {
+        e.target.value = formatBRLInput(e.target.value);
+      });
+    }
+
+    if (closeEditMetaModalBtn) {
+      closeEditMetaModalBtn.addEventListener("click", hideEditMetaModal);
+    }
+
+    if (modalEditMetaCancelBtn) {
+      modalEditMetaCancelBtn.addEventListener("click", hideEditMetaModal);
+    }
+
+    if (formEditMeta) {
+      formEditMeta.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const id = editMetaId.value;
+        const nome = editMetaNome.value.trim();
+        const valor = parseBRLValue(editMetaValor.value);
+        const foto = editMetaFoto ? editMetaFoto.value.trim() : "";
+
+        if (!nome) {
+          showStatus("Digite o nome do produto/viagem.", true);
+          return;
+        }
+        if (isNaN(valor) || valor <= 0) {
+          showStatus("Digite um valor válido de meta.", true);
+          return;
+        }
+
+        try {
+          window.App.State.atualizarMeta(id, nome, valor, foto);
+          hideEditMetaModal();
+          showStatus("Meta atualizada com sucesso!");
+        } catch (err) {
+          showStatus(err.message, true);
+        }
       });
     }
 
@@ -291,13 +342,20 @@ window.App.UIMetas = (() => {
     reader.readAsDataURL(file);
   }
 
-  function resetPhotoInput() {
-    currentPhotoBase64 = "";
-    if (metaPhotoFileInput) metaPhotoFileInput.value = "";
-    if (metaPhotoUrlInput) metaPhotoUrlInput.value = "";
-    if (metaPhotoPreview) metaPhotoPreview.src = "";
-    if (metaPhotoPreviewContainer) metaPhotoPreviewContainer.classList.add("hidden");
-    if (metaPhotoUploadZone) metaPhotoUploadZone.classList.remove("hidden");
+  function showEditMetaModal(meta) {
+    if (!editMetaModal) return;
+    const { formatBRLInput } = window.App.UIUtils;
+    if (editMetaId) editMetaId.value = meta.id;
+    if (editMetaNome) editMetaNome.value = meta.nome;
+    if (editMetaValor) editMetaValor.value = formatBRLInput(meta.valor.toFixed(2));
+    if (editMetaFoto) editMetaFoto.value = meta.foto || "";
+    editMetaModal.classList.remove("hidden");
+  }
+
+  function hideEditMetaModal() {
+    if (!editMetaModal) return;
+    editMetaModal.classList.add("hidden");
+    if (formEditMeta) formEditMeta.reset();
   }
 
   function obterNomeMeta(state, id) {
@@ -390,6 +448,7 @@ window.App.UIMetas = (() => {
                   ? `<button class="btn-comprar w-full sm:w-auto bg-emerald-650 hover:bg-emerald-600 text-white font-semibold py-1.5 px-3 rounded-lg text-xs transition focus:outline-none cursor-pointer" data-id="${meta.id}">Adquirir</button>`
                   : ""
               }
+              <button class="btn-editar w-full sm:w-auto bg-slate-850 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 font-semibold py-1.5 px-3 rounded-lg text-xs transition focus:outline-none cursor-pointer" data-id="${meta.id}">Editar</button>
               <button class="btn-excluir w-full sm:w-auto bg-slate-850 hover:bg-slate-800 text-rose-400 hover:text-rose-300 font-semibold py-1.5 px-3 rounded-lg text-xs transition focus:outline-none cursor-pointer" data-id="${meta.id}">Excluir</button>
             </div>
           `;
@@ -464,6 +523,13 @@ window.App.UIMetas = (() => {
               } catch (err) {
                 showStatus(err.message, true);
               }
+            });
+          }
+
+          const btnEditar = card.querySelector(".btn-editar");
+          if (btnEditar) {
+            btnEditar.addEventListener("click", () => {
+              showEditMetaModal(meta);
             });
           }
 

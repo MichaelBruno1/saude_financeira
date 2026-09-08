@@ -179,6 +179,9 @@ window.App.APIClient = (() => {
     async deleteMeta(id) {
       return await _fetch("DELETE", `/api/v1/metas/${id}`);
     },
+    async updateMeta(id, data) {
+      return await _fetch("PUT", `/api/v1/metas/${id}`, data);
+    },
     async reorderMetas(perfilId, ids) {
       return await _fetch("POST", `/api/v1/perfis/${perfilId}/metas/reorder`, { ids });
     },

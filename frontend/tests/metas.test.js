@@ -174,4 +174,24 @@ describe('Metas Feature State Integration', () => {
     // Target should be baseline (1000) + value (5000) = 6000
     expect(state.metas[0].valorTarget).toBe(6000);
   });
+
+  it('should update a meta and recalculate targets', () => {
+    const State = global.window.App.State;
+    State.adicionarPerfil("Michael", 5000);
+    State.adicionarDespesa("CDB", 1000, "Investimento", 1, 1, false, 2026, "CDB");
+
+    const m1 = State.adicionarMeta("Celular", 2000, "");
+    expect(m1.valorTarget).toBe(3000);
+
+    State.atualizarMeta(m1.id, "Celular Pro Max", 3000, "https://foto.com/img.png");
+
+    const state = State.getState();
+    const updated = state.metas.find(m => m.id === m1.id);
+    expect(updated.nome).toBe("Celular Pro Max");
+    expect(updated.valor).toBe(3000);
+    expect(updated.foto).toBe("https://foto.com/img.png");
+    // Target should recalculate to baseline (1000) + 3000 = 4000
+    expect(updated.valorTarget).toBe(4000);
+  });
 });
+
